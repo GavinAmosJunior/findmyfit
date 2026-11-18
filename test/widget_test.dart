@@ -73,36 +73,44 @@ void main() {
       state.finishReturn(batch.id);
       state.toggleFavorite(a.id);
 
-      await tester.pumpWidget(FindMyFitApp(state: state));
-      await tester.pumpAndSettle();
-      for (final icon in [
-        Icons.shopping_basket_outlined,
-        Icons.local_laundry_service_outlined,
-        Icons.travel_explore_outlined,
-      ]) {
-        await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(icon)));
+      // Fails with the screen name and the overflowing widget, so a CI
+      // failure says exactly what to fix.
+      Future<void> settle(String screen) async {
         await tester.pumpAndSettle();
+        final error = tester.takeException();
+        if (error != null) {
+          final details = error is FlutterError ? error.toStringDeep() : '$error';
+          fail('$screen ($lang) overflowed: $details');
+        }
       }
-      // Pushed screens: return check, settings, add clothes.
-      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(Icons.local_laundry_service_outlined)));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byIcon(Icons.chevron_right_rounded).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
-      await tester.pumpAndSettle();
-      tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-      await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(Icons.checkroom_outlined)));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.settings_outlined));
-      await tester.pumpAndSettle();
-      tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(Icons.add_rounded));
-      await tester.pumpAndSettle();
 
-      // Any RenderFlex overflow above would have failed the test.
-      expect(tester.takeException(), isNull);
+      Finder tab(IconData icon) => find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(icon));
+      void back() => tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+
+      await tester.pumpWidget(FindMyFitApp(state: state));
+      await settle('Closet');
+      await tester.tap(tab(Icons.shopping_basket_outlined));
+      await settle('Hamper');
+      await tester.tap(tab(Icons.local_laundry_service_outlined));
+      await settle('Laundry');
+      await tester.tap(tab(Icons.travel_explore_outlined));
+      await settle('Missing');
+
+      await tester.tap(tab(Icons.local_laundry_service_outlined));
+      await settle('Laundry');
+      await tester.ensureVisible(find.byIcon(Icons.chevron_right_rounded).first);
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
+      await settle('Return check');
+      back();
+      await settle('Laundry');
+      await tester.tap(tab(Icons.checkroom_outlined));
+      await settle('Closet');
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await settle('Settings');
+      back();
+      await settle('Closet');
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await settle('Add clothes');
     });
   }
 
