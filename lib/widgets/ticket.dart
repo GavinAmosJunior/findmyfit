@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import 'pressable.dart';
+import 'store_sign.dart';
 
 /// A laundromat claim ticket: a painted header band with the place and the
 /// ticket number, and a plain white body for what's inside. Solid edges,
@@ -9,6 +10,9 @@ import 'pressable.dart';
 class Ticket extends StatelessWidget {
   final String title;
   final Color color;
+
+  /// Letter color on the band; defaults to white (ink on mustard).
+  final Color? foreground;
   final Widget? trailing;
   final Widget body;
   final VoidCallback? onTap;
@@ -20,13 +24,14 @@ class Ticket extends StatelessWidget {
     required this.color,
     required this.body,
     required this.semanticLabel,
+    this.foreground,
     this.trailing,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final onBand = color == SignColors.mustard ? SignColors.ink : Colors.white;
+    final onBand = foreground ?? onSignColor(color);
     final ticket = ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: ColoredBox(

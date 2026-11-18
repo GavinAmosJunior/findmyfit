@@ -18,6 +18,21 @@ IconData statusIcon(GarmentStatus status) {
   }
 }
 
+/// The sign color for a status: closet blue, hamper mustard, laundry
+/// green, missing red. Same as the tab the piece lives in.
+Color statusSignColor(GarmentStatus status) {
+  switch (status) {
+    case GarmentStatus.closet:
+      return SignColors.blue;
+    case GarmentStatus.dirtyHamper:
+      return SignColors.mustard;
+    case GarmentStatus.inLaundry:
+      return SignColors.green;
+    case GarmentStatus.missing:
+      return SignColors.red;
+  }
+}
+
 /// A garment's status as a small painted chip: icon and word on a tint of
 /// its color. Never color alone.
 class StatusChip extends StatelessWidget {

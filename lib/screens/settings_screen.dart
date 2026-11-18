@@ -6,6 +6,8 @@ import '../state/app_scope.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/grouped_section.dart';
 import '../theme/app_icons.dart';
+import '../theme/app_theme.dart';
+import '../widgets/store_sign.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -68,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final state = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(s.settings)),
+      appBar: SignBar(title: s.settings, color: SignColors.ink),
       body: ListView(
         padding: const EdgeInsets.only(top: 8, bottom: 32),
         children: [

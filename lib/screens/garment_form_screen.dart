@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import '../theme/app_icons.dart';
+import '../widgets/store_sign.dart';
 
 /// Adding is camera-first: snap a photo, type a name, tap "Add and next",
 /// and the camera opens again for the next piece. "Choose photos" queues
@@ -258,20 +259,26 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
         if (!didPop) _confirmLeave();
       },
       child: Scaffold(
-        appBar: AppBar(
+        appBar: SignBar(
+          color: SignColors.blue,
           leading: IconButton(
             tooltip: _isEdit ? s.cancel : s.done,
             icon: const Icon(AppIcons.close),
             onPressed: _confirmLeave,
           ),
-          title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
+          title: _isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes),
           actions: [
             if (_isEdit)
               TextButton(onPressed: _saveEdit, child: Text(s.save))
             else if (_added > 0)
               Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: Center(child: Text(s.addedCount(_added), style: context.text.labelMedium)),
+                child: Center(
+                  child: Text(
+                    s.addedCount(_added),
+                    style: context.text.labelMedium?.copyWith(color: onSignColor(SignColors.blue)),
+                  ),
+                ),
               ),
           ],
         ),
@@ -280,7 +287,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                   children: [
                     _photoArea(context, s),
                     const SizedBox(height: 20),

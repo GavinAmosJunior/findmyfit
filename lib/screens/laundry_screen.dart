@@ -90,7 +90,8 @@ class _ActiveBatchCard extends StatelessWidget {
 
     return Ticket(
       title: batch.laundromatName,
-      color: SignColors.blue,
+      // The Laundry tab stays in its own green: solid for what's out now.
+      color: SignColors.green,
       trailing: TicketNumber(s.ticketNo(batch.batchCode.replaceAll('#', ''))),
       semanticLabel: '${batch.laundromatName}, ${s.backCount(batch.verifiedCount, batch.totalItems)}',
       onTap: () => BatchScreen.open(context, batch.id),
@@ -192,7 +193,9 @@ class _HistoryTicket extends StatelessWidget {
 
     return Ticket(
       title: batch.laundromatName,
-      color: SignColors.ink,
+      // History is quieter: a soft green band with dark green letters.
+      color: context.palette.clean.background,
+      foreground: context.palette.clean.foreground,
       trailing: TicketNumber(s.ticketNo(batch.batchCode.replaceAll('#', ''))),
       semanticLabel: '${batch.laundromatName}, ${s.historySummary(batch.totalItems, missing)}',
       onTap: () => BatchScreen.open(context, batch.id),

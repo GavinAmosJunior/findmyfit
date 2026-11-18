@@ -61,11 +61,7 @@ class _HamperScreenState extends State<HamperScreen> {
           if (items.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: EmptyState(
-                icon: AppIcons.hamper,
-                title: s.emptyHamperTitle,
-                body: s.emptyHamperBody,
-              ),
+              child: EmptyState(icon: AppIcons.hamper, title: s.emptyHamperTitle, body: s.emptyHamperBody),
             )
           else ...[
             SliverToBoxAdapter(
@@ -81,10 +77,7 @@ class _HamperScreenState extends State<HamperScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               // One grouped list, like iOS, rather than a stack of cards.
               sliver: DecoratedSliver(
-                decoration: BoxDecoration(
-                  color: context.palette.card,
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                decoration: BoxDecoration(color: context.palette.card, borderRadius: BorderRadius.circular(16)),
                 sliver: SliverList.separated(
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const Divider(indent: 124),
@@ -115,6 +108,8 @@ class _HamperScreenState extends State<HamperScreen> {
                   onPressed: selected.isEmpty
                       ? () => showMessage(context, s.selectToSend)
                       : () => _send(context, selected),
+                  // Green: everything that sends to or checks laundry is green.
+                  style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
                   icon: const Icon(AppIcons.laundryFill),
                   label: Text(s.sendToLaundry(selected.length)),
                 ),
@@ -129,19 +124,20 @@ class _HamperScreenState extends State<HamperScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: false,
+      clipBehavior: Clip.antiAlias,
       builder: (_) => _SendSheet(count: selected.length),
     );
     if (result == null || !context.mounted) return;
     final state = AppScope.read(context);
-    final batch = state.sendToLaundry(
-      garmentIds: selected.map((g) => g.id).toList(),
-      laundromatName: result,
-    );
+    final batch = state.sendToLaundry(garmentIds: selected.map((g) => g.id).toList(), laundromatName: result);
     HapticFeedback.mediumImpact();
     // We switch to Laundry, so show the message above the whole app.
     final shell = HomeShellState.maybeOf(context);
     shell?.goTo(HomeShellState.laundryTab);
-    if (shell != null && shell.mounted) showMessage(shell.context, s.sentToLaundry(batch.totalItems, batch.laundromatName));
+    if (shell != null && shell.mounted) {
+      showMessage(shell.context, s.sentToLaundry(batch.totalItems, batch.laundromatName));
+    }
   }
 }
 
@@ -268,44 +264,49 @@ class _SendSheetState extends State<_SendSheet> {
     final s = S.of(context);
     final recent = AppScope.read(context).recentLaundromats.take(4).toList();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        0,
-        20,
-        // Clear the keyboard, or the gesture bar when there's no keyboard.
-        16 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).viewPadding.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(s.sendSheetTitle, style: context.text.headlineSmall),
-          const SizedBox(height: 4),
-          Text(s.items(widget.count), style: context.text.bodySmall),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _place,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(labelText: s.laundromat, hintText: s.laundromatHint),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SheetSign(title: s.sendSheetTitle, subtitle: s.items(widget.count), color: SignColors.green),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            // Clear the keyboard, or the gesture bar when there's no keyboard.
+            16 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).viewPadding.bottom,
           ),
-          if (recent.length > 1) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final r in recent) ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _place,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: s.laundromat, hintText: s.laundromatHint),
+              ),
+              if (recent.length > 1) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final r in recent)
+                      ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
+                  ],
+                ),
               ],
-            ),
-          ],
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(_place.text),
-            child: Text(s.sendToLaundry(widget.count)),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(_place.text),
+                style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
+                child: Text(s.sendToLaundry(widget.count)),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

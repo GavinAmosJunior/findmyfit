@@ -11,6 +11,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import 'home_shell.dart';
 import '../theme/app_icons.dart';
+import '../widgets/store_sign.dart';
 
 /// The return check: tick each piece as it comes back from the laundromat.
 /// Anything left unticked when you finish moves to Missing.
@@ -32,14 +33,10 @@ class BatchScreen extends StatelessWidget {
     final editable = !batch.isCompleted;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(batch.laundromatName),
-            Text('${batch.batchCode} · ${s.sentOn(s.date(batch.createdAt))}', style: context.text.bodySmall),
-          ],
-        ),
+      appBar: SignBar(
+        title: batch.laundromatName,
+        subtitle: '${batch.batchCode} · ${s.sentOn(s.date(batch.createdAt))}',
+        color: SignColors.green,
         actions: [
           if (editable) ...[
             PopupMenuButton<String>(
@@ -50,7 +47,7 @@ class BatchScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
         children: [
           if (!editable) _CompletedStamp(batch: batch),
           if (editable) ...[
@@ -81,6 +78,8 @@ class BatchScreen extends StatelessWidget {
                   child: Text(s.backCount(batch.verifiedCount, batch.totalItems), style: context.text.labelMedium),
                 ),
                 TextButton.icon(
+                  // Green like the rest of the laundry screens.
+                  style: TextButton.styleFrom(foregroundColor: context.palette.clean.foreground),
                   onPressed: batch.verifiedCount == garments.length
                       ? null
                       : () {
@@ -121,7 +120,11 @@ class BatchScreen extends StatelessWidget {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton(onPressed: () => _finish(context, batch), child: Text(s.finishReturn)),
+                child: FilledButton(
+                  onPressed: () => _finish(context, batch),
+                  style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
+                  child: Text(s.finishReturn),
+                ),
               ),
             ),
     );
