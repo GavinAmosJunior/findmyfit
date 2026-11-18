@@ -52,3 +52,6 @@ app.*.map.json
 
 # Third-party skill (no license to redistribute)
 .claude/skills/
+
+# Local emulator screenshots
+/screenshots/

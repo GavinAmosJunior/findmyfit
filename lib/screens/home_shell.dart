@@ -6,6 +6,7 @@ import '../models/garment.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import 'closet_screen.dart';
+import 'garment_form_screen.dart';
 import 'hamper_screen.dart';
 import 'laundry_screen.dart';
 import 'missing_screen.dart';
@@ -37,6 +38,14 @@ class HomeShellState extends State<HomeShell> {
     final state = AppScope.of(context);
     final missing = state.countOf(GarmentStatus.missing);
 
+    final addButton = _index == 0 && state.garments.isNotEmpty
+        ? FloatingActionButton(
+            tooltip: s.addClothes,
+            onPressed: () => GarmentFormScreen.openAdd(context),
+            child: const Icon(Icons.add_rounded, size: 30),
+          )
+        : null;
+
     final body = IndexedStack(
       index: _index,
       children: const [ClosetScreen(), HamperScreen(), LaundryScreen(), MissingScreen()],
@@ -47,6 +56,7 @@ class HomeShellState extends State<HomeShell> {
       Widget icon(IconData data) => Icon(data, size: 26);
       return Scaffold(
         body: body,
+        floatingActionButton: addButton,
         bottomNavigationBar: CupertinoTabBar(
           currentIndex: _index,
           onTap: goTo,
@@ -70,6 +80,7 @@ class HomeShellState extends State<HomeShell> {
 
     return Scaffold(
       body: body,
+      floatingActionButton: addButton,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(border: Border(top: BorderSide(color: context.palette.separator))),
         child: NavigationBar(
