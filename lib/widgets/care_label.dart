@@ -3,22 +3,23 @@ import 'package:flutter/material.dart';
 import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 
 IconData statusIcon(GarmentStatus status) {
   switch (status) {
     case GarmentStatus.closet:
-      return Icons.checkroom_rounded;
+      return AppIcons.closetFill;
     case GarmentStatus.dirtyHamper:
-      return Icons.shopping_basket_outlined;
+      return AppIcons.hamper;
     case GarmentStatus.inLaundry:
-      return Icons.local_laundry_service_outlined;
+      return AppIcons.laundry;
     case GarmentStatus.missing:
-      return Icons.travel_explore_rounded;
+      return AppIcons.missingFill;
   }
 }
 
 /// A garment's status, drawn like the little care label sewn into clothes:
-/// a stitched (dashed) border, small caps and an icon. Status is always
+/// a stitched (dashed) border, a short word and an icon. Status is always
 /// shown as icon + word, never color alone.
 class CareLabel extends StatelessWidget {
   final GarmentStatus status;
@@ -47,14 +48,13 @@ class CareLabel extends StatelessWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  label.toUpperCase(),
+                  label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     height: 1.1,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
+                    fontWeight: FontWeight.w600,
                     color: colors.foreground,
                   ),
                 ),

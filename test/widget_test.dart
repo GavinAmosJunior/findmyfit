@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_laundry_tracker/main.dart';
 import 'package:smart_laundry_tracker/models/garment.dart';
+import 'package:smart_laundry_tracker/screens/home_shell.dart';
 import 'package:smart_laundry_tracker/state/wardrobe_state.dart';
+import 'package:smart_laundry_tracker/theme/app_icons.dart';
 
 Future<WardrobeState> _loadedState() async {
   final state = WardrobeState(load: false);
@@ -25,7 +27,7 @@ void main() {
 
     expect(find.text('Start your closet'), findsOneWidget);
     expect(find.text('Add clothes'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(AppTabBar), findsOneWidget);
   });
 
   testWidgets('one tap on "Wore it" moves a garment to the hamper, Undo brings it back', (tester) async {
@@ -84,32 +86,32 @@ void main() {
         }
       }
 
-      Finder tab(IconData icon) => find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(icon));
+      Finder tab(IconData icon) => find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(icon));
       void back() => tester.state<NavigatorState>(find.byType(Navigator).first).pop();
 
       await tester.pumpWidget(FindMyFitApp(state: state));
       await settle('Closet');
-      await tester.tap(tab(Icons.shopping_basket_outlined));
+      await tester.tap(tab(AppIcons.hamper));
       await settle('Hamper');
-      await tester.tap(tab(Icons.local_laundry_service_outlined));
+      await tester.tap(tab(AppIcons.laundry));
       await settle('Laundry');
-      await tester.tap(tab(Icons.travel_explore_outlined));
+      await tester.tap(tab(AppIcons.missing));
       await settle('Missing');
 
-      await tester.tap(tab(Icons.local_laundry_service_outlined));
+      await tester.tap(tab(AppIcons.laundry));
       await settle('Laundry');
-      await tester.ensureVisible(find.byIcon(Icons.chevron_right_rounded).first);
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
+      await tester.ensureVisible(find.byIcon(AppIcons.chevron).first);
+      await tester.tap(find.byIcon(AppIcons.chevron).first);
       await settle('Return check');
       back();
       await settle('Laundry');
-      await tester.tap(tab(Icons.checkroom_outlined));
+      await tester.tap(tab(AppIcons.closet));
       await settle('Closet');
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byIcon(AppIcons.settings));
       await settle('Settings');
       back();
       await settle('Closet');
-      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.tap(find.byIcon(AppIcons.add));
       await settle('Add clothes');
     });
   }

@@ -10,6 +10,7 @@ import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
+import '../theme/app_icons.dart';
 
 /// Adding is camera-first: snap a photo, type a name, tap "Add and next",
 /// and the camera opens again for the next piece. "Choose photos" queues
@@ -221,7 +222,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: _isEdit ? s.cancel : s.done,
-          icon: const Icon(Icons.close_rounded),
+          icon: const Icon(AppIcons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
@@ -333,7 +334,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                       flex: 2,
                       child: FilledButton.icon(
                         onPressed: _busy ? null : () => _add(next: true),
-                        icon: Icon(_hasCamera ? Icons.photo_camera_rounded : Icons.arrow_forward_rounded),
+                        icon: Icon(_hasCamera ? AppIcons.camera : AppIcons.forward),
                         label: Text(s.addAndNext),
                       ),
                     ),
@@ -371,7 +372,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_a_photo_outlined, size: 48, color: context.colors.primary),
+                              Icon(AppIcons.addPhoto, size: 48, color: context.colors.primary),
                               const SizedBox(height: 10),
                               Text(s.addPhoto, style: context.text.titleMedium),
                             ],
@@ -387,7 +388,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
               Expanded(
                 child: TextButton.icon(
                   onPressed: _busy ? null : _takePhoto,
-                  icon: const Icon(Icons.photo_camera_outlined),
+                  icon: const Icon(AppIcons.cameraOutline),
                   label: Text(hasPhoto ? s.changePhoto : s.takePhoto),
                 ),
               ),
@@ -395,7 +396,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
             Expanded(
               child: TextButton.icon(
                 onPressed: _busy ? null : _choosePhotos,
-                icon: const Icon(Icons.photo_library_outlined),
+                icon: const Icon(AppIcons.library),
                 label: Text(!_hasCamera && hasPhoto ? s.changePhoto : s.choosePhotos),
               ),
             ),

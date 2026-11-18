@@ -5,17 +5,18 @@ import 'package:flutter/material.dart';
 
 import '../models/garment.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 
 IconData categoryIcon(GarmentCategory category) {
   switch (category) {
     case GarmentCategory.tops:
-      return Icons.dry_cleaning_rounded;
+      return AppIcons.tops;
     case GarmentCategory.bottoms:
-      return Icons.view_column_rounded;
+      return AppIcons.bottoms;
     case GarmentCategory.outerwear:
-      return Icons.layers_rounded;
+      return AppIcons.outerwear;
     case GarmentCategory.delicates:
-      return Icons.spa_rounded;
+      return AppIcons.delicates;
   }
 }
 

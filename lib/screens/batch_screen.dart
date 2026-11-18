@@ -10,6 +10,7 @@ import '../widgets/care_label.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import 'home_shell.dart';
+import '../theme/app_icons.dart';
 
 /// The return check: tick each piece as it comes back from the laundromat.
 /// Anything left unticked when you finish moves to Missing.
@@ -85,7 +86,7 @@ class BatchScreen extends StatelessWidget {
                           HapticFeedback.selectionClick();
                           state.markAllReceived(batch.id);
                         },
-                  icon: const Icon(Icons.done_all_rounded),
+                  icon: const Icon(AppIcons.checkAll),
                   label: Text(s.allBack),
                 ),
               ],
@@ -206,7 +207,7 @@ class _ReturnRow extends StatelessWidget {
                     duration: const Duration(milliseconds: 180),
                     transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
                     child: Icon(
-                      received ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                      received ? AppIcons.checked : AppIcons.unchecked,
                       key: ValueKey(received),
                       size: 30,
                       color: received ? clean.foreground : context.palette.tertiaryText,

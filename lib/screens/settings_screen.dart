@@ -5,6 +5,7 @@ import '../services/backup_service.dart';
 import '../state/app_scope.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/grouped_section.dart';
+import '../theme/app_icons.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -84,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   selected: state.language == code,
                   selectedColor: Theme.of(context).colorScheme.onSurface,
                   trailing: state.language == code
-                      ? Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.primary)
+                      ? Icon(AppIcons.check, color: Theme.of(context).colorScheme.primary)
                       : null,
                   onTap: () => state.setLanguage(code),
                 ),
@@ -96,13 +97,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               ListTile(
                 enabled: !_working,
-                leading: const Icon(Icons.ios_share_rounded),
+                leading: const Icon(AppIcons.share),
                 title: Text(s.exportBackup),
                 onTap: _export,
               ),
               ListTile(
                 enabled: !_working,
-                leading: const Icon(Icons.download_rounded),
+                leading: const Icon(AppIcons.download),
                 title: Text(s.importBackup),
                 onTap: _import,
               ),

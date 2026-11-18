@@ -10,6 +10,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
 import 'garment_sheet.dart';
 import 'home_shell.dart';
+import '../theme/app_icons.dart';
 
 /// Dirty clothes waiting to go out. Everything starts selected (you usually
 /// send the whole hamper); untick what stays home, then send.
@@ -57,7 +58,7 @@ class _HamperScreenState extends State<HamperScreen> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Icons.shopping_basket_outlined,
+                icon: AppIcons.hamper,
                 title: s.emptyHamperTitle,
                 body: s.emptyHamperBody,
               ),
@@ -79,7 +80,6 @@ class _HamperScreenState extends State<HamperScreen> {
                 decoration: BoxDecoration(
                   color: context.palette.card,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.palette.separator),
                 ),
                 sliver: SliverList.separated(
                   itemCount: items.length,
@@ -111,7 +111,7 @@ class _HamperScreenState extends State<HamperScreen> {
                   onPressed: selected.isEmpty
                       ? () => showMessage(context, s.selectToSend)
                       : () => _send(context, selected),
-                  icon: const Icon(Icons.local_laundry_service_rounded),
+                  icon: const Icon(AppIcons.laundryFill),
                   label: Text(s.sendToLaundry(selected.length)),
                 ),
               ),
@@ -168,7 +168,7 @@ class _HamperRow extends StatelessWidget {
               style: TextStyle(color: context.palette.clean.foreground, fontWeight: FontWeight.w600),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.checkroom_rounded, color: context.palette.clean.foreground),
+            Icon(AppIcons.closetFill, color: context.palette.clean.foreground),
           ],
         ),
       ),

@@ -9,9 +9,11 @@ import '../widgets/care_label.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
+import '../widgets/pressable.dart';
 import 'garment_form_screen.dart';
 import 'garment_sheet.dart';
 import 'settings_screen.dart';
+import '../theme/app_icons.dart';
 
 /// Marks a clean garment as worn, with haptic feedback and an Undo.
 void wearGarment(BuildContext context, Garment garment) {
@@ -83,7 +85,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
           : FloatingActionButton(
               tooltip: s.addClothes,
               onPressed: () => GarmentFormScreen.openAdd(context),
-              child: const Icon(Icons.add_rounded, size: 30),
+              child: const Icon(AppIcons.add, size: 30),
             ),
       body: CustomScrollView(
         slivers: [
@@ -93,14 +95,14 @@ class _ClosetScreenState extends State<ClosetScreen> {
               IconButton(
                 tooltip: s.search,
                 onPressed: all.isEmpty ? null : _toggleSearch,
-                icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
+                icon: Icon(_searching ? AppIcons.close : AppIcons.search),
               ),
               IconButton(
                 tooltip: s.settings,
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 ),
-                icon: const Icon(Icons.settings_outlined),
+                icon: const Icon(AppIcons.settings),
               ),
               const SizedBox(width: 4),
             ],
@@ -111,7 +113,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Icons.add_a_photo_outlined,
+                icon: AppIcons.addPhoto,
                 title: s.emptyClosetTitle,
                 body: s.emptyClosetBody,
                 actionLabel: s.addClothes,
@@ -123,20 +125,21 @@ class _ClosetScreenState extends State<ClosetScreen> {
             if (visible.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: EmptyState(icon: Icons.search_off_rounded, title: s.noMatches, body: s.noMatchesBody),
+                child: EmptyState(icon: AppIcons.noResults, title: s.noMatches, body: s.noMatchesBody),
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 104),
+                // Room for the + button and the tab bar floating over the grid.
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 96 + MediaQuery.paddingOf(context).bottom),
                 sliver: SliverLayoutBuilder(
                   builder: (context, constraints) {
                     final columns = (constraints.crossAxisExtent / 190).floor().clamp(2, 5);
                     // Name + care label grow with the phone's text size setting.
-                    final labelArea = 30 + MediaQuery.textScalerOf(context).scale(42);
+                    final labelArea = 16 + MediaQuery.textScalerOf(context).scale(42);
                     return SliverGrid.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
-                        mainAxisSpacing: 14,
+                        mainAxisSpacing: 18,
                         crossAxisSpacing: 12,
                         mainAxisExtent: (constraints.crossAxisExtent - 12 * (columns - 1)) / columns + labelArea,
                       ),
@@ -171,7 +174,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: s.searchClothes,
-                prefixIcon: const Icon(Icons.search_rounded),
+                prefixIcon: const Icon(AppIcons.search),
               ),
             ),
           ),
@@ -221,52 +224,60 @@ class _GarmentTile extends StatelessWidget {
     final s = S.of(context);
     final canWear = garment.status == GarmentStatus.closet;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => GarmentSheet.show(context, garment.id),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  GarmentImage(garment: garment),
-                  if (garment.isFavorite)
-                    const Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Icon(Icons.favorite_rounded, color: Colors.white, size: 20,
-                          shadows: [Shadow(color: Color(0x66000000), blurRadius: 6)]),
-                    ),
-                  if (canWear)
-                    Positioned(
-                      right: 4,
-                      bottom: 4,
-                      child: _WoreItButton(
-                        tooltip: s.woreItHint(garment.name),
-                        onPressed: () => wearGarment(context, garment),
-                      ),
-                    ),
-                ],
+    // Photo first: no card around it, just the picture, the name and,
+    // only when a piece isn't clean in the closet, its care label.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AspectRatio(
+          aspectRatio: 1,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Pressable(
+                label: garment.name,
+                onTap: () => GarmentSheet.show(context, garment.id),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: GarmentImage(garment: garment),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(garment.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
-                  const SizedBox(height: 6),
-                  CareLabel(status: garment.status),
-                ],
-              ),
-            ),
-          ],
+              if (garment.isFavorite)
+                const Positioned(
+                  top: 10,
+                  left: 10,
+                  child: IgnorePointer(
+                    child: Icon(AppIcons.favorite, color: Colors.white, size: 20,
+                        shadows: [Shadow(color: Color(0x66000000), blurRadius: 6)]),
+                  ),
+                ),
+              if (canWear)
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: _WoreItButton(
+                    tooltip: s.woreItHint(garment.name),
+                    onPressed: () => wearGarment(context, garment),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(garment.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
+              const SizedBox(height: 4),
+              if (canWear)
+                Text(s.categoryLabel(garment.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall)
+              else
+                CareLabel(status: garment.status),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -291,7 +302,7 @@ class _WoreItButton extends StatelessWidget {
         elevation: 2,
         shadowColor: const Color(0x55000000),
       ),
-      icon: const Icon(Icons.shopping_basket_outlined, size: 22),
+      icon: const Icon(AppIcons.hamper, size: 22),
     );
   }
 }

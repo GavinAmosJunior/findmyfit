@@ -10,6 +10,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/grouped_section.dart';
+import '../theme/app_icons.dart';
 
 /// Clothes that didn't come back. Grouped by laundromat, each group can
 /// send that laundromat a ready-made message listing what's missing.
@@ -37,7 +38,7 @@ class MissingScreen extends StatelessWidget {
             SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Icons.verified_outlined,
+                icon: AppIcons.allFound,
                 title: s.emptyMissingTitle,
                 body: s.emptyMissingBody,
               ),
@@ -68,12 +69,13 @@ class MissingScreen extends StatelessWidget {
                     onPressed: () => SharePlus.instance.share(
                       ShareParams(text: s.askMessage(entry.key, entry.value.map((g) => g.name).toList())),
                     ),
-                    icon: const Icon(Icons.chat_outlined),
+                    icon: const Icon(AppIcons.chat),
                     label: Text(s.askLaundromat),
                   ),
                 ),
               ),
             ],
+            SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
           ],
         ],
       ),
@@ -134,7 +136,7 @@ class _MissingCard extends StatelessWidget {
                         state.updateGarment(garment);
                       });
                     },
-                    icon: const Icon(Icons.check_rounded),
+                    icon: const Icon(AppIcons.check),
                     label: Text(s.foundIt),
                   ),
                 ),

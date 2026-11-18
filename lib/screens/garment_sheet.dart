@@ -10,6 +10,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import 'closet_screen.dart';
 import 'garment_form_screen.dart';
+import '../theme/app_icons.dart';
 
 /// Details and actions for one garment, in a bottom sheet.
 class GarmentSheet extends StatelessWidget {
@@ -69,7 +70,7 @@ class GarmentSheet extends StatelessWidget {
                   state.toggleFavorite(garment.id);
                 },
                 icon: Icon(
-                  garment.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  garment.isFavorite ? AppIcons.favorite : AppIcons.favoriteOutline,
                   color: garment.isFavorite ? const Color(0xFFE11D48) : null,
                 ),
               ),
@@ -99,7 +100,7 @@ class GarmentSheet extends StatelessWidget {
                 close();
                 wearGarment(outer, garment);
               },
-              icon: const Icon(Icons.shopping_basket_outlined),
+              icon: const Icon(AppIcons.hamper),
               label: Text(s.woreIt),
             ),
           if (garment.status == GarmentStatus.dirtyHamper)
@@ -108,7 +109,7 @@ class GarmentSheet extends StatelessWidget {
                 state.moveToCloset(garment.id);
                 close();
               },
-              icon: const Icon(Icons.checkroom_rounded),
+              icon: const Icon(AppIcons.closetFill),
               label: Text(s.putBackClean),
             ),
           const SizedBox(height: 8),
@@ -120,7 +121,7 @@ class GarmentSheet extends StatelessWidget {
                     close();
                     GarmentFormScreen.openEdit(outer, garment);
                   },
-                  icon: const Icon(Icons.edit_outlined),
+                  icon: const Icon(AppIcons.edit),
                   label: Text(s.edit),
                 ),
               ),
@@ -133,7 +134,7 @@ class GarmentSheet extends StatelessWidget {
                     showMessage(outer, s.removed(garment.name),
                         actionLabel: s.undo, onAction: () => state.restoreGarment(garment, index));
                   },
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: const Icon(AppIcons.delete),
                   label: Text(s.delete),
                 ),
               ),

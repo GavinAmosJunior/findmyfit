@@ -8,6 +8,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/grouped_section.dart';
 import 'batch_screen.dart';
+import '../theme/app_icons.dart';
 
 /// Batches out at the laundromat, plus a short history.
 class LaundryScreen extends StatelessWidget {
@@ -28,7 +29,7 @@ class LaundryScreen extends StatelessWidget {
             SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                icon: Icons.local_laundry_service_outlined,
+                icon: AppIcons.laundry,
                 title: s.emptyLaundryTitle,
                 body: s.emptyLaundryBody,
               ),
@@ -61,7 +62,7 @@ class LaundryScreen extends StatelessWidget {
                         title: Text(b.laundromatName),
                         subtitle: Text('${s.date(b.createdAt)} · ${s.historySummary(b.totalItems, state.stillMissingFrom(b))}'),
                         trailing: Icon(
-                          state.stillMissingFrom(b) > 0 ? Icons.travel_explore_rounded : Icons.check_circle_rounded,
+                          state.stillMissingFrom(b) > 0 ? AppIcons.missingFill : AppIcons.checked,
                           color: state.stillMissingFrom(b) > 0
                               ? context.palette.missing.foreground
                               : context.palette.clean.foreground,
@@ -71,7 +72,7 @@ class LaundryScreen extends StatelessWidget {
                   ],
                 ),
               ),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            SliverToBoxAdapter(child: SizedBox(height: 24 + MediaQuery.paddingOf(context).bottom)),
           ],
         ],
       ),
@@ -111,7 +112,7 @@ class _ActiveBatchCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: context.palette.tertiaryText),
+                  Icon(AppIcons.chevron, color: context.palette.tertiaryText),
                 ],
               ),
               const SizedBox(height: 14),

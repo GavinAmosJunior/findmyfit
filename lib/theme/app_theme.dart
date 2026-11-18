@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -184,7 +185,16 @@ class AppTheme {
       scaffoldBackgroundColor: background,
       textTheme: textTheme,
       extensions: [palette],
-      splashFactory: InkSparkle.splashFactory,
+      // iOS shows a soft highlight on press, not a ripple.
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: text.withValues(alpha: 0.06),
+      // Pages slide in from the right and can be swiped back, on both phones.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: background,
         surfaceTintColor: Colors.transparent,
@@ -199,10 +209,9 @@ class AppTheme {
         color: palette.card,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: palette.separator),
-        ),
+        // White on the grouped background is enough; no outline (iOS
+        // inset grouped lists have none).
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: palette.card,
@@ -234,7 +243,9 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(44, 50),
           shape: pill,
-          side: BorderSide(color: palette.separator),
+          // iOS "bordered" buttons are a tinted fill, not an outline.
+          backgroundColor: accent.withValues(alpha: brightness == Brightness.light ? 0.10 : 0.16),
+          side: BorderSide.none,
           textStyle: textTheme.labelLarge,
         ),
       ),
@@ -245,12 +256,12 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: palette.card,
+        backgroundColor: palette.separator.withValues(alpha: brightness == Brightness.light ? 0.7 : 1),
         selectedColor: text,
         secondarySelectedColor: text,
         labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: text),
         secondaryLabelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: background),
-        side: BorderSide(color: palette.separator),
+        side: BorderSide.none,
         shape: const StadiumBorder(),
         showCheckmark: false,
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
@@ -265,7 +276,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: palette.separator),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

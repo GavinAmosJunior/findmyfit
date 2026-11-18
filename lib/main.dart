@@ -62,6 +62,7 @@ class _FindMyFitAppState extends State<FindMyFitApp> {
             locale: lang == 'system' ? null : Locale(lang),
             supportedLocales: S.supported,
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            scrollBehavior: const _AppScrollBehavior(),
             builder: (context, child) => MobileFrame(child: child!),
             home: HomeShell(key: homeShellKey),
           );
@@ -69,4 +70,16 @@ class _FindMyFitAppState extends State<FindMyFitApp> {
       ),
     );
   }
+}
+
+/// Lists bounce at the edges, as on iPhone, instead of Android's stretch.
+class _AppScrollBehavior extends MaterialScrollBehavior {
+  const _AppScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) => child;
 }
