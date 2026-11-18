@@ -6,10 +6,9 @@ import '../models/garment.dart';
 import '../models/laundry_batch.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
-import '../widgets/care_label.dart';
+import '../widgets/tags.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
-import '../widgets/ticket.dart';
 import 'home_shell.dart';
 import '../theme/app_icons.dart';
 
@@ -203,7 +202,7 @@ class _ReturnRow extends StatelessWidget {
                       Text(garment.name, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
                       if (!editable) ...[
                         const SizedBox(height: 4),
-                        CareLabel(status: garment.status),
+                        StatusChip(status: garment.status),
                       ] else
                         Text(s.categoryLabel(garment.category), style: context.text.bodySmall),
                     ],
@@ -229,7 +228,7 @@ class _ReturnRow extends StatelessWidget {
   }
 }
 
-/// The stamp on a finished check. It slams down only right after you
+/// The plate on a finished check. It drops in only right after you
 /// finish, not every time you open an old ticket.
 class _CompletedStamp extends StatelessWidget {
   final LaundryBatch batch;
@@ -246,8 +245,8 @@ class _CompletedStamp extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
       child: Center(
         child: missing == 0
-            ? Stamp(s.allBack, color: context.palette.clean.foreground, fontSize: 30, slam: justFinished)
-            : Stamp(s.stampMissing(missing), color: context.palette.missing.foreground, fontSize: 30),
+            ? StatusPlate(s.allBack, color: SignColors.green, icon: AppIcons.check, fontSize: 26, land: justFinished)
+            : StatusPlate(s.stampMissing(missing), color: SignColors.red, fontSize: 26),
       ),
     );
   }

@@ -11,18 +11,18 @@ def glyph(code,size,color):
     ImageDraw.Draw(im).text((-l,-t),ch,font=f,fill=color)
     return im
 def gradient(size):
-    top=(66,98,140); bot=(33,51,77)  # denim, light to dark
+    top=(43,96,190); bot=(31,79,160)  # sign blue, a touch lighter at the top
     g=Image.new('RGB',(1,size))
     for y in range(size):
         k=y/(size-1); g.putpixel((0,y),tuple(int(top[i]+(bot[i]-top[i])*k) for i in range(3)))
     return g.resize((size,size))
-def art(canvas,scale):
+def art(canvas,scale,lift=0):
     # hanger, then a check badge overlapping its lower right
     c=canvas.size[0]
     h=glyph(0xe7fe,int(620*scale),(255,255,255,255))
     d=int(260*scale)
     gw=h.width+int(d*0.25); gh=h.height+int(d*0.55)
-    hx=(c-gw)//2; hy=(c-gh)//2
+    hx=(c-gw)//2; hy=(c-gh)//2-lift
     # soft shadow for depth
     sh=Image.new('RGBA',canvas.size,(0,0,0,0)); sh.paste((0,30,90,90),(hx,hy+int(14*scale)),h)
     canvas.alpha_composite(sh.filter(ImageFilter.GaussianBlur(18*scale)))
@@ -43,6 +43,14 @@ def art(canvas,scale):
         canvas.paste((0,0,0,0),(bx-ring,by-ring),m)
     canvas.alpha_composite(badge,(bx-ring,by-ring))
 THREAD=(226,69,60,255)
+INK=(22,24,27,255); CHALK=(244,242,236,255); MUSTARD=(233,178,58,255)
+def floor(img, band, tile):
+    # laundromat floor along the bottom: mustard trim, then checkerboard
+    d=ImageDraw.Draw(img); c=img.size[0]; top=c-band
+    d.rectangle((0,top-int(tile*0.35),c,top),fill=MUSTARD)
+    for row in range(0, band//tile+1):
+        for col in range(0, c//tile+1):
+            d.rectangle((col*tile,top+row*tile,col*tile+tile-1,top+row*tile+tile-1),fill=INK if (row+col)%2==0 else CHALK)
 def stitch(img, inset, circle=False, dash=34, gap=22, width=10):
     import math
     d=ImageDraw.Draw(img)
@@ -69,9 +77,9 @@ def stitch(img, inset, circle=False, dash=34, gap=22, width=10):
             a0=start+k*30+4; d.arc((cx-rad,cy-rad,cx+rad,cy+rad),a0,a0+18,fill=THREAD,width=width)
 
 # full icon (iOS + legacy Android)
-full=gradient(S).convert('RGBA'); stitch(full,64); art(full,0.9)
+full=gradient(S).convert('RGBA'); floor(full,190,64); art(full,0.8,lift=95)
 full.convert('RGB').save('assets/icon/app_icon.png')
 # adaptive: gradient background + transparent foreground in the safe zone
-bg=gradient(S).convert('RGBA'); stitch(bg,190,circle=True,dash=30,gap=20,width=9); bg.convert('RGB').save('assets/icon/app_icon_background.png')
-fg=Image.new('RGBA',(S,S),(0,0,0,0)); art(fg,0.76)
+bg=gradient(S).convert('RGBA'); floor(bg,300,56); bg.convert('RGB').save('assets/icon/app_icon_background.png')
+fg=Image.new('RGBA',(S,S),(0,0,0,0)); art(fg,0.66,lift=80)
 fg.save('assets/icon/app_icon_foreground.png')

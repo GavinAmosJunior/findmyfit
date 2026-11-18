@@ -19,6 +19,18 @@ class TagColors {
       );
 }
 
+/// The storefront colors: painted sign boards, mostly. They stay the same
+/// in dark mode, like a sign lit at night. White or ink text on each was
+/// checked for at least 4.5:1.
+class SignColors {
+  static const blue = Color(0xFF1F4FA0); // white 7.82:1
+  static const green = Color(0xFF1E6B4B); // white 6.44:1
+  static const red = Color(0xFFC42B23); // white 5.65:1
+  static const mustard = Color(0xFFE9B23A); // ink 9.23:1
+  static const ink = Color(0xFF16181B);
+  static const chalk = Color(0xFFF4F2EC);
+}
+
 /// App-specific colors that Material's ColorScheme has no slot for.
 ///
 /// Every text/background pair here was checked for at least 4.5:1 contrast
@@ -30,9 +42,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color separator;
   final Color card;
 
-  /// The red thread: the one bright brand color, used sparingly for the
-  /// stitch on labels and a few signature moments.
-  final Color thread;
+  /// Signal red for text and small marks on the page (sign red is too
+  /// light for small text on dark backgrounds).
+  final Color signal;
+
+  /// Stainless steel: the clothes rails and machine doors.
+  final Color steel;
   final TagColors clean;
   final TagColors hamper;
   final TagColors laundry;
@@ -43,7 +58,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.tertiaryText,
     required this.separator,
     required this.card,
-    required this.thread,
+    required this.signal,
+    required this.steel,
     required this.clean,
     required this.hamper,
     required this.laundry,
@@ -63,29 +79,32 @@ class AppPalette extends ThemeExtension<AppPalette> {
     }
   }
 
-  // "Care Label": linen, denim and a red thread. Ratios are against card.
+  // "Laundromat": wall white, tile green, sign blue, signal red, mustard.
+  // Ratios are text on its background.
   static const light = AppPalette(
-    secondaryText: Color(0xFF5C5850), // 6.73:1
-    tertiaryText: Color(0xFF6B665D), // 5.42:1 (4.97:1 on background)
-    separator: Color(0xFFE4DDD0),
-    card: Color(0xFFFBF9F5),
-    thread: Color(0xFFB8352B), // 5.57:1
-    clean: TagColors(Color(0xFFE5EFE6), Color(0xFF2D6A4C), Color(0xFF9CC4AC)), // 5.44:1
-    hamper: TagColors(Color(0xFFF5EAD3), Color(0xFF83520F), Color(0xFFD9B36B)), // 5.53:1
-    laundry: TagColors(Color(0xFFE2E9F2), Color(0xFF2F4A6D), Color(0xFF9FB4CF)), // 7.40:1
-    missing: TagColors(Color(0xFFF7E2DE), Color(0xFFA2302A), Color(0xFFE09A90)), // 5.64:1
+    secondaryText: Color(0xFF5E5B55), // 6.77:1 on card, 6.04:1 on wall
+    tertiaryText: Color(0xFF6B6862), // 4.96:1 on wall
+    separator: Color(0xFFDCD8CE),
+    card: Color(0xFFFFFFFF),
+    signal: Color(0xFFB8271F), // 5.60:1 on wall
+    steel: Color(0xFFA7AFB8),
+    clean: TagColors(Color(0xFFDCEBE2), Color(0xFF14523A), Color(0xFF1E6B4B)), // 7.41:1
+    hamper: TagColors(Color(0xFFFBEBC4), Color(0xFF6E4A05), Color(0xFFE9B23A)), // 6.72:1
+    laundry: TagColors(Color(0xFFDCEAF8), Color(0xFF173E7E), Color(0xFF1F4FA0)), // 8.47:1
+    missing: TagColors(Color(0xFFF9DEDB), Color(0xFFA32019), Color(0xFFC42B23)), // 5.94:1
   );
 
   static const dark = AppPalette(
-    secondaryText: Color(0xFFBEB8AD), // 7.98:1
-    tertiaryText: Color(0xFF9D978C), // 5.42:1
-    separator: Color(0xFF30333B),
-    card: Color(0xFF20232A),
-    thread: Color(0xFFFF8070), // 6.42:1
-    clean: TagColors(Color(0xFF16291F), Color(0xFF8FD3AE), Color(0xFF2F6B4C)), // 8.82:1
-    hamper: TagColors(Color(0xFF2E2310), Color(0xFFF0C46A), Color(0xFF7A5A1C)), // 9.39:1
-    laundry: TagColors(Color(0xFF1A2433), Color(0xFF9FBBE0), Color(0xFF3B5578)), // 7.93:1
-    missing: TagColors(Color(0xFF331816), Color(0xFFFF9E92), Color(0xFF8A3A33)), // 8.23:1
+    secondaryText: Color(0xFFBDB9B1), // 8.35:1 on card
+    tertiaryText: Color(0xFF9A968E), // 5.54:1 on card
+    separator: Color(0xFF2C3036),
+    card: Color(0xFF1D2025),
+    signal: Color(0xFFFF8A80), // 7.16:1 on card
+    steel: Color(0xFF6E767F),
+    clean: TagColors(Color(0xFF173326), Color(0xFF8FD3AE), Color(0xFF1E6B4B)), // 7.87:1
+    hamper: TagColors(Color(0xFF3A2C0C), Color(0xFFF2C866), Color(0xFFE9B23A)), // 8.56:1
+    laundry: TagColors(Color(0xFF172846), Color(0xFFA9C6F5), Color(0xFF1F4FA0)), // 8.46:1
+    missing: TagColors(Color(0xFF3D1512), Color(0xFFFF9C93), Color(0xFFC42B23)), // 7.93:1
   );
 
   @override
@@ -99,7 +118,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       tertiaryText: Color.lerp(tertiaryText, other.tertiaryText, t)!,
       separator: Color.lerp(separator, other.separator, t)!,
       card: Color.lerp(card, other.card, t)!,
-      thread: Color.lerp(thread, other.thread, t)!,
+      signal: Color.lerp(signal, other.signal, t)!,
+      steel: Color.lerp(steel, other.steel, t)!,
       clean: TagColors.lerp(clean, other.clean, t),
       hamper: TagColors.lerp(hamper, other.hamper, t),
       laundry: TagColors.lerp(laundry, other.laundry, t),
@@ -125,16 +145,16 @@ const garmentSwatches = <int>[
 ];
 
 class AppTheme {
-  static const _accentLight = Color(0xFF2F4A6D); // denim, 8.60:1 on card
-  static const _accentDark = Color(0xFF9FBBE0); // washed denim, 7.98:1 on card
+  static const _accentLight = SignColors.blue; // 7.82:1 with white, 6.99:1 on wall
+  static const _accentDark = Color(0xFF8DB2F0); // 7.59:1 on card
 
-  /// Barlow Condensed for titles only, like the woven name label in a
-  /// collar; body text uses the platform font (SF Pro on iPhone, Roboto on
+  /// Anton for titles only, the tall bold letters of a laundromat sign;
+  /// body text uses the platform font (SF Pro on iPhone, Roboto on
   /// Android) for legibility at small sizes, as Apple's branding guidance
   /// suggests.
   static TextTheme _textTheme(Color primary, Color secondary) {
     TextStyle display(double size, FontWeight weight, double spacing) =>
-        GoogleFonts.barlowCondensed(
+        GoogleFonts.anton(
           fontSize: size,
           fontWeight: weight,
           letterSpacing: spacing,
@@ -143,9 +163,9 @@ class AppTheme {
         );
 
     return TextTheme(
-      displaySmall: display(40, FontWeight.w700, -0.2),
-      headlineMedium: display(36, FontWeight.w700, -0.2),
-      headlineSmall: display(26, FontWeight.w700, 0),
+      displaySmall: display(40, FontWeight.w400, 1.0),
+      headlineMedium: display(34, FontWeight.w400, 1.0),
+      headlineSmall: display(24, FontWeight.w400, 0.6),
       titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: primary),
       titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: primary),
       titleSmall: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: primary),
@@ -297,10 +317,10 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: brightness == Brightness.light ? const Color(0xFF1F2430) : const Color(0xFFF2EEE6),
+        backgroundColor: brightness == Brightness.light ? SignColors.ink : const Color(0xFFF1EFEA),
         contentTextStyle: TextStyle(
           fontSize: 15,
-          color: brightness == Brightness.light ? const Color(0xFFF2EEE6) : const Color(0xFF15171C),
+          color: brightness == Brightness.light ? const Color(0xFFF1EFEA) : SignColors.ink,
         ),
         actionTextColor: brightness == Brightness.light ? _accentDark : _accentLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -336,18 +356,18 @@ class AppTheme {
   static final ThemeData light = _build(
     brightness: Brightness.light,
     accent: _accentLight,
-    onAccent: Colors.white, // 9.05:1
-    background: const Color(0xFFF3EFE7), // linen
-    text: const Color(0xFF1F2430), // 14.76:1 on card
+    onAccent: Colors.white, // 7.82:1
+    background: SignColors.chalk, // laundromat wall
+    text: SignColors.ink, // 15.89:1 on wall
     palette: AppPalette.light,
   );
 
   static final ThemeData dark = _build(
     brightness: Brightness.dark,
     accent: _accentDark,
-    onAccent: const Color(0xFF15171C), // 9.10:1
-    background: const Color(0xFF15171C),
-    text: const Color(0xFFF2EEE6), // 15.49:1
+    onAccent: const Color(0xFF121417), // 8.57:1
+    background: const Color(0xFF121417),
+    text: const Color(0xFFF1EFEA), // 16.06:1
     palette: AppPalette.dark,
   );
 }

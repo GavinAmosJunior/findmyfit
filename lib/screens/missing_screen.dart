@@ -8,8 +8,9 @@ import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
-import '../widgets/care_label.dart';
+import '../widgets/tags.dart';
 import '../widgets/ticket.dart';
 import '../theme/app_icons.dart';
 
@@ -34,7 +35,9 @@ class MissingScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(title: Text(s.missing)),
+          StoreSign(title: s.missing, color: SignColors.ink),
+          // Breathing room under the checker strip.
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (missing.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -83,22 +86,11 @@ class _MissingTicket extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Ticket(
-      semanticLabel: place,
-      top: Row(
-        children: [
-          Expanded(
-            child: Text(
-              place.toUpperCase(),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.headlineSmall?.copyWith(fontSize: 21, letterSpacing: 0.6),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Stamp(s.stampMissing(garments.length), color: context.palette.missing.foreground, fontSize: 14),
-        ],
-      ),
-      bottom: Column(
+      title: place,
+      color: SignColors.red,
+      trailing: TicketNumber(s.stampMissing(garments.length)),
+      semanticLabel: '$place, ${s.stampMissing(garments.length)}',
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final (i, g) in garments.indexed) ...[
@@ -145,7 +137,7 @@ class _MissingPiece extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  WovenLabel(garment.name, fontSize: 13),
+                  HangTag(garment.name, fontSize: 13),
                   if (batch != null) ...[
                     const SizedBox(height: 6),
                     Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),

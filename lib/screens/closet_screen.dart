@@ -5,9 +5,10 @@ import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
-import '../widgets/care_label.dart';
+import '../widgets/tags.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/pressable.dart';
 import 'garment_form_screen.dart';
@@ -89,8 +90,9 @@ class _ClosetScreenState extends State<ClosetScreen> {
             ),
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: Text(s.closet),
+          StoreSign(
+            title: s.closet,
+            color: SignColors.blue,
             actions: [
               IconButton(
                 tooltip: s.search,
@@ -107,6 +109,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
               const SizedBox(width: 4),
             ],
           ),
+          // Breathing room under the checker strip.
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (!state.isLoaded)
             const SliverFillRemaining(child: Center(child: CircularProgressIndicator.adaptive()))
           else if (all.isEmpty)
@@ -273,7 +277,7 @@ class _GarmentTile extends StatelessWidget {
               if (canWear)
                 Text(s.categoryLabel(garment.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall)
               else
-                CareLabel(status: garment.status),
+                StatusChip(status: garment.status),
             ],
           ),
         ),

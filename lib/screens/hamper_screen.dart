@@ -7,6 +7,7 @@ import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
 import 'garment_sheet.dart';
 import 'home_shell.dart';
@@ -37,8 +38,9 @@ class _HamperScreenState extends State<HamperScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: Text(s.hamper),
+          StoreSign(
+            title: s.hamper,
+            color: SignColors.mustard,
             actions: [
               if (items.isNotEmpty)
                 TextButton(
@@ -54,6 +56,8 @@ class _HamperScreenState extends State<HamperScreen> {
               const SizedBox(width: 8),
             ],
           ),
+          // Breathing room under the checker strip.
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (items.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,

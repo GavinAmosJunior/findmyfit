@@ -50,10 +50,11 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
+      padding: const EdgeInsets.fromLTRB(20, 18, 12, 8),
       child: Row(
         children: [
-          Expanded(child: Text(text, style: context.text.titleMedium)),
+          // Small spaced capitals, like the lettering on a laundromat window.
+          Expanded(child: Text(text.toUpperCase(), style: context.text.labelMedium?.copyWith(letterSpacing: 1.2))),
           ?trailing,
         ],
       ),

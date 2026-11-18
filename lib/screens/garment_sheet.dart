@@ -5,7 +5,7 @@ import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
-import '../widgets/care_label.dart';
+import '../widgets/tags.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import 'closet_screen.dart';
@@ -82,7 +82,7 @@ class GarmentSheet extends StatelessWidget {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              CareLabel(status: garment.status),
+              StatusChip(status: garment.status),
               Text(s.categoryLabel(garment.category), style: context.text.bodyMedium),
             ],
           ),

@@ -11,9 +11,10 @@ import '../models/saved_fit.dart';
 import '../state/app_scope.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
-import '../widgets/care_label.dart';
+import '../widgets/tags.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/pressable.dart';
 
@@ -175,7 +176,9 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProvider
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(title: Text(s.fitShuffle)),
+          StoreSign(title: s.fitShuffle, color: SignColors.red),
+          // Breathing room under the checker strip.
+          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (!ready)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -229,27 +232,37 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProvider
                   onPressed: () => _toggleSave(fit),
                   style: IconButton.styleFrom(
                     minimumSize: const Size(52, 52),
-                    backgroundColor: context.colors.primary.withValues(alpha: 0.10),
-                    foregroundColor: context.colors.primary,
+                    backgroundColor: context.palette.missing.background,
+                    foregroundColor: context.palette.signal,
                   ),
                   icon: Icon(
                     saved ? AppIcons.favorite : AppIcons.favoriteOutline,
-                    color: saved ? context.palette.thread : null,
+                    color: saved ? context.palette.signal : null,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
+                  // Stays red while the rails spin; a second tap is ignored
+                  // rather than greying the button out mid-moment.
                   child: FilledButton.icon(
-                    onPressed: _spinning ? null : () => _shuffle(lists),
+                    onPressed: () => _shuffle(lists),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: SignColors.red,
+                      foregroundColor: Colors.white,
+                      textStyle: context.text.headlineSmall?.copyWith(fontSize: 18, letterSpacing: 1.4),
+                    ),
                     icon: const Icon(AppIcons.shuffle),
-                    label: Text(s.shuffle),
+                    label: Text(s.shuffle.toUpperCase()),
                   ),
                 ),
               ],
             ),
           ),
+          // The laundromat floor under the rails.
+          const SizedBox(height: 18),
+          const CheckerStrip(height: 24),
           if (fits.isNotEmpty) ...[
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
               child: Text(s.savedFits.toUpperCase(), style: context.text.labelMedium?.copyWith(letterSpacing: 1.2)),
@@ -295,7 +308,7 @@ class _Rail extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final palette = context.palette;
-    final rodColor = rail.locked ? palette.thread : palette.tertiaryText;
+    final rodColor = rail.locked ? palette.signal : palette.steel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -310,7 +323,7 @@ class _Rail extends StatelessWidget {
                 onPressed: onLock,
                 icon: Icon(
                   rail.locked ? AppIcons.locked : AppIcons.unlocked,
-                  color: rail.locked ? palette.thread : palette.tertiaryText,
+                  color: rail.locked ? palette.signal : palette.tertiaryText,
                 ),
               ),
             ],
@@ -416,7 +429,7 @@ class _Hanging extends StatelessWidget {
         ),
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: size),
-          child: WovenLabel(garment.name),
+          child: HangTag(garment.name),
         ),
       ],
     );
