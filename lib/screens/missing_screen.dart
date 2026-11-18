@@ -9,7 +9,8 @@ import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
-import '../widgets/grouped_section.dart';
+import '../widgets/care_label.dart';
+import '../widgets/ticket.dart';
 import '../theme/app_icons.dart';
 
 /// Clothes that didn't come back. Grouped by laundromat, each group can
@@ -51,30 +52,19 @@ class MissingScreen extends StatelessWidget {
                     style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
               ),
             ),
-            for (final entry in groups.entries) ...[
-              SliverToBoxAdapter(child: SectionTitle(entry.key)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList.separated(
-                  itemCount: entry.value.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) => _MissingCard(garment: entry.value[i]),
-                ),
+            // One ticket per laundromat: what's missing from there, and a
+            // ready-made message to ask about it.
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              sliver: SliverList.separated(
+                itemCount: groups.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
+                itemBuilder: (context, i) {
+                  final entry = groups.entries.elementAt(i);
+                  return _MissingTicket(place: entry.key, garments: entry.value);
+                },
               ),
-              // Own row, so it fits next to long laundromat names on small phones.
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-                  child: OutlinedButton.icon(
-                    onPressed: () => SharePlus.instance.share(
-                      ShareParams(text: s.askMessage(entry.key, entry.value.map((g) => g.name).toList())),
-                    ),
-                    icon: const Icon(AppIcons.chat),
-                    label: Text(s.askLaundromat),
-                  ),
-                ),
-              ),
-            ],
+            ),
             SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
           ],
         ],
@@ -83,86 +73,132 @@ class MissingScreen extends StatelessWidget {
   }
 }
 
-class _MissingCard extends StatelessWidget {
+class _MissingTicket extends StatelessWidget {
+  final String place;
+  final List<Garment> garments;
+
+  const _MissingTicket({required this.place, required this.garments});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Ticket(
+      semanticLabel: place,
+      top: Row(
+        children: [
+          Expanded(
+            child: Text(
+              place.toUpperCase(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.headlineSmall?.copyWith(fontSize: 21, letterSpacing: 0.6),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Stamp(s.stampMissing(garments.length), color: context.palette.missing.foreground, fontSize: 14),
+        ],
+      ),
+      bottom: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, g) in garments.indexed) ...[
+            if (i > 0) const Divider(height: 28),
+            _MissingPiece(garment: g),
+          ],
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => SharePlus.instance.share(
+              ShareParams(text: s.askMessage(place, garments.map((g) => g.name).toList())),
+            ),
+            icon: const Icon(AppIcons.chat),
+            label: Text(s.askLaundromat),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissingPiece extends StatelessWidget {
   final Garment garment;
 
-  const _MissingCard({required this.garment});
+  const _MissingPiece({required this.garment});
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final state = AppScope.read(context);
     final batch = state.batchById(garment.currentBatchId);
+    final palette = context.palette;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox.square(dimension: 56, child: GarmentImage(garment: garment, iconSize: 26)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(garment.name, style: context.text.titleMedium),
-                      if (batch != null)
-                        Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
-                    ],
-                  ),
-                ),
-              ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox.square(dimension: 56, child: GarmentImage(garment: garment, iconSize: 26)),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      final fromBatch = garment.currentBatchId;
-                      state.markFound(garment.id);
-                      HapticFeedback.mediumImpact();
-                      showMessage(context, s.foundMessage(garment.name),
-                          actionLabel: s.undo, onAction: () {
-                        garment
-                          ..status = GarmentStatus.missing
-                          ..currentBatchId = fromBatch;
-                        state.updateGarment(garment);
-                      });
-                    },
-                    icon: const Icon(AppIcons.check),
-                    label: Text(s.foundIt),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(foregroundColor: context.colors.error),
-                    onPressed: () async {
-                      final ok = await confirmAction(
-                        context,
-                        title: s.lostTitle(garment.name),
-                        body: s.lostBody,
-                        confirmLabel: s.delete,
-                        cancelLabel: s.cancel,
-                        destructive: true,
-                      );
-                      if (ok) state.markLost(garment.id);
-                    },
-                    child: Text(s.lostForGood),
-                  ),
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  WovenLabel(garment.name, fontSize: 13),
+                  if (batch != null) ...[
+                    const SizedBox(height: 6),
+                    Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () {
+                  final fromBatch = garment.currentBatchId;
+                  state.markFound(garment.id);
+                  HapticFeedback.mediumImpact();
+                  showMessage(context, s.foundMessage(garment.name), actionLabel: s.undo, onAction: () {
+                    garment
+                      ..status = GarmentStatus.missing
+                      ..currentBatchId = fromBatch;
+                    state.updateGarment(garment);
+                  });
+                },
+                icon: const Icon(AppIcons.check),
+                label: Text(s.foundIt),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: palette.missing.foreground,
+                  backgroundColor: palette.missing.background,
+                ),
+                onPressed: () async {
+                  final ok = await confirmAction(
+                    context,
+                    title: s.lostTitle(garment.name),
+                    body: s.lostBody,
+                    confirmLabel: s.delete,
+                    cancelLabel: s.cancel,
+                    destructive: true,
+                  );
+                  if (ok) state.markLost(garment.id);
+                },
+                child: Text(s.lostForGood),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

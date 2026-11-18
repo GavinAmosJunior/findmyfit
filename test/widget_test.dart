@@ -112,13 +112,13 @@ void main() {
       await settle('Settings');
       back();
       await settle('Closet');
-      await tester.tap(find.text('FIT SHUFFLE'));
-      await settle('Fit Shuffle');
+      await tester.tap(tab(AppIcons.fits));
+      await settle('Fits');
       await tester.ensureVisible(find.byIcon(AppIcons.shuffle));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(AppIcons.shuffle));
-      await settle('Fit Shuffle after shuffling');
-      back();
+      await settle('Fits after shuffling');
+      await tester.tap(tab(AppIcons.closet));
       await settle('Closet');
       await tester.tap(find.byIcon(AppIcons.add));
       await settle('Add clothes');
@@ -167,23 +167,66 @@ void main() {
     });
   });
 
-  testWidgets('wearing a shuffled fit sends both pieces to the hamper', (tester) async {
+  testWidgets('Fits only suggests: shuffling and saving never move clothes', (tester) async {
     final state = await _loadedState();
-    final top = state.addGarment(name: 'Linen shirt', category: GarmentCategory.tops);
-    final bottom = state.addGarment(name: 'Chinos', category: GarmentCategory.bottoms);
+    final a = state.addGarment(name: 'Linen shirt', category: GarmentCategory.tops);
+    state.addGarment(name: 'Oxford shirt', category: GarmentCategory.tops);
+    final b = state.addGarment(name: 'Chinos', category: GarmentCategory.bottoms);
     await tester.pumpWidget(FindMyFitApp(state: state));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('FIT SHUFFLE'));
+    await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.fits)));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Wear this fit'));
+    await tester.ensureVisible(find.byIcon(AppIcons.shuffle));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Wear this fit'));
+    await tester.tap(find.byIcon(AppIcons.shuffle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save fit'));
     await tester.pumpAndSettle();
 
-    expect(state.garmentById(top.id)!.status, GarmentStatus.dirtyHamper);
-    expect(state.garmentById(bottom.id)!.status, GarmentStatus.dirtyHamper);
-    expect(find.text('Not enough clean clothes'), findsOneWidget);
+    expect(state.fits, hasLength(1));
+    expect(state.garments.every((g) => g.status == GarmentStatus.closet), isTrue);
+    expect(state.garmentById(a.id)!.wearCount + state.garmentById(b.id)!.wearCount, 0);
+    expect(find.text('Wear this fit'), findsNothing);
+  });
+
+  testWidgets('a piece put in the hamper by mistake goes back with one tap', (tester) async {
+    final state = await _loadedState();
+    final g = state.addGarment(name: 'Blue tee', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.hamper)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Put Blue tee back in the closet'));
+    await tester.pumpAndSettle();
+    expect(state.garmentById(g.id)!.status, GarmentStatus.closet);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(state.garmentById(g.id)!.status, GarmentStatus.dirtyHamper);
+  });
+
+  testWidgets('finishing a check with everything back stamps the ticket ALL BACK', (tester) async {
+    final state = await _loadedState();
+    final g = state.addGarment(name: 'Tee', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    state.sendToLaundry(garmentIds: [g.id], laundromatName: 'Sparkle');
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.laundry)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SPARKLE'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All back'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish check'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ALL BACK'), findsOneWidget, reason: 'stays on the check and shows the stamp');
+    expect(state.garmentById(g.id)!.status, GarmentStatus.closet);
   });
 
   testWidgets('closing the add form with something typed asks before discarding', (tester) async {

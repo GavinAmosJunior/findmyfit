@@ -8,6 +8,7 @@ import '../models/garment.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import 'closet_screen.dart';
+import 'fit_shuffle_screen.dart';
 import 'hamper_screen.dart';
 import 'laundry_screen.dart';
 import 'missing_screen.dart';
@@ -27,6 +28,12 @@ class HomeShell extends StatefulWidget {
 }
 
 class HomeShellState extends State<HomeShell> {
+  static const closetTab = 0;
+  static const fitsTab = 1;
+  static const hamperTab = 2;
+  static const laundryTab = 3;
+  static const missingTab = 4;
+
   int _index = 0;
 
   void goTo(int index) => setState(() => _index = index);
@@ -47,6 +54,7 @@ class HomeShellState extends State<HomeShell> {
       index: _index,
       children: const [
         ScaffoldMessenger(child: ClosetScreen()),
+        ScaffoldMessenger(child: FitShuffleScreen()),
         ScaffoldMessenger(child: HamperScreen()),
         ScaffoldMessenger(child: LaundryScreen()),
         ScaffoldMessenger(child: MissingScreen()),
@@ -55,6 +63,7 @@ class HomeShellState extends State<HomeShell> {
 
     final tabs = [
       (s.closet, AppIcons.closet, AppIcons.closetFill),
+      (s.fits, AppIcons.fits, AppIcons.fitsFill),
       (s.hamper, AppIcons.hamper, AppIcons.hamperFill),
       (s.laundry, AppIcons.laundry, AppIcons.laundryFill),
       (s.missing, AppIcons.missing, AppIcons.missingFill),
@@ -84,7 +93,7 @@ class HomeShellState extends State<HomeShell> {
               label: label,
               icon: icon,
               selectedIcon: selectedIcon,
-              badge: i == 3 && missing > 0 ? '$missing' : null,
+              badge: i == missingTab && missing > 0 ? '$missing' : null,
             ),
         ],
       ),

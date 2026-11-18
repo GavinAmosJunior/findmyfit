@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../widgets/care_label.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
+import '../widgets/ticket.dart';
 import 'home_shell.dart';
 import '../theme/app_icons.dart';
 
@@ -52,6 +53,7 @@ class BatchScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          if (!editable) _CompletedStamp(batch: batch),
           if (editable) ...[
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -139,10 +141,15 @@ class BatchScreen extends StatelessWidget {
     );
     if (!ok || !context.mounted) return;
     state.finishReturn(batch.id);
+    if (notBack == 0) {
+      // Everything came back: stay here and let the stamp land.
+      HapticFeedback.heavyImpact();
+      return;
+    }
     HapticFeedback.mediumImpact();
     final shell = HomeShellState.maybeOf(context);
     Navigator.of(context).pop();
-    shell?.goTo(notBack > 0 ? 3 : 0);
+    shell?.goTo(HomeShellState.missingTab);
   }
 
   Future<void> _cancel(BuildContext context, LaundryBatch batch) async {
@@ -217,6 +224,30 @@ class _ReturnRow extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The stamp on a finished check. It slams down only right after you
+/// finish, not every time you open an old ticket.
+class _CompletedStamp extends StatelessWidget {
+  final LaundryBatch batch;
+
+  const _CompletedStamp({required this.batch});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final missing = AppScope.of(context).stillMissingFrom(batch);
+    final done = batch.completedAt;
+    final justFinished = done != null && DateTime.now().difference(done) < const Duration(seconds: 3);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
+      child: Center(
+        child: missing == 0
+            ? Stamp(s.allBack, color: context.palette.clean.foreground, fontSize: 30, slam: justFinished)
+            : Stamp(s.stampMissing(missing), color: context.palette.missing.foreground, fontSize: 30),
       ),
     );
   }

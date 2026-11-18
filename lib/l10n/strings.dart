@@ -27,6 +27,7 @@ class S {
   String get hamper => _t('Hamper', 'Keranjang');
   String get laundry => _t('Laundry', 'Laundry');
   String get missing => _t('Missing', 'Hilang');
+  String get fits => _t('Fits', 'Gaya');
   String get settings => _t('Settings', 'Pengaturan');
 
   // ---------------------------------------------------------------- general
@@ -110,10 +111,7 @@ class S {
 
   // ------------------------------------------------------------ fit shuffle
   String get fitShuffle => 'Fit Shuffle';
-  String get shufflePrompt => _t('Can’t decide? Let the rail pick.', 'Bingung mau pakai apa? Biar rel yang pilih.');
   String get shuffle => _t('Shuffle', 'Acak');
-  String get wearThisFit => _t('Wear this fit', 'Pakai fit ini');
-  String get woreFit => _t('Have a good one. Both pieces are in the hamper.', 'Selamat beraktivitas. Keduanya masuk keranjang.');
   String get saveFit => _t('Save fit', 'Simpan fit');
   String get unsaveFit => _t('Remove saved fit', 'Hapus fit tersimpan');
   String get savedFits => _t('Saved fits', 'Fit tersimpan');
@@ -144,6 +142,7 @@ class S {
   String sentToLaundry(int n, String place) =>
       _id ? '$n item dikirim ke $place' : '${items(n)} sent to $place';
   String get swipePutBack => _t('Put back', 'Kembalikan');
+  String putBackHint(String name) => _t('Put $name back in the closet', 'Kembalikan $name ke lemari');
 
   // ---------------------------------------------------------------- laundry
   String get emptyLaundryTitle => _t('Nothing at the laundry', 'Tidak ada di laundry');
@@ -157,6 +156,8 @@ class S {
   String get checkReturn => _t('Check what came back', 'Cek yang sudah kembali');
   String get tickAsBack => _t('Tick each piece as it comes back', 'Centang tiap pakaian yang sudah kembali');
   String get allBack => _t('All back', 'Semua kembali');
+  String stampMissing(int n) => _t('$n missing', '$n hilang');
+  String ticketNo(String code) => _t('No. $code', 'No. $code');
   String get finishReturn => _t('Finish check', 'Selesai cek');
   String get finishAllBackTitle => _t('Everything came back', 'Semua sudah kembali');
   String finishMissingTitle(int n) =>

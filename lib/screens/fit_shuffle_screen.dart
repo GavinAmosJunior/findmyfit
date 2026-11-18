@@ -17,12 +17,10 @@ import '../widgets/pressable.dart';
 
 /// Mix and match clean clothes. Tops and bottoms hang on two rails you can
 /// swipe on their own; Shuffle slides the unlocked rails like hangers
-/// pushed along a rod, and "Wear this fit" sends both pieces to the hamper.
+/// pushed along a rod. It's for ideas only: nothing here changes where
+/// clothes are (closet, hamper, laundry).
 class FitShuffleScreen extends StatefulWidget {
   const FitShuffleScreen({super.key});
-
-  static Future<void> open(BuildContext context) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FitShuffleScreen()));
 
   @override
   State<FitShuffleScreen> createState() => _FitShuffleScreenState();
@@ -80,23 +78,6 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> {
     if (!mounted) return;
     HapticFeedback.lightImpact();
     setState(() => _spinning = false);
-  }
-
-  void _wear(List<Garment> fit) {
-    final state = AppScope.read(context);
-    final s = S.of(context);
-    final before = [for (final g in fit) (g.id, state.markWorn(g.id))];
-    HapticFeedback.mediumImpact();
-    showMessage(
-      context,
-      s.woreFit,
-      actionLabel: s.undo,
-      onAction: () {
-        for (final (id, snapshot) in before) {
-          if (snapshot != null) state.undoMarkWorn(id, snapshot);
-        }
-      },
-    );
   }
 
   // The heart filling in is the feedback; no snackbar over the buttons.
@@ -157,8 +138,8 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> {
     final fits = state.fits;
     final mq = MediaQuery.of(context);
     // Both rails and the Shuffle button should fit on one screen: about
-    // 560pt go to the title, rail headers, hangers, labels and buttons.
-    final free = mq.size.height - mq.padding.top - mq.padding.bottom - 560;
+    // 500pt go to the title, rail headers, hangers, labels and buttons.
+    final free = mq.size.height - mq.padding.top - mq.padding.bottom - 500;
     final card = min(mq.size.width * 0.56 - 28, free / 2).clamp(96.0, 240.0);
 
     return Padding(
@@ -208,14 +189,6 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: OutlinedButton(
-              onPressed: _spinning ? null : () => _wear(fit),
-              child: Text(s.wearThisFit),
             ),
           ),
           if (fits.isNotEmpty) ...[

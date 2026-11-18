@@ -136,7 +136,7 @@ class _HamperScreenState extends State<HamperScreen> {
     HapticFeedback.mediumImpact();
     // We switch to Laundry, so show the message above the whole app.
     final shell = HomeShellState.maybeOf(context);
-    shell?.goTo(2);
+    shell?.goTo(HomeShellState.laundryTab);
     if (shell != null && shell.mounted) showMessage(shell.context, s.sentToLaundry(batch.totalItems, batch.laundromatName));
   }
 }
@@ -152,6 +152,17 @@ class _HamperRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final state = AppScope.read(context);
+
+    void putBack() {
+      HapticFeedback.lightImpact();
+      state.moveToCloset(garment.id);
+      showMessage(
+        context,
+        s.foundMessage(garment.name),
+        actionLabel: s.undo,
+        onAction: () => state.moveToHamper(garment.id),
+      );
+    }
 
     return Dismissible(
       key: ValueKey(garment.id),
@@ -172,15 +183,7 @@ class _HamperRow extends StatelessWidget {
           ],
         ),
       ),
-      onDismissed: (_) {
-        state.moveToCloset(garment.id);
-        showMessage(
-          context,
-          s.foundMessage(garment.name),
-          actionLabel: s.undo,
-          onAction: () => state.moveToHamper(garment.id),
-        );
-      },
+      onDismissed: (_) => putBack(),
       child: Material(
         type: MaterialType.transparency,
         child: Semantics(
@@ -212,6 +215,13 @@ class _HamperRow extends StatelessWidget {
                         Text(s.categoryLabel(garment.category), style: context.text.bodySmall),
                       ],
                     ),
+                  ),
+                  // Swiping works too, but a visible button is what people
+                  // find when something landed here by mistake.
+                  IconButton(
+                    tooltip: s.putBackHint(garment.name),
+                    onPressed: putBack,
+                    icon: Icon(AppIcons.putBack, color: context.palette.secondaryText),
                   ),
                 ],
               ),

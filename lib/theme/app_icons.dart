@@ -42,6 +42,10 @@ abstract final class AppIcons {
   static const IconData forward = IconData(0xe06c, fontFamily: _bold);
   static const IconData chevron = IconData(0xe13a, fontFamily: _bold);
 
+  static const IconData fits = IconData(0xe422, fontFamily: _regular);
+  static const IconData fitsFill = IconData(0xe422, fontFamily: _fill);
+  static const IconData putBack = IconData(0xe08a, fontFamily: _regular);
+
   // Fit Shuffle.
   static const IconData shuffle = IconData(0xe422, fontFamily: _bold);
   static const IconData locked = IconData(0xe308, fontFamily: _fill);

@@ -11,7 +11,7 @@ def glyph(code,size,color):
     ImageDraw.Draw(im).text((-l,-t),ch,font=f,fill=color)
     return im
 def gradient(size):
-    top=(56,140,255); bot=(0,72,190)
+    top=(66,98,140); bot=(33,51,77)  # denim, light to dark
     g=Image.new('RGB',(1,size))
     for y in range(size):
         k=y/(size-1); g.putpixel((0,y),tuple(int(top[i]+(bot[i]-top[i])*k) for i in range(3)))
@@ -42,10 +42,36 @@ def art(canvas,scale):
         m=Image.new('L',badge.size,0); ImageDraw.Draw(m).ellipse((0,0,badge.width-1,badge.height-1),fill=255)
         canvas.paste((0,0,0,0),(bx-ring,by-ring),m)
     canvas.alpha_composite(badge,(bx-ring,by-ring))
+THREAD=(226,69,60,255)
+def stitch(img, inset, circle=False, dash=34, gap=22, width=10):
+    import math
+    d=ImageDraw.Draw(img)
+    c=img.size[0]
+    if circle:
+        r=c/2-inset; n=int(2*math.pi*r/(dash+gap))
+        for k in range(n):
+            a0=2*math.pi*k/n; a1=a0+2*math.pi*dash/(dash+gap)/n
+            d.arc((c/2-r,c/2-r,c/2+r,c/2+r), math.degrees(a0), math.degrees(a1), fill=THREAD, width=width)
+        return
+    # rounded square seam, drawn as dashes along its outline
+    rad=170; L=inset; R=c-inset
+    pts=[]
+    def seg(x0,y0,x1,y1):
+        length=math.hypot(x1-x0,y1-y0); s=0
+        while s<length:
+            e=min(s+dash,length)
+            pts.append(((x0+(x1-x0)*s/length,y0+(y1-y0)*s/length),(x0+(x1-x0)*e/length,y0+(y1-y0)*e/length)))
+            s+=dash+gap
+    seg(L+rad,L,R-rad,L); seg(R,L+rad,R,R-rad); seg(R-rad,R,L+rad,R); seg(L,R-rad,L,L+rad)
+    for a,b in pts: d.line([a,b],fill=THREAD,width=width)
+    for cx,cy,start in ((L+rad,L+rad,180),(R-rad,L+rad,270),(R-rad,R-rad,0),(L+rad,R-rad,90)):
+        for k in range(3):
+            a0=start+k*30+4; d.arc((cx-rad,cy-rad,cx+rad,cy+rad),a0,a0+18,fill=THREAD,width=width)
+
 # full icon (iOS + legacy Android)
-full=gradient(S).convert('RGBA'); art(full,1.0)
+full=gradient(S).convert('RGBA'); stitch(full,64); art(full,0.9)
 full.convert('RGB').save('assets/icon/app_icon.png')
 # adaptive: gradient background + transparent foreground in the safe zone
-gradient(S).save('assets/icon/app_icon_background.png')
+bg=gradient(S).convert('RGBA'); stitch(bg,190,circle=True,dash=30,gap=20,width=9); bg.convert('RGB').save('assets/icon/app_icon_background.png')
 fg=Image.new('RGBA',(S,S),(0,0,0,0)); art(fg,0.76)
 fg.save('assets/icon/app_icon_foreground.png')
