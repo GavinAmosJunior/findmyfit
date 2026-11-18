@@ -14,10 +14,20 @@ goes missing between your closet and the laundromat.
 
 ## Features
 
-- Add garments with a camera or gallery photo
-- Categories: Tops, Bottoms, Outerwear, Delicates
-- Favorites, brand, fabric and wash notes
-- Data saved on the device (no account needed)
+- **Camera-first adding** – snap, name, "Add and next"; or pick a pile of
+  photos from your gallery and name them one by one
+- **One-tap "Wore it"** on every clean garment, with Undo
+- **Return check** – tick each piece as it comes back; the rest move to Missing
+- **Ask the laundromat** – share a ready-made list of missing items
+- **Backup** – export everything, photos included, to one file and import it
+  on a new phone
+- Care-label style status tags, light and dark mode, English and Bahasa
+  Indonesia
+- Data stays on your device (no account needed)
+
+Design follows Apple's Human Interface Guidelines: 44pt touch targets,
+text contrast of at least 4.5:1 in both modes, status never shown by color
+alone, and confirmation only for actions that can't be undone.
 
 ## Running it
 

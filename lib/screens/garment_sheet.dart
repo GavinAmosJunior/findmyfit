@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../l10n/strings.dart';
+import '../models/garment.dart';
+import '../state/app_scope.dart';
+import '../theme/app_theme.dart';
+import '../widgets/care_label.dart';
+import '../widgets/dialogs.dart';
+import '../widgets/garment_image.dart';
+import 'closet_screen.dart';
+import 'garment_form_screen.dart';
+
+/// Details and actions for one garment, in a bottom sheet.
+class GarmentSheet extends StatelessWidget {
+  final String garmentId;
+
+  const GarmentSheet({super.key, required this.garmentId});
+
+  static Future<void> show(BuildContext context, String garmentId) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => GarmentSheet(garmentId: garmentId),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final state = AppScope.of(context);
+    final garment = state.garmentById(garmentId);
+    if (garment == null) return const SizedBox(height: 120);
+
+    // Snackbars must outlive the sheet, so use the screen behind it.
+    final outer = Navigator.of(context).context;
+
+    void close() => Navigator.of(context).pop();
+
+    final wear = garment.lastWornAt == null
+        ? (garment.wearCount == 0 ? s.neverWorn : s.timesWorn(garment.wearCount))
+        : '${s.timesWorn(garment.wearCount)} · ${s.lastWorn(s.date(garment.lastWornAt!))}';
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.of(context).padding.bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: GarmentImage(garment: garment, iconSize: 56),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: Text(garment.name, style: context.text.headlineSmall)),
+              IconButton(
+                tooltip: garment.isFavorite ? s.unfavorite : s.favorite,
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  state.toggleFavorite(garment.id);
+                },
+                icon: Icon(
+                  garment.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: garment.isFavorite ? const Color(0xFFE11D48) : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              CareLabel(status: garment.status),
+              Text(s.categoryLabel(garment.category), style: context.text.bodyMedium),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(wear, style: context.text.bodySmall),
+          if (garment.brand != null || garment.notes != null) ...[
+            const SizedBox(height: 16),
+            if (garment.brand != null) _Detail(label: s.brand, value: garment.brand!),
+            if (garment.notes != null) _Detail(label: s.notes, value: garment.notes!),
+          ],
+          const SizedBox(height: 20),
+          if (garment.status == GarmentStatus.closet)
+            FilledButton.icon(
+              onPressed: () {
+                close();
+                wearGarment(outer, garment);
+              },
+              icon: const Icon(Icons.shopping_basket_outlined),
+              label: Text(s.woreIt),
+            ),
+          if (garment.status == GarmentStatus.dirtyHamper)
+            OutlinedButton.icon(
+              onPressed: () {
+                state.moveToCloset(garment.id);
+                close();
+              },
+              icon: const Icon(Icons.checkroom_rounded),
+              label: Text(s.putBackClean),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: () {
+                    close();
+                    GarmentFormScreen.openEdit(outer, garment);
+                  },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(s.edit),
+                ),
+              ),
+              Expanded(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: context.colors.error),
+                  onPressed: () {
+                    final index = state.removeGarment(garment.id);
+                    close();
+                    showMessage(outer, s.removed(garment.name),
+                        actionLabel: s.undo, onAction: () => state.restoreGarment(garment, index));
+                  },
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: Text(s.delete),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Detail extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _Detail({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: context.text.labelMedium),
+          const SizedBox(height: 2),
+          Text(value, style: context.text.bodyLarge),
+        ],
+      ),
+    );
+  }
+}

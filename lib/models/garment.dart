@@ -4,19 +4,6 @@ enum GarmentCategory {
   outerwear,
   delicates;
 
-  String get displayName {
-    switch (this) {
-      case GarmentCategory.tops:
-        return 'Tops';
-      case GarmentCategory.bottoms:
-        return 'Bottoms';
-      case GarmentCategory.outerwear:
-        return 'Outerwear';
-      case GarmentCategory.delicates:
-        return 'Delicates';
-    }
-  }
-
   static GarmentCategory fromString(String? val) {
     return GarmentCategory.values.firstWhere(
       (e) => e.name == val,
@@ -26,36 +13,10 @@ enum GarmentCategory {
 }
 
 enum GarmentStatus {
-  closet,      // In Closet (Clean)
-  dirtyHamper, // In Dirty Hamper (Dirty Bin)
-  inLaundry,   // Dumped to laundry / washing
-  missing;     // Flagged as missing after return cross-check
-
-  String get displayName {
-    switch (this) {
-      case GarmentStatus.closet:
-        return 'In Closet (Clean)';
-      case GarmentStatus.dirtyHamper:
-        return 'In Hamper (Dirty)';
-      case GarmentStatus.inLaundry:
-        return 'At Laundry';
-      case GarmentStatus.missing:
-        return 'Missing';
-    }
-  }
-
-  String get shortName {
-    switch (this) {
-      case GarmentStatus.closet:
-        return 'In Closet';
-      case GarmentStatus.dirtyHamper:
-        return 'In Hamper';
-      case GarmentStatus.inLaundry:
-        return 'At Laundry';
-      case GarmentStatus.missing:
-        return 'Missing';
-    }
-  }
+  closet, // Clean, in the closet
+  dirtyHamper, // Worn, waiting in the hamper
+  inLaundry, // Sent out to the laundromat
+  missing; // Didn't come back from the laundromat
 
   static GarmentStatus fromString(String? val) {
     return GarmentStatus.values.firstWhere(
@@ -71,13 +32,16 @@ class Garment {
   final GarmentCategory category;
   GarmentStatus status;
   final String? brand;
-  final String? fabricNotes;
-  final String? washNotes;
+  final String? notes;
   final String? imageUrl;
   final int? fallbackColor;
   bool isFavorite;
+
+  /// The laundry batch this garment is in, or went missing from.
   String? currentBatchId;
-  DateTime dateAdded;
+  final DateTime dateAdded;
+  int wearCount;
+  DateTime? lastWornAt;
 
   Garment({
     required this.id,
@@ -85,13 +49,14 @@ class Garment {
     required this.category,
     this.status = GarmentStatus.closet,
     this.brand,
-    this.fabricNotes,
-    this.washNotes,
+    this.notes,
     this.imageUrl,
     this.fallbackColor,
     this.isFavorite = false,
     this.currentBatchId,
     DateTime? dateAdded,
+    this.wearCount = 0,
+    this.lastWornAt,
   }) : dateAdded = dateAdded ?? DateTime.now();
 
   Map<String, dynamic> toJson() {
@@ -101,60 +66,63 @@ class Garment {
       'category': category.name,
       'status': status.name,
       'brand': brand,
-      'fabricNotes': fabricNotes,
-      'washNotes': washNotes,
+      'notes': notes,
       'imageUrl': imageUrl,
       'fallbackColor': fallbackColor,
       'isFavorite': isFavorite,
       'currentBatchId': currentBatchId,
       'dateAdded': dateAdded.toIso8601String(),
+      'wearCount': wearCount,
+      'lastWornAt': lastWornAt?.toIso8601String(),
     };
   }
 
   factory Garment.fromJson(Map<String, dynamic> json) {
+    // Older saves kept fabric and wash notes in separate fields.
+    final legacyNotes = [json['fabricNotes'], json['washNotes']]
+        .whereType<String>()
+        .where((s) => s.isNotEmpty && s != 'Everyday Fabric' && s != 'Machine Wash Safe')
+        .join(' · ');
     return Garment(
       id: json['id'] as String,
-      name: json['name'] as String? ?? 'Untitled Garment',
+      name: json['name'] as String? ?? 'Untitled',
       category: GarmentCategory.fromString(json['category'] as String?),
       status: GarmentStatus.fromString(json['status'] as String?),
       brand: json['brand'] as String?,
-      fabricNotes: json['fabricNotes'] as String?,
-      washNotes: json['washNotes'] as String?,
+      notes: json['notes'] as String? ?? (legacyNotes.isEmpty ? null : legacyNotes),
       imageUrl: json['imageUrl'] as String?,
       fallbackColor: json['fallbackColor'] as int?,
       isFavorite: json['isFavorite'] as bool? ?? false,
       currentBatchId: json['currentBatchId'] as String?,
-      dateAdded: json['dateAdded'] != null
-          ? DateTime.tryParse(json['dateAdded'] as String) ?? DateTime.now()
-          : DateTime.now(),
+      dateAdded: DateTime.tryParse(json['dateAdded'] as String? ?? ''),
+      wearCount: json['wearCount'] as int? ?? 0,
+      lastWornAt: DateTime.tryParse(json['lastWornAt'] as String? ?? ''),
     );
   }
 
-  Garment copyWith({
-    String? name,
-    GarmentCategory? category,
-    GarmentStatus? status,
-    String? brand,
-    String? fabricNotes,
-    String? washNotes,
-    String? imageUrl,
-    int? fallbackColor,
-    bool? isFavorite,
-    String? currentBatchId,
+  /// Returns a copy with the given fields replaced. Nullable text fields are
+  /// passed as-is (including null), so an edit can clear them.
+  Garment edited({
+    required String name,
+    required GarmentCategory category,
+    required String? brand,
+    required String? notes,
+    required String? imageUrl,
   }) {
     return Garment(
       id: id,
-      name: name ?? this.name,
-      category: category ?? this.category,
-      status: status ?? this.status,
-      brand: brand ?? this.brand,
-      fabricNotes: fabricNotes ?? this.fabricNotes,
-      washNotes: washNotes ?? this.washNotes,
-      imageUrl: imageUrl ?? this.imageUrl,
-      fallbackColor: fallbackColor ?? this.fallbackColor,
-      isFavorite: isFavorite ?? this.isFavorite,
-      currentBatchId: currentBatchId ?? this.currentBatchId,
+      name: name,
+      category: category,
+      status: status,
+      brand: brand,
+      notes: notes,
+      imageUrl: imageUrl,
+      fallbackColor: fallbackColor,
+      isFavorite: isFavorite,
+      currentBatchId: currentBatchId,
       dateAdded: dateAdded,
+      wearCount: wearCount,
+      lastWornAt: lastWornAt,
     );
   }
 }
