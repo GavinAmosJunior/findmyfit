@@ -9,11 +9,6 @@ import '../widgets/garment_image.dart';
 import '../widgets/grouped_section.dart';
 import 'batch_screen.dart';
 
-bool _isToday(DateTime d) {
-  final now = DateTime.now();
-  return d.year == now.year && d.month == now.month && d.day == now.day;
-}
-
 /// Batches out at the laundromat, plus a short history.
 class LaundryScreen extends StatelessWidget {
   const LaundryScreen({super.key});
@@ -94,12 +89,6 @@ class _ActiveBatchCard extends StatelessWidget {
     final s = S.of(context);
     final state = AppScope.of(context);
     final garments = state.garmentsInBatch(batch);
-    final pickup = batch.pickupDate;
-    final pickupToday = pickup != null && _isToday(pickup);
-    final dates = [
-      s.sentOn(s.date(batch.createdAt)),
-      if (pickup != null && !pickupToday) s.pickupOn(s.weekdayDate(pickup)),
-    ].join(' · ');
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -118,32 +107,13 @@ class _ActiveBatchCard extends StatelessWidget {
                       children: [
                         Text(batch.laundromatName, style: context.text.titleMedium),
                         const SizedBox(height: 2),
-                        Text(dates, style: context.text.bodySmall),
+                        Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
                       ],
                     ),
                   ),
                   Icon(Icons.chevron_right_rounded, color: context.palette.tertiaryText),
                 ],
               ),
-              if (pickupToday) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: context.palette.laundry.background,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.event_available_rounded, size: 16, color: context.palette.laundry.foreground),
-                      const SizedBox(width: 6),
-                      Text(s.pickupToday,
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.palette.laundry.foreground)),
-                    ],
-                  ),
-                ),
-              ],
               const SizedBox(height: 14),
               SizedBox(
                 height: 44,

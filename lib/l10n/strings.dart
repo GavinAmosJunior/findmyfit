@@ -45,7 +45,6 @@ class S {
   String items(int n) => _id ? '$n item' : (n == 1 ? '1 item' : '$n items');
 
   String date(DateTime d) => DateFormat.MMMd(localeName).format(d);
-  String weekdayDate(DateTime d) => DateFormat.MMMEd(localeName).format(d);
 
   // ----------------------------------------------------------------- status
   String statusLabel(GarmentStatus s) {
@@ -116,8 +115,6 @@ class S {
   String get sendSheetTitle => _t('Send to laundry', 'Kirim ke laundry');
   String get laundromat => _t('Laundromat', 'Tempat laundry');
   String get laundromatHint => _t('Sparkle Clean', 'Laundry Bersih Jaya');
-  String get pickupDate => _t('Pickup date', 'Tanggal ambil');
-  String get noPickupDate => _t('Not set', 'Belum diatur');
   String sentToLaundry(int n, String place) =>
       _id ? '$n item dikirim ke $place' : '${items(n)} sent to $place';
   String get swipePutBack => _t('Put back', 'Kembalikan');
@@ -130,8 +127,6 @@ class S {
   String get atLaundryNow => _t('At the laundry now', 'Sedang di laundry');
   String get history => _t('History', 'Riwayat');
   String sentOn(String date) => _t('Sent $date', 'Dikirim $date');
-  String pickupOn(String date) => _t('Pickup $date', 'Ambil $date');
-  String get pickupToday => _t('Pickup today', 'Ambil hari ini');
   String backCount(int back, int total) => _id ? '$back dari $total kembali' : '$back of $total back';
   String get checkReturn => _t('Check what came back', 'Cek yang sudah kembali');
   String get tickAsBack => _t('Tick each piece as it comes back', 'Centang tiap pakaian yang sudah kembali');

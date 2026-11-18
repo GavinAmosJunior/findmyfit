@@ -121,7 +121,7 @@ class _HamperScreenState extends State<HamperScreen> {
 
   Future<void> _send(BuildContext context, List<Garment> selected) async {
     final s = S.of(context);
-    final result = await showModalBottomSheet<(String, DateTime?)>(
+    final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -131,8 +131,7 @@ class _HamperScreenState extends State<HamperScreen> {
     final state = AppScope.read(context);
     final batch = state.sendToLaundry(
       garmentIds: selected.map((g) => g.id).toList(),
-      laundromatName: result.$1,
-      pickupDate: result.$2,
+      laundromatName: result,
     );
     HapticFeedback.mediumImpact();
     // We switch to Laundry, so show the message above the whole app.
@@ -224,7 +223,7 @@ class _HamperRow extends StatelessWidget {
   }
 }
 
-/// Where the clothes are going and when to pick them up.
+/// Where the clothes are going.
 class _SendSheet extends StatefulWidget {
   final int count;
 
@@ -236,7 +235,6 @@ class _SendSheet extends StatefulWidget {
 
 class _SendSheetState extends State<_SendSheet> {
   final _place = TextEditingController();
-  DateTime? _pickup;
 
   @override
   void initState() {
@@ -249,17 +247,6 @@ class _SendSheetState extends State<_SendSheet> {
   void dispose() {
     _place.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _pickup ?? now.add(const Duration(days: 2)),
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: now.add(const Duration(days: 60)),
-    );
-    if (picked != null) setState(() => _pickup = picked);
   }
 
   @override
@@ -298,21 +285,9 @@ class _SendSheetState extends State<_SendSheet> {
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_outlined),
-              title: Text(s.pickupDate),
-              trailing: Text(
-                _pickup == null ? s.noPickupDate : s.weekdayDate(_pickup!),
-                style: context.text.bodyMedium?.copyWith(color: context.colors.primary),
-              ),
-              onTap: _pickDate,
-            ),
-          ),
           const SizedBox(height: 20),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop((_place.text, _pickup)),
+            onPressed: () => Navigator.of(context).pop(_place.text),
             child: Text(s.sendToLaundry(widget.count)),
           ),
         ],

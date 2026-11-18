@@ -234,7 +234,6 @@ class WardrobeState extends ChangeNotifier {
   LaundryBatch sendToLaundry({
     required List<String> garmentIds,
     required String laundromatName,
-    DateTime? pickupDate,
   }) {
     _batchCounter++;
     final batch = LaundryBatch(
@@ -242,7 +241,6 @@ class WardrobeState extends ChangeNotifier {
       batchCode: '#L-$_batchCounter',
       laundromatName: laundromatName.trim().isEmpty ? 'Laundromat' : laundromatName.trim(),
       itemIds: List.of(garmentIds),
-      pickupDate: pickupDate,
     );
     for (final id in garmentIds) {
       final g = garmentById(id);

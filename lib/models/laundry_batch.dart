@@ -5,7 +5,6 @@ class LaundryBatch {
   final List<String> itemIds;
   final Set<String> verifiedItemIds;
   final DateTime createdAt;
-  final DateTime? pickupDate;
   bool isCompleted;
   DateTime? completedAt;
 
@@ -16,7 +15,6 @@ class LaundryBatch {
     required this.itemIds,
     Set<String>? verifiedItemIds,
     DateTime? createdAt,
-    this.pickupDate,
     this.isCompleted = false,
     this.completedAt,
   })  : verifiedItemIds = verifiedItemIds ?? <String>{},
@@ -37,7 +35,6 @@ class LaundryBatch {
       'itemIds': itemIds,
       'verifiedItemIds': verifiedItemIds.toList(),
       'createdAt': createdAt.toIso8601String(),
-      'pickupDate': pickupDate?.toIso8601String(),
       'isCompleted': isCompleted,
       'completedAt': completedAt?.toIso8601String(),
     };
@@ -54,7 +51,6 @@ class LaundryBatch {
       itemIds: strings(json['itemIds']),
       verifiedItemIds: strings(json['verifiedItemIds']).toSet(),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
-      pickupDate: DateTime.tryParse(json['pickupDate'] as String? ?? ''),
       isCompleted: json['isCompleted'] as bool? ?? false,
       completedAt: DateTime.tryParse(json['completedAt'] as String? ?? ''),
     );
