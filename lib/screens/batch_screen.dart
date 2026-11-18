@@ -41,15 +41,6 @@ class BatchScreen extends StatelessWidget {
         ),
         actions: [
           if (editable) ...[
-            TextButton(
-              onPressed: batch.verifiedCount == garments.length
-                  ? null
-                  : () {
-                      HapticFeedback.selectionClick();
-                      state.markAllReceived(batch.id);
-                    },
-              child: Text(s.allBack),
-            ),
             PopupMenuButton<String>(
               onSelected: (_) => _cancel(context, batch),
               itemBuilder: (_) => [PopupMenuItem(value: 'cancel', child: Text(s.cancelBatch))],
@@ -76,11 +67,30 @@ class BatchScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(s.backCount(batch.verifiedCount, batch.totalItems), style: context.text.labelMedium),
+            // "All back" sits here, not in the top bar, so long translations
+            // still fit next to the title on small phones.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(s.backCount(batch.verifiedCount, batch.totalItems), style: context.text.labelMedium),
+                ),
+                TextButton.icon(
+                  onPressed: batch.verifiedCount == garments.length
+                      ? null
+                      : () {
+                          HapticFeedback.selectionClick();
+                          state.markAllReceived(batch.id);
+                        },
+                  icon: const Icon(Icons.done_all_rounded),
+                  label: Text(s.allBack),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
           Card(
             clipBehavior: Clip.antiAlias,
