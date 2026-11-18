@@ -1,0 +1,231 @@
+<!DOCTYPE html><html class="h-full" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><title>Laundr</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#e6e8ea", "error-container": "#ffdad6", "on-secondary-fixed": "#002113", "primary-container": "#2170e4", "surface-tint": "#005ac2", "on-secondary": "#ffffff", "outline": "#727785", "primary-fixed": "#d8e2ff", "tertiary": "#825100", "secondary-container": "#6cf8bb", "on-secondary-container": "#00714d", "on-background": "#191c1e", "secondary-fixed-dim": "#4edea3", "tertiary-fixed-dim": "#ffb95f", "on-tertiary": "#ffffff", "on-tertiary-container": "#fffbff", "on-tertiary-fixed": "#2a1700", "secondary-fixed": "#6ffbbe", "outline-variant": "#c2c6d6", "surface-bright": "#f7f9fb", "surface-container-lowest": "#ffffff", "surface-container-highest": "#e0e3e5", "surface-container": "#eceef0", "inverse-on-surface": "#eff1f3", "inverse-surface": "#2d3133", "surface-container-low": "#f2f4f6", "secondary": "#006c49", "on-primary-fixed": "#001a42", "surface": "#f7f9fb", "on-primary-fixed-variant": "#004395", "error": "#ba1a1a", "tertiary-fixed": "#ffddb8", "surface-variant": "#e0e3e5", "background": "#f7f9fb", "on-surface-variant": "#424754", "inverse-primary": "#adc6ff", "primary": "#0058be", "tertiary-container": "#a36700", "surface-dim": "#d8dadc", "on-secondary-fixed-variant": "#005236", "on-error-container": "#93000a", "primary-fixed-dim": "#adc6ff", "on-surface": "#191c1e", "on-primary-container": "#fefcff", "on-tertiary-fixed-variant": "#653e00", "on-error": "#ffffff", "on-primary": "#ffffff" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem", "margin": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "display-lg": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "title-sm": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"] }, "fontSize": { "display-lg": ["34px", { "lineHeight": "41px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["17px", { "lineHeight": "24px", "letterSpacing": "-0.003em", "fontWeight": "400" }], "title-sm": ["17px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-md": ["15px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }] } } } };</script><style>@layer base { html, body { width: 100%; margin: 0; padding: 0; } body { overscroll-behavior-y: none; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); } .pt-safe { padding-top: env(safe-area-inset-top, 44px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style></head><body class="bg-surface text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="px-margin h-14 items-center relative flex justify-between"><div class="flex items-center gap-2"><img alt="FindMyFit Icon" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Vk58qUsgj5PaH9xkR4AuMRSKHCvnhie1m-NuQ-QooJPtQIQYyEiWO3BGM0eg0EdlsxT_35VKCrmyQALldsKXUjnZgKWnpMkySNaa7jSSSnuJqydwlRt23UXXyfgP7XpvduNcbCjo2cSs4esC3FZ8jXqoEQe8BdZsEMye8Qpre6LOVogR4VIO4Ic708uvCkgdqGPtLLmOpQLsptkUnxrreLg5e_oDG-a0VNW9HuJShwxsjaaL_0i0dk6RHk"><span class="font-headline-md text-[18px] font-bold tracking-tight text-on-surface">FindMyFit</span></div><div class="flex items-center justify-end gap-1"><button aria-label="Quick Actions" class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">local_laundry_service</span></button><a class="w-9 h-9 flex items-center justify-center" data-path="wardrobe" href="#"><img alt="Profile" class="w-7 h-7 rounded-full object-cover ring-2 ring-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKao4r7J2j0-JeiEqctMQsjdGBncAJ7z4isNCufwCSipEhSuMMkkK5Hkxt3qERRP6jpRp2-SHH-46CqkGsGVatDZTZ2QqXY2M1ilvPHyFmHHW65FQYnIF57wo2sSSS8iAlcCbSVlyBIY7T78XoZWRkYCQmnLmDThTRz3TKOc03VZI9KJM3PZZ-6-uyWg27XmKu6HESpc0LDwi6ViPRtUo0VRy2pJrvdhTRZAUK45cxnmx-e-9IiAkvHA"></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-20 bg-surface px-margin"><div class="flex flex-col w-full pb-6 space-y-5">
+<!-- Segmented Status Switcher (Horizontal scrollable Apple HIG control) -->
+<div class="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1 -mx-margin px-margin"><button class="status-tab flex-shrink-0 px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm transition-all active:scale-95 flex items-center gap-1.5" data-filter="all"><span class="">All Clothes</span><span class="bg-surface/20 text-on-primary rounded-full px-1.5 py-0.2 text-[11px] font-bold">48</span></button><button class="status-tab flex-shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-all active:scale-95 flex items-center gap-1.5 hover:bg-surface-container-highest" data-filter="closet"><span class="w-2 h-2 rounded-full bg-secondary"></span><span class="">In Closet</span><span class="opacity-70 text-[11px]">32</span></button><button class="status-tab flex-shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-all active:scale-95 flex items-center gap-1.5 hover:bg-surface-container-highest" data-filter="hamper"><span class="w-2 h-2 rounded-full bg-tertiary"></span><span class="">In Hampers</span><span class="opacity-70 text-[11px]">14</span></button><button class="status-tab flex-shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-all active:scale-95 flex items-center gap-1.5 hover:bg-surface-container-highest" data-filter="laundry"><span class="">At Laundry</span><span class="opacity-70 text-[11px]">0</span></button><button class="status-tab flex-shrink-0 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-all active:scale-95 flex items-center gap-1.5 hover:bg-surface-container-highest" data-filter="missing"><span class="w-2 h-2 rounded-full bg-error"></span><span class="">Missing</span><span class="opacity-70 text-[11px]">2</span></button></div>
+<!-- Summary Widget: Apple Fitness concentric activity style cards -->
+<div class="bg-surface-container-lowest rounded-lg p-4 shadow-sm">
+<div class="flex items-center justify-between mb-3.5">
+<div>
+<p class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Wardrobe Balance</p>
+<p class="font-title-sm text-title-sm font-bold text-on-surface mt-0.5">Ready for the Week</p>
+</div>
+<div class="flex items-center gap-1 text-secondary bg-secondary-container/40 px-2.5 py-1 rounded-full font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="">Optimal</span>
+</div>
+</div>
+<!-- Apple-style Segmented Progress Bar -->
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden flex p-0.5 gap-0.5 shadow-inner">
+<div class="h-full rounded-full bg-secondary transition-all duration-700 ease-out" style="width: 67%" title="67% Ready"></div>
+<div class="h-full rounded-full bg-tertiary transition-all duration-700 ease-out" style="width: 29%" title="29% Hamper"></div>
+<div class="h-full rounded-full bg-error transition-all duration-700 ease-out" style="width: 4%" title="4% Missing"></div>
+</div>
+<!-- 3 Distribution Metrics -->
+<div class="grid grid-cols-3 gap-2 mt-3.5 pt-3"><div class="bg-surface-container-low rounded-DEFAULT p-2.5 flex flex-col justify-between"><div class="flex items-center gap-1 text-secondary"><span class="material-symbols-outlined text-[16px]">checkroom</span><span class="font-label-sm text-label-sm font-semibold">Fresh</span></div><div class="mt-1.5"><span class="font-headline-md text-headline-md font-bold text-on-surface">67%</span><p class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-0.5">32 items</p></div></div><div class="bg-surface-container-low rounded-DEFAULT p-2.5 flex flex-col justify-between"><div class="flex items-center gap-1 text-tertiary"><span class="material-symbols-outlined text-[16px]">shopping_basket</span><span class="font-label-sm text-label-sm font-semibold">In Hampers</span></div><div class="mt-1.5"><span class="font-headline-md text-headline-md font-bold text-on-surface">29%</span><p class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-0.5">14 items · 2 batches</p></div></div><div class="bg-surface-container-low rounded-DEFAULT p-2.5 flex flex-col justify-between"><div class="flex items-center gap-1 text-error"><span class="material-symbols-outlined text-[16px]">qr_code_2</span><span class="font-label-sm text-label-sm font-semibold">Missing</span></div><div class="mt-1.5"><span class="font-headline-md text-headline-md font-bold text-on-surface">4%</span><p class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-0.5">2 items</p></div></div></div>
+</div>
+<!-- Smart Snap Clothing Hero Action Banner -->
+<div class="relative overflow-hidden bg-primary text-on-primary rounded-lg p-4 shadow-md flex items-center justify-between">
+<div class="relative z-10 max-w-[65%]">
+<div class="inline-flex items-center gap-1 bg-surface-container-lowest/15 backdrop-blur-md rounded-full px-2 py-0.5 mb-1.5">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+<span class="font-label-sm text-label-sm tracking-wide">AI Care Scanner</span>
+</div>
+<h3 class="font-headline-md text-headline-md font-bold leading-tight">Snap New Garment</h3>
+<p class="font-label-md text-label-md text-primary-fixed opacity-90 mt-1 line-clamp-2">Auto-detects fabric blend, wash temperatures, &amp; care tags instantly.</p>
+</div>
+<button aria-label="Snap photo of garment" class="relative z-10 w-12 h-12 rounded-full bg-surface-container-lowest text-primary flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0">
+<span class="material-symbols-outlined text-[26px]">photo_camera</span>
+</button>
+<!-- Aesthetic Ambient Shapes in Background -->
+<div class="absolute -right-6 -bottom-8 w-32 h-32 bg-primary-container rounded-full opacity-60 blur-xl pointer-events-none"></div>
+<div class="absolute right-12 top-0 w-20 h-20 bg-secondary-fixed rounded-full opacity-20 blur-lg pointer-events-none"></div>
+</div>
+<!-- Category Filter Pills -->
+<div class="flex items-center space-x-2 overflow-x-auto no-scrollbar pt-1">
+<button class="category-pill px-3.5 py-1 rounded-full bg-on-surface text-surface font-label-md text-label-md shadow-sm transition-all" data-category="all">
+      All
+    </button>
+<button class="category-pill px-3.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all" data-category="tops">
+      Tops
+    </button>
+<button class="category-pill px-3.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all" data-category="bottoms">
+      Bottoms
+    </button>
+<button class="category-pill px-3.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all" data-category="outerwear">
+      Outerwear
+    </button>
+<button class="category-pill px-3.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-all" data-category="delicates">
+      Delicates
+    </button>
+</div>
+<!-- Garment 2-Column Gallery Grid -->
+<div class="grid grid-cols-2 gap-3" id="garment-grid"><!-- Item 1: In Closet -->
+<div class="garment-card group bg-surface-container-lowest rounded-lg overflow-hidden shadow-sm flex flex-col justify-between transition-all" data-cat="tops" data-status="closet">
+  <div class="relative w-full aspect-square bg-surface-container-low overflow-hidden">
+    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Crisp white heavyweight organic cotton t-shirt neatly pressed on a sleek natural wooden hanger against a clean neutral studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkWSvNNAWyWRa3fcGtNg6vHlusjL_x66XWrlKOglYd4bdm1qJFUZvNX7aQQTwTRxQOUazBKGA3KTsZcUCXaYya7N--vwmwEfeSyrOHRtBK1gOCvZVXTTK9v-ceq7zH--iNmzTugF-VyHZFCuursnfZny1baSFNOnOTmn4dJXRwXohpG_Ar9ImBE5NQRrovlOCpxLkzgsPH8x-qh1re6CmwBxjYvQAo9z4nkbMJiTdpnQ1gvopA-GkKxA">
+    <span class="absolute top-2.5 left-2.5 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold text-on-surface shadow-xs">
+      Tops
+    </span>
+    <button class="favorite-toggle absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform shadow-xs">
+      <span class="material-symbols-outlined text-[16px]">favorite</span>
+    </button>
+  </div>
+  <div class="p-3 flex flex-col flex-1 justify-between gap-3">
+    <div>
+      <h4 class="font-title-sm text-title-sm font-bold text-on-surface truncate">Heavyweight Tee</h4>
+      <p class="font-label-sm text-label-sm text-outline truncate mt-0.5">100% Cotton · Cold Wash</p>
+    </div>
+    <div class="pt-2 border-t border-surface-container-high/60 flex items-center justify-between">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm font-semibold w-full justify-center">
+        <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+        In Closet (Clean)
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Item 2: In Hamper -->
+<div class="garment-card group bg-surface-container-lowest rounded-lg overflow-hidden shadow-sm flex flex-col justify-between transition-all" data-cat="bottoms" data-status="hamper">
+  <div class="relative w-full aspect-square bg-surface-container-low overflow-hidden">
+    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Folded indigo Japanese selvedge denim jeans resting on a clean textured linen laundry surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2ZmRpKtDL6OExLx3XmWvk_Jv3JyobHKgvXAdvaLGoMGeltVOSPW-Pn6UUVRc_5LT7MLZfCzn5FlPSjv6MVGXKq52Wk5imKSXraeEiNis1jxIi4gH54VPKWLYeU9B7COy0gOSZ4GDDjddn3-DgfuJXpJrxbjZpmGo9WH33eCVCrBNcQZRHndM8bKWwjC4_Y7I64pIQK9mLKYOdnv-Mwk0Zp3S7TgOJ3doLkHlknTRCHay09MLvaG8Q0w">
+    <span class="absolute top-2.5 left-2.5 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold text-on-surface shadow-xs">
+      Bottoms
+    </span>
+    <button class="favorite-toggle absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-center text-tertiary active:scale-90 transition-transform shadow-xs">
+      <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+    </button>
+  </div>
+  <div class="p-3 flex flex-col flex-1 justify-between gap-3">
+    <div>
+      <h4 class="font-title-sm text-title-sm font-bold text-on-surface truncate">Selvedge Denim</h4>
+      <p class="font-label-sm text-label-sm text-outline truncate mt-0.5">Raw Indigo · Line Dry</p>
+    </div>
+    <div class="pt-2 border-t border-surface-container-high/60 flex items-center justify-between"><span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold w-full justify-center truncate"><span class="w-1.5 h-1.5 rounded-full bg-tertiary flex-shrink-0"></span><span class="truncate">In Hamper · Weekly Wash</span></span></div>
+  </div>
+</div>
+
+<!-- Item 3: In Closet Outerwear -->
+<div class="garment-card group bg-surface-container-lowest rounded-lg overflow-hidden shadow-sm flex flex-col justify-between transition-all" data-cat="outerwear" data-status="closet">
+  <div class="relative w-full aspect-square bg-surface-container-low overflow-hidden">
+    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Oatmeal beige tailored merino wool overcoat on an oak wall peg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfgOMccUTM8nYKKq6UzbgxhlUDDZT-86nYRdmTFCnvkeFbvjjtkeitNBvcrhfwnnBMqW5tdw4MUiTNOdsGDjr8n707cCxfe0WpNloGsVCCHZrQQn5c-tJZYLmaBRbpfz-Om9wUAFDAbU3kHrk1QWagTMAw-PN_mHcXVwyrmLXJfE6z5Ddci5x6rHoe2svnRquhc06w319A-FIcsqibw5W2CRtbG7Mn-O4EjXt06L7KzlxwSg57WVbINw">
+    <span class="absolute top-2.5 left-2.5 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold text-on-surface shadow-xs">
+      Outerwear
+    </span>
+    <button class="favorite-toggle absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform shadow-xs">
+      <span class="material-symbols-outlined text-[16px]">favorite</span>
+    </button>
+  </div>
+  <div class="p-3 flex flex-col flex-1 justify-between gap-3">
+    <div>
+      <h4 class="font-title-sm text-title-sm font-bold text-on-surface truncate">Merino Overcoat</h4>
+      <p class="font-label-sm text-label-sm text-outline truncate mt-0.5">100% Wool · Dry Clean</p>
+    </div>
+    <div class="pt-2 border-t border-surface-container-high/60 flex items-center justify-between">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm font-semibold w-full justify-center">
+        <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+        In Closet (Clean)
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Item 4: Missing Delicates -->
+<div class="garment-card group bg-surface-container-lowest rounded-lg overflow-hidden shadow-sm flex flex-col justify-between transition-all" data-cat="delicates" data-status="missing">
+  <div class="relative w-full aspect-square bg-surface-container-low overflow-hidden">
+    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Chic sage green ribbed cashmere socks pair arranged aesthetically on a smooth white stone surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-jrYKp2fn1r4Fis6KZBHKVXvsbeDVd5RN362_q3ARQjbRYwk-nV9x4TolURLnAXJanp_jPoA60_2ugeIssMmgtE17IfB7YuVOIDxoMEoY_lsu9J8IOKHT58N6G588mTLNKeutrYGPjjYqn53ZO7ZtyTjV8QMJgdKvbqRikcMhP-dNlDk7MwgBfyAOGlzVUPA0EYy15CVWsrgMGbG1HQqPxveoLypggMqenlK8lnlCeX_gBFdIFj7VzQ">
+    <span class="absolute top-2.5 left-2.5 bg-surface-container-lowest/90 backdrop-blur-md px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold text-on-surface shadow-xs">
+      Delicates
+    </span>
+    <button class="favorite-toggle absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-surface-container-lowest/90 backdrop-blur-md flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform shadow-xs">
+      <span class="material-symbols-outlined text-[16px]">favorite</span>
+    </button>
+  </div>
+  <div class="p-3 flex flex-col flex-1 justify-between gap-3">
+    <div>
+      <h4 class="font-title-sm text-title-sm font-bold text-on-surface truncate">Cashmere Socks</h4>
+      <p class="font-label-sm text-label-sm text-outline truncate mt-0.5">Last seen in Dryer 2</p>
+    </div>
+    <div class="pt-2 border-t border-surface-container-high/60 flex items-center justify-between">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error font-label-sm text-label-sm font-semibold w-full justify-center">
+        <span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+        Investigating (Missing)
+      </span>
+    </div>
+  </div>
+</div></div>
+<!-- Micro-interactions Script -->
+<script>
+    // Segmented tab filtering
+    const tabs = document.querySelectorAll('.status-tab');
+    const cards = document.querySelectorAll('.garment-card');
+    const categoryPills = document.querySelectorAll('.category-pill');
+
+    let currentStatus = 'all';
+    let currentCategory = 'all';
+
+    function filterGrid() {
+      cards.forEach(card => {
+        const matchesStatus = currentStatus === 'all' || card.dataset.status === currentStatus;
+        const matchesCat = currentCategory === 'all' || card.dataset.cat === currentCategory;
+        if (matchesStatus && matchesCat) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => {
+          t.classList.remove('bg-primary', 'text-on-primary');
+          t.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+        });
+        tab.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+        tab.classList.add('bg-primary', 'text-on-primary');
+        currentStatus = tab.dataset.filter;
+        filterGrid();
+      });
+    });
+
+    categoryPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        categoryPills.forEach(p => {
+          p.classList.remove('bg-on-surface', 'text-surface');
+          p.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        });
+        pill.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
+        pill.classList.add('bg-on-surface', 'text-surface');
+        currentCategory = pill.dataset.category;
+        filterGrid();
+      });
+    });
+
+    // 1-Tap Worn Today micro-interaction
+    document.querySelectorAll('.send-hamper-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const card = btn.closest('.garment-card');
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">autorenew</span><span>Tossing in...</span>';
+        setTimeout(() => {
+          card.dataset.status = 'hamper';
+          const statusContainer = card.querySelector('.p-3 > div > div');
+          statusContainer.innerHTML = `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold">
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+              In Hamper
+            </span>
+          `;
+          btn.outerHTML = `
+            <button class="mark-clean-btn mt-3 w-full py-1.5 px-2 bg-secondary-container/40 text-on-secondary-container font-label-md text-label-md rounded-full flex items-center justify-center gap-1 active:scale-95 transition-all hover:bg-secondary hover:text-on-secondary">
+              <span class="material-symbols-outlined text-[16px]">checkroom</span>
+              <span>Mark Clean</span>
+            </button>
+          `;
+        }, 400);
+      });
+    });
+  </script>
+</div></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/85 backdrop-blur-2xl shadow-[0_-1px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 transition-transform active:scale-95 text-primary font-semibold" data-path="wardrobe" href="#"><span class="material-symbols-outlined text-[24px]">checkroom</span><span class="font-label-sm text-label-sm">Wardrobe</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant relative transition-transform active:scale-95" data-path="hamper" href="#"><span class="relative"><span class="material-symbols-outlined text-[24px]">shopping_basket</span><span class="absolute -top-1 -right-2 bg-primary text-on-primary font-label-sm text-[10px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center font-bold">5</span></span><span class="font-label-sm text-label-sm">Hamper</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant transition-transform active:scale-95" data-path="at-laundry" href="#"><span class="material-symbols-outlined text-[24px]">save_as</span><span class="font-label-sm text-label-sm">At Laundry</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant transition-transform active:scale-95" data-path="lost-and-found" href="#"><span class="material-symbols-outlined text-[24px]">manage_search</span><span class="font-label-sm text-label-sm">Lost &amp; Found</span></a></div></nav>
+
+</body></html>

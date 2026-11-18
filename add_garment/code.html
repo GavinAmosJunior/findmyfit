@@ -1,0 +1,114 @@
+<!DOCTYPE html><html class="h-full" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><title>Laundr</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#e6e8ea", "error-container": "#ffdad6", "on-secondary-fixed": "#002113", "primary-container": "#2170e4", "surface-tint": "#005ac2", "on-secondary": "#ffffff", "outline": "#727785", "primary-fixed": "#d8e2ff", "tertiary": "#825100", "secondary-container": "#6cf8bb", "on-secondary-container": "#00714d", "on-background": "#191c1e", "secondary-fixed-dim": "#4edea3", "tertiary-fixed-dim": "#ffb95f", "on-tertiary": "#ffffff", "on-tertiary-container": "#fffbff", "on-tertiary-fixed": "#2a1700", "secondary-fixed": "#6ffbbe", "outline-variant": "#c2c6d6", "surface-bright": "#f7f9fb", "surface-container-lowest": "#ffffff", "surface-container-highest": "#e0e3e5", "surface-container": "#eceef0", "inverse-on-surface": "#eff1f3", "inverse-surface": "#2d3133", "surface-container-low": "#f2f4f6", "secondary": "#006c49", "on-primary-fixed": "#001a42", "surface": "#f7f9fb", "on-primary-fixed-variant": "#004395", "error": "#ba1a1a", "tertiary-fixed": "#ffddb8", "surface-variant": "#e0e3e5", "background": "#f7f9fb", "on-surface-variant": "#424754", "inverse-primary": "#adc6ff", "primary": "#0058be", "tertiary-container": "#a36700", "surface-dim": "#d8dadc", "on-secondary-fixed-variant": "#005236", "on-error-container": "#93000a", "primary-fixed-dim": "#adc6ff", "on-surface": "#191c1e", "on-primary-container": "#fefcff", "on-tertiary-fixed-variant": "#653e00", "on-error": "#ffffff", "on-primary": "#ffffff" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem", "margin": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "display-lg": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "title-sm": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"] }, "fontSize": { "display-lg": ["34px", { "lineHeight": "41px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["17px", { "lineHeight": "24px", "letterSpacing": "-0.003em", "fontWeight": "400" }], "title-sm": ["17px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-md": ["15px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }] } } } };</script><style>@layer base { html, body { width: 100%; margin: 0; padding: 0; } body { overscroll-behavior-y: none; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); } .pt-safe { padding-top: env(safe-area-inset-top, 44px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="px-margin h-14 flex items-center justify-between relative"><div class="flex items-center gap-space-sm z-10"><button aria-label="Close" class="w-9 h-9 -ml-1.5 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">close</span></button><img alt="FindMyFit App Icon" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Vk58qUsgj5PaH9xkR4AuMRSKHCvnhie1m-NuQ-QooJPtQIQYyEiWO3BGM0eg0EdlsxT_35VKCrmyQALldsKXUjnZgKWnpMkySNaa7jSSSnuJqydwlRt23UXXyfgP7XpvduNcbCjo2cSs4esC3FZ8jXqoEQe8BdZsEMye8Qpre6LOVogR4VIO4Ic708uvCkgdqGPtLLmOpQLsptkUnxrreLg5e_oDG-a0VNW9HuJShwxsjaaL_0i0dk6RHk"><span class="font-headline-md text-[18px] font-bold tracking-tight text-primary">FindMyFit</span></div><div class="flex items-center gap-space-xs z-10"><a class="w-9 h-9 flex items-center justify-center" data-path="wardrobe" href="#"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKao4r7J2j0-JeiEqctMQsjdGBncAJ7z4isNCufwCSipEhSuMMkkK5Hkxt3qERRP6jpRp2-SHH-46CqkGsGVatDZTZ2QqXY2M1ilvPHyFmHHW65FQYnIF57wo2sSSS8iAlcCbSVlyBIY7T78XoZWRkYCQmnLmDThTRz3TKOc03VZI9KJM3PZZ-6-uyWg27XmKu6HESpc0LDwi6ViPRtUo0VRy2pJrvdhTRZAUK45cxnmx-e-9IiAkvHA"></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-20 bg-surface px-margin"><div class="flex flex-col w-full pb-6 space-y-space-md"><!-- Clean Garment Photo Preview --><div class="relative w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-md bg-surface-container-high"><img alt="Captured Garment Preview" class="w-full h-full object-cover" id="viewfinderFeed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCxiDyBfoj4vAzUUUNjdfYiEN1_AAu6uKdz447C6CethXM1piyJTSplmPMJ3Re629OOYAG_Yg3BdnVES6GuHPh0Ol3EoHo8MK5XmA3lSYh6QjMODdoiv1ZU2OJm05oBL6loemWG2ACMjYKVYUPXf26cczRfe21IQPLCgHTPbQnaQOdn-Ir_t4JNNPYeKqo_qtZPPe6ERPMtHrKc-b8iZK2Tn9YRNGoDCVIpQrCpVlwXeyO82vQc1bAuQ"><button aria-label="Retake Photo" class="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface font-label-sm text-label-sm font-semibold shadow-sm flex items-center space-x-1 hover:bg-surface-container-lowest transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">photo_camera</span><span class="">Retake</span></button></div><!-- Minimal Intake Card --><div class="w-full bg-surface-container-lowest rounded-3xl p-margin shadow-[0_4px_24px_rgba(0,0,0,0.04)] space-y-space-md"><!-- Garment Name Input --><div class="space-y-space-xs"><label class="block font-label-md text-label-md font-semibold text-on-surface" for="garmentNameInput">Garment Name</label><div class="relative w-full"><input class="w-full h-12 pl-4 pr-10 rounded-2xl bg-surface-container-low text-on-surface font-body-md text-body-md font-medium focus:outline-none focus:bg-surface-container transition-colors" id="garmentNameInput" placeholder="e.g. Grey Hoodie" type="text" value="Grey Hoodie"><button aria-label="Clear Input" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface" onclick="document.getElementById('garmentNameInput').value='';" type="button"><span class="material-symbols-outlined text-[18px]">cancel</span></button></div></div><!-- Category Selector --><div class="space-y-space-xs"><label class="block font-label-md text-label-md font-semibold text-on-surface">Category</label><div class="grid grid-cols-4 gap-2" id="categoryChips"><button class="category-chip flex flex-col items-center justify-center p-2.5 rounded-2xl bg-primary text-on-primary shadow-sm transition-transform active:scale-95" data-cat="tops" type="button"><span class="material-symbols-outlined text-[20px]">apparel</span><span class="font-label-sm text-label-sm font-semibold mt-1">Tops</span></button><button class="category-chip flex flex-col items-center justify-center p-2.5 rounded-2xl bg-surface-container-low text-on-surface hover:bg-surface-container transition-transform active:scale-95" data-cat="bottoms" type="button"><span class="material-symbols-outlined text-[20px]">straighten</span><span class="font-label-sm text-label-sm font-medium mt-1">Bottoms</span></button><button class="category-chip flex flex-col items-center justify-center p-2.5 rounded-2xl bg-surface-container-low text-on-surface hover:bg-surface-container transition-transform active:scale-95" data-cat="outerwear" type="button"><span class="material-symbols-outlined text-[20px]">dry_cleaning</span><span class="font-label-sm text-label-sm font-medium mt-1">Outerwear</span></button><button class="category-chip flex flex-col items-center justify-center p-2.5 rounded-2xl bg-surface-container-low text-on-surface hover:bg-surface-container transition-transform active:scale-95" data-cat="delicates" type="button"><span class="material-symbols-outlined text-[20px]">spa</span><span class="font-label-sm text-label-sm font-medium mt-1">Delicates</span></button></div></div><!-- Clean Location Status Toggle --><div class="space-y-space-xs"><label class="font-label-md text-label-md font-semibold text-on-surface block">Initial Location</label><div class="grid grid-cols-2 p-1 rounded-2xl bg-surface-container-low" id="statusSwitch"><button class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl bg-surface-container-lowest text-secondary shadow-sm font-label-md text-label-md font-bold transition-all" id="statusClosetBtn" type="button"><span class="material-symbols-outlined text-[18px]">checkroom</span><span class="">In Closet (Clean)</span></button><button class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-on-surface-variant font-label-md text-label-md font-medium transition-all" id="statusHamperBtn" type="button"><span class="material-symbols-outlined text-[18px]">shopping_basket</span><span class="">In Hamper (Dirty)</span></button></div></div><!-- Primary Action: Save Garment --><div class="pt-space-xs"><button class="w-full h-14 rounded-full bg-primary text-on-primary font-title-sm text-title-sm font-bold flex items-center justify-center space-x-2 shadow-[0_8px_20px_-4px_rgba(0,88,190,0.35)] active:scale-[0.98] transition-transform" id="saveGarmentBtn" type="button"><span class="material-symbols-outlined text-[22px]">check</span><span class="">Save Garment</span></button></div></div></div>
+<script>
+  (function () {
+    // Shutter Trigger Tactile Flash micro-interaction
+    const shutterBtn = document.getElementById('shutterBtn');
+    const shutterInner = document.getElementById('shutterInner');
+    const viewfinder = document.getElementById('viewfinderFeed');
+    const flashBtn = document.getElementById('flashToggle');
+    let flashOn = false;
+
+    if (shutterBtn && shutterInner && viewfinder) {
+      shutterBtn.addEventListener('click', function () {
+        shutterInner.classList.add('scale-75', 'bg-secondary');
+        viewfinder.classList.add('brightness-150');
+        setTimeout(function () {
+          shutterInner.classList.remove('scale-75', 'bg-secondary');
+          viewfinder.classList.remove('brightness-150');
+        }, 150);
+      });
+    }
+
+    // Flash toggle button
+    if (flashBtn) {
+      flashBtn.addEventListener('click', function () {
+        flashOn = !flashOn;
+        const icon = flashBtn.querySelector('.material-symbols-outlined');
+        if (flashOn) {
+          flashBtn.classList.replace('text-on-surface-variant', 'text-tertiary-container');
+          flashBtn.classList.add('bg-tertiary-fixed');
+          if (icon) icon.textContent = 'flash_on';
+        } else {
+          flashBtn.classList.replace('text-tertiary-container', 'text-on-surface-variant');
+          flashBtn.classList.remove('bg-tertiary-fixed');
+          if (icon) icon.textContent = 'flash_off';
+        }
+      });
+    }
+
+    // Flip Camera button animation
+    const flipCam = document.getElementById('flipCamToggle');
+    if (flipCam) {
+      flipCam.addEventListener('click', function () {
+        const icon = flipCam.querySelector('.material-symbols-outlined');
+        if (icon) {
+          icon.classList.add('rotate-180', 'transition-transform', 'duration-300');
+          setTimeout(() => icon.classList.remove('rotate-180'), 300);
+        }
+      });
+    }
+
+    // Category Selector selection
+    const categoryChips = document.querySelectorAll('.category-chip');
+    categoryChips.forEach(chip => {
+      chip.addEventListener('click', function () {
+        categoryChips.forEach(c => {
+          c.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+          c.classList.add('bg-surface-container-low', 'text-on-surface');
+          const lbl = c.querySelector('span:last-child');
+          if (lbl) {
+            lbl.classList.remove('font-semibold');
+            lbl.classList.add('font-medium');
+          }
+        });
+        this.classList.remove('bg-surface-container-low', 'text-on-surface');
+        this.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+        const activeLbl = this.querySelector('span:last-child');
+        if (activeLbl) {
+          activeLbl.classList.remove('font-medium');
+          activeLbl.classList.add('font-semibold');
+        }
+      });
+    });
+
+    // Wardrobe status switcher (In Closet vs In Hamper)
+    const closetBtn = document.getElementById('statusClosetBtn');
+    const hamperBtn = document.getElementById('statusHamperBtn');
+
+    if (closetBtn && hamperBtn) {
+      closetBtn.addEventListener('click', function () {
+        closetBtn.className = "flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl bg-surface-container-lowest text-secondary shadow-sm font-label-md text-label-md font-bold transition-all";
+        hamperBtn.className = "flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-on-surface-variant font-label-md text-label-md font-medium transition-all";
+      });
+
+      hamperBtn.addEventListener('click', function () {
+        hamperBtn.className = "flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl bg-surface-container-lowest text-tertiary shadow-sm font-label-md text-label-md font-bold transition-all";
+        closetBtn.className = "flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-on-surface-variant font-label-md text-label-md font-medium transition-all";
+      });
+    }
+
+    // Save To Wardrobe Toast Animation
+    const saveBtn = document.getElementById('saveGarmentBtn');
+    const saveToast = document.getElementById('saveToast');
+
+    if (saveBtn && saveToast) {
+      saveBtn.addEventListener('click', function () {
+        saveToast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+        saveToast.classList.add('opacity-100', 'translate-y-0');
+        setTimeout(() => {
+          saveToast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+          saveToast.classList.remove('opacity-100', 'translate-y-0');
+        }, 2600);
+      });
+    }
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/85 backdrop-blur-2xl shadow-[0_-1px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant relative transition-transform active:scale-95" data-path="wardrobe" href="#"><span class="material-symbols-outlined text-[24px]">checkroom</span><span class="font-label-sm text-label-sm">Wardrobe</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant relative transition-transform active:scale-95" data-path="hamper" href="#"><span class="relative"><span class="material-symbols-outlined text-[24px]">shopping_basket</span><span class="absolute -top-1 -right-2 bg-primary text-on-primary font-label-sm text-[10px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center font-bold">5</span></span><span class="font-label-sm text-label-sm">Hamper</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant transition-transform active:scale-95" data-path="at-laundry" href="#"><span class="material-symbols-outlined text-[24px]">save_as</span><span class="font-label-sm text-label-sm">At Laundry</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant transition-transform active:scale-95" data-path="lost-and-found" href="#"><span class="material-symbols-outlined text-[24px]">manage_search</span><span class="font-label-sm text-label-sm">Lost &amp; Found</span></a></div></nav>
+
+</body></html>

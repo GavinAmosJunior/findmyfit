@@ -1,0 +1,228 @@
+<!DOCTYPE html><html class="h-full" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><title>Laundr</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#e6e8ea", "error-container": "#ffdad6", "on-secondary-fixed": "#002113", "primary-container": "#2170e4", "surface-tint": "#005ac2", "on-secondary": "#ffffff", "outline": "#727785", "primary-fixed": "#d8e2ff", "tertiary": "#825100", "secondary-container": "#6cf8bb", "on-secondary-container": "#00714d", "on-background": "#191c1e", "secondary-fixed-dim": "#4edea3", "tertiary-fixed-dim": "#ffb95f", "on-tertiary": "#ffffff", "on-tertiary-container": "#fffbff", "on-tertiary-fixed": "#2a1700", "secondary-fixed": "#6ffbbe", "outline-variant": "#c2c6d6", "surface-bright": "#f7f9fb", "surface-container-lowest": "#ffffff", "surface-container-highest": "#e0e3e5", "surface-container": "#eceef0", "inverse-on-surface": "#eff1f3", "inverse-surface": "#2d3133", "surface-container-low": "#f2f4f6", "secondary": "#006c49", "on-primary-fixed": "#001a42", "surface": "#f7f9fb", "on-primary-fixed-variant": "#004395", "error": "#ba1a1a", "tertiary-fixed": "#ffddb8", "surface-variant": "#e0e3e5", "background": "#f7f9fb", "on-surface-variant": "#424754", "inverse-primary": "#adc6ff", "primary": "#0058be", "tertiary-container": "#a36700", "surface-dim": "#d8dadc", "on-secondary-fixed-variant": "#005236", "on-error-container": "#93000a", "primary-fixed-dim": "#adc6ff", "on-surface": "#191c1e", "on-primary-container": "#fefcff", "on-tertiary-fixed-variant": "#653e00", "on-error": "#ffffff", "on-primary": "#ffffff" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter": "1rem", "margin": "1.25rem", "space-lg": "1.5rem", "space-md": "1rem", "space-xl": "2rem" }, "fontFamily": { "display-lg": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "title-sm": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"] }, "fontSize": { "display-lg": ["34px", { "lineHeight": "41px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["17px", { "lineHeight": "24px", "letterSpacing": "-0.003em", "fontWeight": "400" }], "title-sm": ["17px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-md": ["15px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" }] } } } };</script><style>@layer base { html, body { width: 100%; margin: 0; padding: 0; } body { overscroll-behavior-y: none; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); } .pt-safe { padding-top: env(safe-area-inset-top, 44px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style></head><body class="bg-surface text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="px-margin h-14 flex items-center justify-between relative"><div class="flex items-center gap-2 shrink-0"><img alt="FindMyFit Icon" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Vk58qUsgj5PaH9xkR4AuMRSKHCvnhie1m-NuQ-QooJPtQIQYyEiWO3BGM0eg0EdlsxT_35VKCrmyQALldsKXUjnZgKWnpMkySNaa7jSSSnuJqydwlRt23UXXyfgP7XpvduNcbCjo2cSs4esC3FZ8jXqoEQe8BdZsEMye8Qpre6LOVogR4VIO4Ic708uvCkgdqGPtLLmOpQLsptkUnxrreLg5e_oDG-a0VNW9HuJShwxsjaaL_0i0dk6RHk"><span class="font-bold text-[18px] text-on-surface tracking-tight">FindMyFit</span></div><div class="flex-1 flex items-center justify-center"></div><div class="flex items-center justify-end shrink-0"><a class="w-9 h-9 flex items-center justify-center" data-path="wardrobe" href="#"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKao4r7J2j0-JeiEqctMQsjdGBncAJ7z4isNCufwCSipEhSuMMkkK5Hkxt3qERRP6jpRp2-SHH-46CqkGsGVatDZTZ2QqXY2M1ilvPHyFmHHW65FQYnIF57wo2sSSS8iAlcCbSVlyBIY7T78XoZWRkYCQmnLmDThTRz3TKOc03VZI9KJM3PZZ-6-uyWg27XmKu6HESpc0LDwi6ViPRtUo0VRy2pJrvdhTRZAUK45cxnmx-e-9IiAkvHA"></a></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 pb-20 bg-surface px-margin"><div class="flex flex-col w-full pb-28">
+<!-- Top Meta Info & Context Header -->
+<div class="flex flex-col gap-space-sm mb-space-md"><div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-margin px-margin"><button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold shrink-0 shadow-sm transition-transform active:scale-95"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">local_laundry_service</span><span class="">Weekly Wash (14)</span></button><button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant font-label-md text-label-md font-medium shrink-0 hover:bg-surface-container-high transition-colors active:scale-95"><span class="material-symbols-outlined text-[16px]">dry_cleaning</span><span class="">Delicates &amp; Wool (5)</span></button><button type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-surface-container-high text-on-surface-variant font-label-md text-label-md shrink-0 hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-[16px]">add</span><span class="">Add Batch</span></button></div><div class="flex flex-col gap-space-xs"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">inventory</span> Checking In Batch</span><span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> Today, 4:30 PM</span></div><div class="flex flex-col"><h2 class="font-headline-md text-headline-md text-on-surface font-bold">Batch: Weekly Wash (#L-2849)</h2><p class="font-body-md text-body-md text-on-surface-variant">Sparkle Clean Laundromat · 14 items expected</p></div></div></div>
+<!-- Interactive Tactile Verification Card -->
+<div class="bg-surface-container-lowest p-space-md shadow-sm mb-space-md rounded-2xl"><div class="flex items-center justify-between mb-2"><div class="flex items-baseline gap-1.5"><span class="font-headline-lg text-[26px] font-bold text-on-surface tracking-tight" id="verified-count">12</span><span class="font-body-md text-body-md text-on-surface-variant">of 14 verified</span></div><span class="font-label-sm text-label-sm text-secondary font-semibold bg-secondary-container/50 px-2 py-0.5 rounded-full">Almost Done</span></div><div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden mb-3"><div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 85.7%;"></div></div><div class="flex items-center justify-between pt-1 border-t border-surface-container"><span class="font-label-sm text-label-sm text-on-surface-variant">1 Pending · 1 Flagged Missing</span><button class="font-label-md text-label-md text-primary font-semibold hover:opacity-80 active:scale-95 transition-transform flex items-center gap-1 py-1 px-2 rounded-full hover:bg-surface-container-low" id="verify-all-quick-btn"><span class="material-symbols-outlined text-[16px]">done_all</span> Verify All 14 Items</button></div></div>
+<!-- Section Header with Quick Assist Pill -->
+<div class="flex items-center justify-between mb-space-sm px-1"><h3 class="font-title-sm text-title-sm text-on-surface font-semibold">Items in This Batch (14)</h3><span class="font-label-sm text-label-sm text-on-surface-variant">Tap circle to confirm</span></div>
+<!-- Garments Interactive Cross-Check List -->
+<div class="flex flex-col gap-space-sm" id="crosscheck-list">
+<!-- 1. Acne Studios Oversized Hoodie (Verified) -->
+<div class="garment-card bg-surface-container-lowest p-3.5 shadow-sm transition-all duration-200 flex items-center justify-between gap-3 rounded-2xl" data-id="item-1" data-verified="true">
+<div class="flex items-center gap-3 min-w-0">
+<img class="w-14 h-14 object-cover shrink-0 shadow-inner rounded-xl" data-alt="A premium heavy vintage black cotton hooded sweatshirt folded neatly against a warm studio neutral background, showcasing textured fleece, clean fabric drape, and subtle luxury stitching." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZLDtDTi0n8LHbV5dV8WCz2C1n4lO2JmdTDUutX63bI_VGju4npvVHfIr0ewcR8biJFEftXP58mzviys6tKDGpOZM42PFGobe6Gij2MWatpAUml2CNVOoUr_tAvIwi85tFr67ZWku2ti5DVrMpGNs7XEoLn1eLemCzBXdy49bqow5Ln7At0Q1QZUMDA54RfV2CrRMDJwngZYjK_zxHJaJiqboXxB7dObW_c3bol7PILiWFP8O3Q8jJ6A">
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate">Acne Studios Oversized Hoodie</span>
+<span class="font-label-md text-label-md text-on-surface-variant truncate">Vintage Black · Delicate Cycle</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check</span> Matched RFID Tag #0921
+          </span>
+</div>
+</div>
+<button aria-label="Toggle verification status" class="check-toggle shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center transition-transform active:scale-90 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+<!-- 2. Uniqlo Supima Cotton Tee (Verified) -->
+<div class="garment-card bg-surface-container-lowest p-3.5 shadow-sm transition-all duration-200 flex items-center justify-between gap-3 rounded-2xl" data-id="item-2" data-verified="true">
+<div class="flex items-center gap-3 min-w-0">
+<img class="w-14 h-14 object-cover shrink-0 shadow-inner rounded-xl" data-alt="Crisp folded white Supima cotton t-shirt with soft fabric weave, bright, high-key warm domestic morning light highlighting the immaculate freshly laundered seams and smooth texture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOkygm5lrbb5c5EuGzJ7HXfaM7FK04GZNi6waDCccPpTJdf7h32kQrTMO4NTYDn49xXVY0FAX06MQD54IxJwyi2gFgms2o9Sa9iO6iYWum_-iFt9CESemzn9dUR9M37RvvoRu6UiFIKTqgGEJPdDXyOGBHlwqC_s11aVH6bGg3esJjG0o804vEui1G6Llhx4f0vGJSjOlSRXHWCe2y_-kf32wtRvB9PZ3wQTfAPNITTgQXMUWHH-LB7w">
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate">Uniqlo Supima Cotton Tee</span>
+<span class="font-label-md text-label-md text-on-surface-variant truncate">White · Everyday Warm Wash</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check</span> Folded Stack Verified
+          </span>
+</div>
+</div>
+<button aria-label="Toggle verification status" class="check-toggle shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center transition-transform active:scale-90 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+<!-- 3. Lululemon ABC Trousers (Verified) -->
+<div class="garment-card bg-surface-container-lowest p-3.5 shadow-sm transition-all duration-200 flex items-center justify-between gap-3 rounded-2xl" data-id="item-3" data-verified="true">
+<div class="flex items-center gap-3 min-w-0">
+<img class="w-14 h-14 object-cover shrink-0 shadow-inner rounded-xl" data-alt="Classic tailored navy technical trousers with refined seam lines, displayed neatly pressed on clean natural surface with high-end fabric finish and gentle blue reflections." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg_-BdbDacALinRiIpPKIvGhVOgh_b-nM7zvQs-ej7L_5I35pXktdbjrS628rP-vQJyYVPnZ2xu5azMtKtmcIzy8TQRWrWsXvRTj6rUrsSZRZ5mrCpXG1o4c9kavsHhmLxoolikn3lDsUUP0CmFOoKUuuVdxlnvrVxu8a0ttY_6DG3rSxLUPDV9PP7dCAXrdf8K_6kRj6XvJLjPV0tdO90ULpw2Hm67zl9MKIzJ__t1liyx0ffz7l5pQ">
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate">Lululemon ABC Trousers</span>
+<span class="font-label-md text-label-md text-on-surface-variant truncate">Navy · Cold Wash Hang Dry</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check</span> Hanger Returned
+          </span>
+</div>
+</div>
+<button aria-label="Toggle verification status" class="check-toggle shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center transition-transform active:scale-90 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+<!-- 4. Patagonia Baggies Shorts (Verified) -->
+<div class="garment-card bg-surface-container-lowest p-3.5 shadow-sm transition-all duration-200 flex items-center justify-between gap-3 rounded-2xl" data-id="item-4" data-verified="true">
+<div class="flex items-center gap-3 min-w-0">
+<img class="w-14 h-14 object-cover shrink-0 shadow-inner rounded-xl" data-alt="Clean khaki recycled nylon outdoor shorts with stitched brand emblem laid flat under crisp natural daylight, showing crisp fresh laundry condition and drawstring waist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9bczuNqXIbayLVOXtoQ63EqvWOqxYpXTMwlzhs8adFkdhzq0f7Op3AAPXDPVrCX3e_D7BtGGKBcEn90_Q3bEAaPnV4XJMLe_zTHJqQx28ZsEigc0oi_jKvKQK5Ghdg5Rv7nqid6rZlerJv_Bc_rAhYIR4CmWENz8Sh7SPxQbhby6TulLEueul-2h8ECg4a-C6GaN0_b6qOeTD0hLzKq-KnQf93TZA_TQ38n8_3ZNdvpzXhUfEg928UA">
+<div class="flex flex-col min-w-0">
+<span class="font-title-sm text-title-sm text-on-surface truncate">Patagonia Baggies Shorts</span>
+<span class="font-label-md text-label-md text-on-surface-variant truncate">Khaki · Active Tumble Low</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check</span> Verified in Basket
+          </span>
+</div>
+</div>
+<button aria-label="Toggle verification status" class="check-toggle shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center transition-transform active:scale-90 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+</div>
+<!-- 5. Maison Margiela Knit Sweater (UNCHECKED / MISSING ALERT) -->
+<div class="garment-card bg-surface-container-lowest p-3.5 shadow-sm transition-all duration-200 flex flex-col gap-2.5 border border-transparent hover:border-outline-variant/40 rounded-2xl" data-id="item-5" data-status="pending"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><div class="relative shrink-0"><img class="w-14 h-14 object-cover shadow-inner rounded-xl" data-alt="Close-up of a luxurious olive green ribbed knit wool sweater, beautifully textured soft yarn, warm studio lighting with shallow depth of field celebrating natural wool fibers." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYO-7JbjlTEZtRENYvGFfxDtXJPGsEdx6Gw88JSDL1OMQS-Fl2ddHU_1smtJi8SU_weHqXvezizwUhzTrfAmQpKQpPxxTBij_eCzIaO7Mo9iI8sSMQcAj_McrldrMf_ShhpnB_WrBKHUx37U2SvBkS_Vz4xCSOsmxM3zQVsiPjg_LbUsop1wT6oPV3Wu8hVJEWbphCg6U71HpaID-pbSWv4-R4F10KFe31cBrB8hfJwMrt_5WGnOTHOw"></div><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Maison Margiela Knit</span><span class="bg-surface-container text-on-surface-variant font-label-sm text-[10px] px-2 py-0.5 rounded-full font-medium tracking-normal shrink-0">Pending</span></div><span class="font-label-md text-label-md text-on-surface-variant truncate">Olive Wool · Hand Wash Only</span><span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mt-0.5"><span class="material-symbols-outlined text-[13px]">touch_app</span> Tap to verify in bundle</span></div></div><button aria-label="Toggle verification status" class="check-toggle shrink-0 w-9 h-9 rounded-full border-2 border-outline/40 hover:border-primary text-on-surface-variant flex items-center justify-center transition-all active:scale-90 bg-surface-container-lowest" type="button"><span class="material-symbols-outlined text-[20px] text-outline/50">radio_button_unchecked</span></button></div><div class="flex items-center justify-end gap-2 pt-1 border-t border-surface-container-low"><button class="font-label-sm text-label-sm text-on-surface-variant hover:text-error flex items-center gap-1 py-1 px-2.5 rounded-full hover:bg-surface-container-low transition-colors" type="button"><span class="material-symbols-outlined text-[14px]">flag</span> Flag as Missing</button></div></div>
+<!-- 6. Cashmere Blend Scarf (UNCHECKED / MISSING ALERT) -->
+<div class="garment-card bg-error-container/40 p-3.5 shadow-sm transition-all duration-200 flex flex-col gap-2.5 border border-error/20 rounded-2xl" data-id="item-6" data-status="missing"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><div class="relative shrink-0"><img class="w-14 h-14 object-cover shadow-inner opacity-90 rounded-xl" data-alt="A warm camel colored cashmere blend fringe scarf folded delicately on an oak surface, soft daylight capturing the fine brushed fibers and soothing luxury tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7-5gIwcidady254Nkci5SFCJRkF3Cw79Okvn5XvQto0uOvY7_hFX3yu5VlGsuX6-gfn_ICIUfP8au4xu7F53BYe6d33tSKJ5KkbJvY08beQe11fEYsAT2lM7UZT4UzTUGzrGaKTXnOdIbZJTcUNEKExz1O63eW7UP_eMJYOY1WmvOAop_5gLEs5EznpvrPf99kz0YJEkQFG50q8XphSCZ1RYX0zgtM11fVrdoRmsmFjCTvgSQLk49HQ"><span class="absolute -bottom-1 -right-1 bg-error text-on-error w-4 h-4 rounded-full flex items-center justify-center font-bold text-[10px] shadow-sm">!</span></div><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-title-sm text-title-sm text-on-surface truncate font-semibold">Cashmere Blend Scarf</span><span class="bg-error text-on-error font-label-sm text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">Flagged Missing</span></div><span class="font-label-md text-label-md text-on-surface-variant truncate">Camel Tan · Gentle Steam Clean</span><span class="font-label-sm text-label-sm text-error font-medium flex items-center gap-1 mt-0.5"><span class="material-symbols-outlined text-[13px]">not_listed_location</span> User flagged: Not found in bag</span></div></div><button aria-label="Unflag missing item" class="shrink-0 w-9 h-9 rounded-full bg-surface-container-high text-error flex items-center justify-center transition-transform active:scale-90 shadow-sm" type="button"><span class="material-symbols-outlined text-[18px]">close</span></button></div><div class="flex items-center justify-between pt-1 border-t border-error/10"><span class="font-label-sm text-label-sm text-error/80">Will route to Lost &amp; Found</span><button class="font-label-sm text-label-sm text-primary font-semibold hover:underline flex items-center gap-1 py-0.5 px-2" type="button"><span class="material-symbols-outlined text-[14px]">undo</span> Undo (Mark Returned)</button></div></div>
+</div>
+<!-- Laundromat Receipt & Discrepancy Note Banner -->
+<div class="mt-space-md p-space-md bg-surface-container-low flex items-start gap-space-sm rounded-2xl">
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">receipt_long</span>
+<div class="flex flex-col gap-0.5">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Store Receipt &amp; Drop-off Weight Synced</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Laundromat weight recorded 6.4 kg. Photo receipts are archived if a missing claim needs immediate resolution.</p>
+</div>
+</div>
+<!-- Sticky Confirmation Action Drawer -->
+<div class="fixed bottom-16 inset-x-0 z-40 bg-surface/90 backdrop-blur-xl px-margin py-space-sm shadow-[0_-4px_24px_rgba(0,0,0,0.06)] flex flex-col gap-2"><button class="w-full bg-primary text-on-primary font-title-sm text-title-sm py-3.5 px-space-md rounded-full flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform font-bold" id="complete-return-btn" type="button"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span><span id="complete-btn-label" class="">Complete Return</span></button><p class="font-label-sm text-label-sm text-on-surface-variant text-center px-space-sm leading-tight" id="bottom-disclaimer-text">13 returned · 1 item flagged will move to Lost &amp; Found</p></div>
+</div>
+<script>
+  (function() {
+    const list = document.getElementById('crosscheck-list');
+    const verifiedCountEl = document.getElementById('verified-count');
+    const warningBanner = document.getElementById('unmatched-warning-banner');
+    const progressRing = document.getElementById('progress-ring-circle');
+    const completeBtnLabel = document.getElementById('complete-btn-label');
+    const bottomDisclaimer = document.getElementById('bottom-disclaimer-text');
+    const checkAllBtn = document.getElementById('check-all-btn');
+    const cameraScanBtn = document.getElementById('camera-scan-btn');
+    const totalItems = 14;
+
+    function updateMetrics() {
+      const cards = list.querySelectorAll('.garment-card');
+      let verifiedCount = 0;
+
+      cards.forEach(card => {
+        if (card.dataset.verified === 'true') {
+          verifiedCount++;
+        }
+      });
+
+      // Extra items from previous batches account for total (14 in batch)
+      // Represent verified out of 14:
+      const missingCount = Math.max(0, totalItems - verifiedCount);
+      verifiedCountEl.textContent = verifiedCount;
+
+      // Update progress ring (Circumference: 2 * PI * 19 = ~119.38)
+      const maxStroke = 119.38;
+      const progressPercent = verifiedCount / totalItems;
+      const offset = maxStroke * (1 - progressPercent);
+      if (progressRing) {
+        progressRing.style.strokeDashoffset = offset.toFixed(2);
+      }
+
+      // Banner states
+      if (missingCount === 0) {
+        if (warningBanner) {
+          warningBanner.className = 'mt-space-md flex items-center justify-between bg-secondary-container px-space-md py-space-xs rounded-full transition-all';
+          warningBanner.innerHTML = `
+            <div class="flex items-center gap-space-xs min-w-0">
+              <span class="material-symbols-outlined text-on-secondary-container text-[18px] shrink-0" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+              <span class="font-label-md text-label-md text-on-secondary-container truncate font-semibold">All 14 Items Accounted For!</span>
+            </div>
+            <span class="font-label-sm text-label-sm text-on-secondary-container font-bold tracking-wide shrink-0 uppercase">Perfect Match</span>
+          `;
+        }
+        completeBtnLabel.textContent = `Complete Return (All 14 Verified)`;
+        bottomDisclaimer.textContent = 'All items safely accounted for. Batch will close and wardrobe history will update.';
+      } else {
+        if (warningBanner) {
+          warningBanner.className = 'mt-space-md flex items-center justify-between bg-error-container/60 px-space-md py-space-xs rounded-full transition-all';
+          warningBanner.innerHTML = `
+            <div class="flex items-center gap-space-xs min-w-0">
+              <span class="material-symbols-outlined text-error text-[18px] shrink-0" style="font-variation-settings: 'FILL' 1;">error</span>
+              <span class="font-label-md text-label-md text-on-error-container truncate font-semibold">${missingCount} Unchecked / Missing Warning</span>
+            </div>
+            <span class="font-label-sm text-label-sm text-error font-bold tracking-wide shrink-0 uppercase">Action Needed</span>
+          `;
+        }
+        completeBtnLabel.textContent = `Complete Return (${verifiedCount} Returned, ${missingCount} Missing)`;
+        bottomDisclaimer.textContent = 'Missing items will automatically transfer to Lost & Found with receipt & laundromat dispute report ready.';
+      }
+    }
+
+    // Toggle individually
+    list.addEventListener('click', (e) => {
+      const toggleBtn = e.target.closest('.check-toggle');
+      if (!toggleBtn) return;
+      const card = toggleBtn.closest('.garment-card');
+      if (!card) return;
+
+      const isVerified = card.dataset.verified === 'true';
+
+      if (isVerified) {
+        // Switch to missing/unverified
+        card.dataset.verified = 'false';
+        card.classList.remove('bg-surface-container-lowest');
+        card.classList.add('bg-error-container/40');
+        toggleBtn.className = 'check-toggle shrink-0 w-9 h-9 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-transform active:scale-90 shadow-sm';
+        toggleBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">radio_button_unchecked</span>';
+      } else {
+        // Switch to verified
+        card.dataset.verified = 'true';
+        card.classList.add('bg-surface-container-lowest');
+        card.classList.remove('bg-error-container/40');
+        toggleBtn.className = 'check-toggle shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center transition-transform active:scale-90 shadow-sm';
+        toggleBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: \'FILL\' 1;">check_circle</span>';
+
+        // Animate gentle bounce
+        toggleBtn.classList.add('scale-110');
+        setTimeout(() => toggleBtn.classList.remove('scale-110'), 200);
+      }
+
+      updateMetrics();
+    });
+
+    // Mark Remainder Button
+    if (checkAllBtn) {
+      checkAllBtn.addEventListener('click', () => {
+        const cards = list.querySelectorAll('.garment-card');
+        cards.forEach(card => {
+          card.dataset.verified = 'true';
+          card.classList.add('bg-surface-container-lowest');
+          card.classList.remove('bg-error-container/40');
+          const toggleBtn = card.querySelector('.check-toggle');
+          if (toggleBtn) {
+            toggleBtn.className = 'check-toggle shrink-0 w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center transition-transform active:scale-90 shadow-sm';
+            toggleBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: \'FILL\' 1;">check_circle</span>';
+          }
+        });
+        updateMetrics();
+      });
+    }
+
+    // Camera AI Scan Simulation
+    if (cameraScanBtn) {
+      cameraScanBtn.addEventListener('click', () => {
+        const originalContent = cameraScanBtn.innerHTML;
+        cameraScanBtn.innerHTML = `
+          <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+          Analyzing Folded Pile...
+        `;
+        setTimeout(() => {
+          cameraScanBtn.innerHTML = originalContent;
+          // Trigger mock scan finding 1 item
+          const item5 = list.querySelector('[data-id="item-5"]');
+          if (item5 && item5.dataset.verified === 'false') {
+            const toggle = item5.querySelector('.check-toggle');
+            if (toggle) toggle.click();
+          }
+        }, 1100);
+      });
+    }
+  })();
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/85 backdrop-blur-2xl shadow-[0_-1px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant transition-transform active:scale-95" data-path="wardrobe" href="#"><span class="material-symbols-outlined text-[24px]">checkroom</span><span class="font-label-sm text-label-sm">Wardrobe</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant relative transition-transform active:scale-95" data-path="hamper" href="#"><span class="relative"><span class="material-symbols-outlined text-[24px]">shopping_basket</span><span class="absolute -top-1 -right-2 bg-primary text-on-primary font-label-sm text-[10px] h-4 min-w-[16px] px-1 rounded-full flex items-center justify-center font-bold">5</span></span><span class="font-label-sm text-label-sm">Hamper</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 transition-transform active:scale-95 text-primary font-semibold" data-path="at-laundry" href="#"><span class="material-symbols-outlined text-[24px]">save_as</span><span class="font-label-sm text-label-sm">At Laundry</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[64px] h-12 text-on-surface-variant transition-transform active:scale-95" data-path="lost-and-found" href="#"><span class="material-symbols-outlined text-[24px]">manage_search</span><span class="font-label-sm text-label-sm">Lost &amp; Found</span></a></div></nav>
+
+</body></html>
