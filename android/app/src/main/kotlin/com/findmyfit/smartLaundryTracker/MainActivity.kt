@@ -1,4 +1,4 @@
-package com.example.smart_laundry_tracker
+package com.findmyfit.smartLaundryTracker
 
 import io.flutter.embedding.android.FlutterActivity
 
