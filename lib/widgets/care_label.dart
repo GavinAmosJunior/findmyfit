@@ -34,7 +34,7 @@ class CareLabel extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: CustomPaint(
-        painter: _StitchPainter(colors.border),
+        foregroundPainter: _StitchPainter(colors.border),
         child: Container(
           padding: const EdgeInsets.fromLTRB(7, 4, 9, 4),
           decoration: BoxDecoration(
@@ -97,4 +97,36 @@ class _StitchPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_StitchPainter old) => old.color != color;
+}
+
+/// A woven name label, like the one sewn into a collar: condensed capitals
+/// on a plain tag, stitched on with the red thread. The app's signature;
+/// use it for names and a few headings, not everywhere.
+class WovenLabel extends StatelessWidget {
+  final String text;
+  final double fontSize;
+
+  const WovenLabel(this.text, {super.key, this.fontSize = 14});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      foregroundPainter: _StitchPainter(context.palette.thread),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 5, 10, 4),
+        decoration: BoxDecoration(color: context.palette.card, borderRadius: _shape),
+        child: Text(
+          text.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.headlineSmall?.copyWith(
+            fontSize: fontSize,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
 }

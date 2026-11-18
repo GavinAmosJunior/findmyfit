@@ -74,6 +74,7 @@ void main() {
       state.sendToLaundry(garmentIds: [c.id], laundromatName: 'Sparkle Clean Laundromat');
       state.finishReturn(batch.id);
       state.toggleFavorite(a.id);
+      state.addGarment(name: 'Wide leg pleated trousers', category: GarmentCategory.bottoms);
 
       // Fails with the screen name and the overflowing widget, so a CI
       // failure says exactly what to fix.
@@ -109,6 +110,14 @@ void main() {
       await settle('Closet');
       await tester.tap(find.byIcon(AppIcons.settings));
       await settle('Settings');
+      back();
+      await settle('Closet');
+      await tester.tap(find.text('FIT SHUFFLE'));
+      await settle('Fit Shuffle');
+      await tester.ensureVisible(find.byIcon(AppIcons.shuffle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(AppIcons.shuffle));
+      await settle('Fit Shuffle after shuffling');
       back();
       await settle('Closet');
       await tester.tap(find.byIcon(AppIcons.add));
@@ -155,6 +164,96 @@ void main() {
       state.cancelBatch(batch.id);
       expect(state.garmentById(a.id)!.status, GarmentStatus.dirtyHamper);
       expect(state.batches, isEmpty);
+    });
+  });
+
+  testWidgets('wearing a shuffled fit sends both pieces to the hamper', (tester) async {
+    final state = await _loadedState();
+    final top = state.addGarment(name: 'Linen shirt', category: GarmentCategory.tops);
+    final bottom = state.addGarment(name: 'Chinos', category: GarmentCategory.bottoms);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('FIT SHUFFLE'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Wear this fit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wear this fit'));
+    await tester.pumpAndSettle();
+
+    expect(state.garmentById(top.id)!.status, GarmentStatus.dirtyHamper);
+    expect(state.garmentById(bottom.id)!.status, GarmentStatus.dirtyHamper);
+    expect(find.text('Not enough clean clothes'), findsOneWidget);
+  });
+
+  testWidgets('closing the add form with something typed asks before discarding', (tester) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = await _loadedState();
+    state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(AppIcons.add));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Black jeans');
+    await tester.tap(find.byIcon(AppIcons.close));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard this piece?'), findsOneWidget);
+
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('Black jeans'), findsOneWidget);
+
+    await tester.tap(find.byIcon(AppIcons.close));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard this piece?'), findsNothing);
+    expect(find.byIcon(AppIcons.close), findsNothing);
+    expect(state.garments, hasLength(1));
+  });
+
+  group('fit shuffle', () {
+    test('rails hold clean clothes only, bottoms apart from the rest', () async {
+      final state = await _loadedState();
+      state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+      state.addGarment(name: 'Coat', category: GarmentCategory.outerwear);
+      state.addGarment(name: 'Jeans', category: GarmentCategory.bottoms);
+      state.addGarment(name: 'Dirty shorts', category: GarmentCategory.bottoms, status: GarmentStatus.dirtyHamper);
+      expect(state.shuffleTops.map((g) => g.name), unorderedEquals(['Tee', 'Coat']));
+      expect(state.shuffleBottoms.map((g) => g.name), ['Jeans']);
+    });
+
+    test('saving the same fit twice removes it, and deleted pieces hide it', () async {
+      final state = await _loadedState();
+      final a = state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+      final b = state.addGarment(name: 'Jeans', category: GarmentCategory.bottoms);
+      expect(state.toggleFit([a.id, b.id]), isTrue);
+      expect(state.isFitSaved([b.id, a.id]), isTrue, reason: 'order does not matter');
+      expect(state.toggleFit([b.id, a.id]), isFalse);
+      expect(state.fits, isEmpty);
+
+      state.toggleFit([a.id, b.id]);
+      state.markLost(a.id);
+      expect(state.fits, isEmpty);
+    });
+
+    test('saved fits survive a backup, and older backups without fits load', () async {
+      final source = await _loadedState();
+      final a = source.addGarment(name: 'Tee', category: GarmentCategory.tops);
+      final b = source.addGarment(name: 'Jeans', category: GarmentCategory.bottoms);
+      source.toggleFit([a.id, b.id]);
+      final backup = source.toBackup();
+
+      SharedPreferences.setMockInitialValues({});
+      final target = await _loadedState();
+      target.restoreBackup(backup);
+      expect(target.fits.single.itemIds, unorderedEquals([a.id, b.id]));
+
+      target.restoreBackup(Map.of(backup)..remove('fits'));
+      expect(target.fits, isEmpty);
     });
   });
 

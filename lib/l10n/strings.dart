@@ -100,6 +100,32 @@ class S {
   String get category => _t('Category', 'Kategori');
   String get name => _t('Name', 'Nama');
 
+  // ------------------------------------------------------- leaving a form
+  String get discardPieceTitle => _t('Discard this piece?', 'Buang pakaian ini?');
+  String get discardPieceBody =>
+      _t('The photo and details you entered will be lost.', 'Foto dan detail yang kamu isi akan hilang.');
+  String get discardChangesTitle => _t('Discard your changes?', 'Buang perubahanmu?');
+  String get discard => _t('Discard', 'Buang');
+  String get keepEditing => _t('Keep editing', 'Lanjut mengisi');
+
+  // ------------------------------------------------------------ fit shuffle
+  String get fitShuffle => 'Fit Shuffle';
+  String get shufflePrompt => _t('Can’t decide? Let the rail pick.', 'Bingung mau pakai apa? Biar rel yang pilih.');
+  String get shuffle => _t('Shuffle', 'Acak');
+  String get wearThisFit => _t('Wear this fit', 'Pakai fit ini');
+  String get woreFit => _t('Have a good one. Both pieces are in the hamper.', 'Selamat beraktivitas. Keduanya masuk keranjang.');
+  String get saveFit => _t('Save fit', 'Simpan fit');
+  String get unsaveFit => _t('Remove saved fit', 'Hapus fit tersimpan');
+  String get savedFits => _t('Saved fits', 'Fit tersimpan');
+  String lockRail(String rail) => _t('Lock $rail', 'Kunci $rail');
+  String unlockRail(String rail) => _t('Unlock $rail', 'Buka kunci $rail');
+  String get shuffleEmptyTitle => _t('Not enough clean clothes', 'Pakaian bersih belum cukup');
+  String get shuffleEmptyBody => _t(
+      'Fit Shuffle mixes your clean tops and bottoms. Have at least one of each in the closet.',
+      'Fit Shuffle memadukan atasan dan bawahan yang bersih. Butuh minimal satu dari masing-masing di lemari.');
+  String get fitNotReady =>
+      _t('Some pieces in that fit aren’t clean right now', 'Ada pakaian di fit itu yang belum bersih');
+
   // ----------------------------------------------------------------- hamper
   String get emptyHamperTitle => _t('Hamper is empty', 'Keranjang kosong');
   String get emptyHamperBody =>

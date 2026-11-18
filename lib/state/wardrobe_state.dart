@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/garment.dart';
 import '../models/laundry_batch.dart';
+import '../models/saved_fit.dart';
 
 /// What a garment looked like before "Wore it", so the action can be undone.
 typedef WornSnapshot = ({GarmentStatus status, int wearCount, DateTime? lastWornAt});
@@ -14,12 +15,14 @@ class WardrobeState extends ChangeNotifier {
   static const _keyBatches = 'saved_batches_v1';
   static const _keyBatchCounter = 'saved_batch_counter_v1';
   static const _keyLanguage = 'language_v1';
+  static const _keyFits = 'saved_fits_v1';
 
   static const backupFormat = 'findmyfit-backup';
   static const backupVersion = 1;
 
   final List<Garment> _garments = [];
   final List<LaundryBatch> _batches = [];
+  final List<SavedFit> _fits = [];
   int _batchCounter = 1000;
   bool _isLoaded = false;
   String _language = 'system';
@@ -31,6 +34,9 @@ class WardrobeState extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
   List<Garment> get garments => List.unmodifiable(_garments);
   List<LaundryBatch> get batches => List.unmodifiable(_batches);
+
+  /// Saved outfits, newest first, skipping any whose pieces were deleted.
+  List<SavedFit> get fits => _fits.where((f) => f.itemIds.every((id) => garmentById(id) != null)).toList();
 
   /// 'system', 'en' or 'id'.
   String get language => _language;
@@ -82,6 +88,7 @@ class WardrobeState extends ChangeNotifier {
       _readJson(
         garments: prefs.getString(_keyGarments),
         batches: prefs.getString(_keyBatches),
+        fits: prefs.getString(_keyFits),
       );
       _batchCounter = prefs.getInt(_keyBatchCounter) ?? 1000;
       _language = prefs.getString(_keyLanguage) ?? 'system';
@@ -93,7 +100,7 @@ class WardrobeState extends ChangeNotifier {
     }
   }
 
-  void _readJson({String? garments, String? batches}) {
+  void _readJson({String? garments, String? batches, String? fits}) {
     if (garments != null && garments.isNotEmpty) {
       _garments
         ..clear()
@@ -104,6 +111,11 @@ class WardrobeState extends ChangeNotifier {
         ..clear()
         ..addAll((jsonDecode(batches) as List).map((e) => LaundryBatch.fromJson(e as Map<String, dynamic>)));
     }
+    if (fits != null && fits.isNotEmpty) {
+      _fits
+        ..clear()
+        ..addAll((jsonDecode(fits) as List).map((e) => SavedFit.fromJson(e as Map<String, dynamic>)));
+    }
   }
 
   Future<void> _save() async {
@@ -111,6 +123,7 @@ class WardrobeState extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyGarments, jsonEncode(_garments.map((g) => g.toJson()).toList()));
       await prefs.setString(_keyBatches, jsonEncode(_batches.map((b) => b.toJson()).toList()));
+      await prefs.setString(_keyFits, jsonEncode(_fits.map((f) => f.toJson()).toList()));
       await prefs.setInt(_keyBatchCounter, _batchCounter);
       await prefs.setString(_keyLanguage, _language);
     } catch (e) {
@@ -303,6 +316,34 @@ class WardrobeState extends ChangeNotifier {
     _changed();
   }
 
+  // ------------------------------------------------------------ fit shuffle
+
+  /// Clean clothes for the upper rail: anything worn on top.
+  List<Garment> get shuffleTops => withStatus(GarmentStatus.closet)
+      .where((g) => g.category != GarmentCategory.bottoms)
+      .toList();
+
+  /// Clean clothes for the lower rail.
+  List<Garment> get shuffleBottoms => withStatus(GarmentStatus.closet)
+      .where((g) => g.category == GarmentCategory.bottoms)
+      .toList();
+
+  bool isFitSaved(Iterable<String> ids) => _fits.any((f) => f.sameAs(ids));
+
+  /// Saves a fit, or removes it if it's already saved. Returns whether it
+  /// is saved now.
+  bool toggleFit(List<String> ids) {
+    final existing = _fits.indexWhere((f) => f.sameAs(ids));
+    if (existing != -1) {
+      _fits.removeAt(existing);
+      _changed();
+      return false;
+    }
+    _fits.insert(0, SavedFit(id: 'fit_${DateTime.now().microsecondsSinceEpoch}', itemIds: List.of(ids)));
+    _changed();
+    return true;
+  }
+
   // ---------------------------------------------------------------- missing
 
   void markFound(String id) => moveToCloset(id);
@@ -324,6 +365,7 @@ class WardrobeState extends ChangeNotifier {
         'batchCounter': _batchCounter,
         'garments': _garments.map((g) => g.toJson()).toList(),
         'batches': _batches.map((b) => b.toJson()).toList(),
+        'fits': _fits.map((f) => f.toJson()).toList(),
       };
 
   /// Replaces all data with a backup. Throws [FormatException] if the file
@@ -338,12 +380,19 @@ class WardrobeState extends ChangeNotifier {
     final batches = (data['batches'] as List? ?? [])
         .map((e) => LaundryBatch.fromJson(e as Map<String, dynamic>))
         .toList();
+    // Backups from before Fit Shuffle have no fits.
+    final fits = (data['fits'] as List? ?? [])
+        .map((e) => SavedFit.fromJson(e as Map<String, dynamic>))
+        .toList();
     _garments
       ..clear()
       ..addAll(garments);
     _batches
       ..clear()
       ..addAll(batches);
+    _fits
+      ..clear()
+      ..addAll(fits);
     _batchCounter = data['batchCounter'] as int? ?? _batchCounter;
     _changed();
   }

@@ -29,6 +29,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color tertiaryText;
   final Color separator;
   final Color card;
+
+  /// The red thread: the one bright brand color, used sparingly for the
+  /// stitch on labels and a few signature moments.
+  final Color thread;
   final TagColors clean;
   final TagColors hamper;
   final TagColors laundry;
@@ -39,6 +43,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.tertiaryText,
     required this.separator,
     required this.card,
+    required this.thread,
     required this.clean,
     required this.hamper,
     required this.laundry,
@@ -58,26 +63,29 @@ class AppPalette extends ThemeExtension<AppPalette> {
     }
   }
 
+  // "Care Label": linen, denim and a red thread. Ratios are against card.
   static const light = AppPalette(
-    secondaryText: Color(0xFF475569), // 7.58:1 on card
-    tertiaryText: Color(0xFF5B6678), // 5.81:1 on card
-    separator: Color(0xFFE2E8F0),
-    card: Color(0xFFFFFFFF),
-    clean: TagColors(Color(0xFFECFDF5), Color(0xFF065F46), Color(0xFF6EE7B7)),
-    hamper: TagColors(Color(0xFFFFFBEB), Color(0xFF92400E), Color(0xFFFCD34D)),
-    laundry: TagColors(Color(0xFFEFF6FF), Color(0xFF1E40AF), Color(0xFF93C5FD)),
-    missing: TagColors(Color(0xFFFEF2F2), Color(0xFF991B1B), Color(0xFFFCA5A5)),
+    secondaryText: Color(0xFF5C5850), // 6.73:1
+    tertiaryText: Color(0xFF6B665D), // 5.42:1 (4.97:1 on background)
+    separator: Color(0xFFE4DDD0),
+    card: Color(0xFFFBF9F5),
+    thread: Color(0xFFB8352B), // 5.57:1
+    clean: TagColors(Color(0xFFE5EFE6), Color(0xFF2D6A4C), Color(0xFF9CC4AC)), // 5.44:1
+    hamper: TagColors(Color(0xFFF5EAD3), Color(0xFF83520F), Color(0xFFD9B36B)), // 5.53:1
+    laundry: TagColors(Color(0xFFE2E9F2), Color(0xFF2F4A6D), Color(0xFF9FB4CF)), // 7.40:1
+    missing: TagColors(Color(0xFFF7E2DE), Color(0xFFA2302A), Color(0xFFE09A90)), // 5.64:1
   );
 
   static const dark = AppPalette(
-    secondaryText: Color(0xFFB4BDCC), // 9.00:1 on card
-    tertiaryText: Color(0xFF939DAF), // 6.24:1 on card
-    separator: Color(0xFF263042),
-    card: Color(0xFF171C27),
-    clean: TagColors(Color(0xFF052E22), Color(0xFF6EE7B7), Color(0xFF047857)),
-    hamper: TagColors(Color(0xFF3B2304), Color(0xFFFCD34D), Color(0xFFB45309)),
-    laundry: TagColors(Color(0xFF0C1E46), Color(0xFF93C5FD), Color(0xFF1D4ED8)),
-    missing: TagColors(Color(0xFF3F0A0A), Color(0xFFFCA5A5), Color(0xFFB91C1C)),
+    secondaryText: Color(0xFFBEB8AD), // 7.98:1
+    tertiaryText: Color(0xFF9D978C), // 5.42:1
+    separator: Color(0xFF30333B),
+    card: Color(0xFF20232A),
+    thread: Color(0xFFFF8070), // 6.42:1
+    clean: TagColors(Color(0xFF16291F), Color(0xFF8FD3AE), Color(0xFF2F6B4C)), // 8.82:1
+    hamper: TagColors(Color(0xFF2E2310), Color(0xFFF0C46A), Color(0xFF7A5A1C)), // 9.39:1
+    laundry: TagColors(Color(0xFF1A2433), Color(0xFF9FBBE0), Color(0xFF3B5578)), // 7.93:1
+    missing: TagColors(Color(0xFF331816), Color(0xFFFF9E92), Color(0xFF8A3A33)), // 8.23:1
   );
 
   @override
@@ -91,6 +99,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       tertiaryText: Color.lerp(tertiaryText, other.tertiaryText, t)!,
       separator: Color.lerp(separator, other.separator, t)!,
       card: Color.lerp(card, other.card, t)!,
+      thread: Color.lerp(thread, other.thread, t)!,
       clean: TagColors.lerp(clean, other.clean, t),
       hamper: TagColors.lerp(hamper, other.hamper, t),
       laundry: TagColors.lerp(laundry, other.laundry, t),
@@ -116,15 +125,16 @@ const garmentSwatches = <int>[
 ];
 
 class AppTheme {
-  static const _accentLight = Color(0xFF0058BE);
-  static const _accentDark = Color(0xFF6EA8FF);
+  static const _accentLight = Color(0xFF2F4A6D); // denim, 8.60:1 on card
+  static const _accentDark = Color(0xFF9FBBE0); // washed denim, 7.98:1 on card
 
-  /// Plus Jakarta Sans for large titles only; body text uses the platform
-  /// font (SF Pro on iPhone, Roboto on Android) for legibility at small
-  /// sizes, as Apple's branding guidance suggests.
+  /// Barlow Condensed for titles only, like the woven name label in a
+  /// collar; body text uses the platform font (SF Pro on iPhone, Roboto on
+  /// Android) for legibility at small sizes, as Apple's branding guidance
+  /// suggests.
   static TextTheme _textTheme(Color primary, Color secondary) {
     TextStyle display(double size, FontWeight weight, double spacing) =>
-        GoogleFonts.plusJakartaSans(
+        GoogleFonts.barlowCondensed(
           fontSize: size,
           fontWeight: weight,
           letterSpacing: spacing,
@@ -133,9 +143,9 @@ class AppTheme {
         );
 
     return TextTheme(
-      displaySmall: display(34, FontWeight.w700, -0.6),
-      headlineMedium: display(28, FontWeight.w700, -0.4),
-      headlineSmall: display(22, FontWeight.w700, -0.3),
+      displaySmall: display(40, FontWeight.w700, -0.2),
+      headlineMedium: display(36, FontWeight.w700, -0.2),
+      headlineSmall: display(26, FontWeight.w700, 0),
       titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: primary),
       titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: primary),
       titleSmall: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: primary),
@@ -287,12 +297,12 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: brightness == Brightness.light ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+        backgroundColor: brightness == Brightness.light ? const Color(0xFF1F2430) : const Color(0xFFF2EEE6),
         contentTextStyle: TextStyle(
           fontSize: 15,
-          color: brightness == Brightness.light ? Colors.white : const Color(0xFF0F172A),
+          color: brightness == Brightness.light ? const Color(0xFFF2EEE6) : const Color(0xFF15171C),
         ),
-        actionTextColor: brightness == Brightness.light ? const Color(0xFF93C5FD) : _accentLight,
+        actionTextColor: brightness == Brightness.light ? _accentDark : _accentLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
@@ -326,18 +336,18 @@ class AppTheme {
   static final ThemeData light = _build(
     brightness: Brightness.light,
     accent: _accentLight,
-    onAccent: Colors.white, // 6.69:1
-    background: const Color(0xFFF4F5F8),
-    text: const Color(0xFF0F172A),
+    onAccent: Colors.white, // 9.05:1
+    background: const Color(0xFFF3EFE7), // linen
+    text: const Color(0xFF1F2430), // 14.76:1 on card
     palette: AppPalette.light,
   );
 
   static final ThemeData dark = _build(
     brightness: Brightness.dark,
     accent: _accentDark,
-    onAccent: const Color(0xFF0B0F17), // 7.95:1
-    background: const Color(0xFF0B0F17),
-    text: const Color(0xFFF1F5F9),
+    onAccent: const Color(0xFF15171C), // 9.10:1
+    background: const Color(0xFF15171C),
+    text: const Color(0xFFF2EEE6), // 15.49:1
     palette: AppPalette.dark,
   );
 }

@@ -11,6 +11,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/pressable.dart';
 import 'garment_form_screen.dart';
+import 'fit_shuffle_screen.dart';
 import 'garment_sheet.dart';
 import 'settings_screen.dart';
 import '../theme/app_icons.dart';
@@ -189,6 +190,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
             style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText),
           ),
         ),
+        if (AppScope.of(context).shuffleTops.isNotEmpty && AppScope.of(context).shuffleBottoms.isNotEmpty)
+          const _ShuffleBanner(),
         SizedBox(
           height: 60,
           child: ListView.separated(
@@ -303,6 +306,44 @@ class _WoreItButton extends StatelessWidget {
         shadowColor: const Color(0x55000000),
       ),
       icon: const Icon(AppIcons.hamper, size: 22),
+    );
+  }
+}
+
+/// The way into Fit Shuffle: a label stitched onto the closet.
+class _ShuffleBanner extends StatelessWidget {
+  const _ShuffleBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+      child: Pressable(
+        label: '${s.fitShuffle}. ${s.shufflePrompt}',
+        onTap: () => FitShuffleScreen.open(context),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          decoration: BoxDecoration(color: context.palette.card, borderRadius: BorderRadius.circular(16)),
+          child: Row(
+            children: [
+              Icon(AppIcons.shuffle, color: context.palette.thread, size: 26),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    WovenLabel(s.fitShuffle, fontSize: 13),
+                    const SizedBox(height: 6),
+                    Text(s.shufflePrompt, style: context.text.bodySmall),
+                  ],
+                ),
+              ),
+              Icon(AppIcons.chevron, size: 18, color: context.palette.tertiaryText),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
