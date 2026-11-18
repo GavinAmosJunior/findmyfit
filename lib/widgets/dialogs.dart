@@ -48,8 +48,12 @@ Future<bool> confirmAction(
 }
 
 /// Shows a short message at the bottom, optionally with an Undo-style action.
-void showMessage(BuildContext context, String message, {String? actionLabel, VoidCallback? onAction}) {
-  final messenger = ScaffoldMessenger.of(context);
+void showMessage(BuildContext context, String message, {String? actionLabel, VoidCallback? onAction}) =>
+    showMessageOn(ScaffoldMessenger.of(context), message, actionLabel: actionLabel, onAction: onAction);
+
+/// Like [showMessage], for a messenger captured earlier (e.g. before a
+/// sheet or screen closed), so the message appears on the right tab.
+void showMessageOn(ScaffoldMessengerState messenger, String message, {String? actionLabel, VoidCallback? onAction}) {
   messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(

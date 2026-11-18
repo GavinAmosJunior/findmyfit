@@ -133,6 +133,17 @@ void main() {
       expect(state.batchById(batch.id)!.isCompleted, isTrue);
     });
 
+    test('history stops counting a piece as missing once it is found', () async {
+      final state = await _loadedState();
+      final a = state.addGarment(name: 'A', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+      final batch = state.sendToLaundry(garmentIds: [a.id], laundromatName: 'Sparkle');
+      state.finishReturn(batch.id);
+      expect(state.stillMissingFrom(batch), 1);
+
+      state.markFound(a.id);
+      expect(state.stillMissingFrom(batch), 0);
+    });
+
     test('cancelling a batch returns clothes to the hamper', () async {
       final state = await _loadedState();
       final a = state.addGarment(name: 'A', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);

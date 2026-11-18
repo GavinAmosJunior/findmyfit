@@ -111,7 +111,7 @@ class _MissingCard extends StatelessWidget {
                     children: [
                       Text(garment.name, style: context.text.titleMedium),
                       if (batch != null)
-                        Text(s.fromBatch(batch.laundromatName, s.date(batch.createdAt)), style: context.text.bodySmall),
+                        Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
                     ],
                   ),
                 ),

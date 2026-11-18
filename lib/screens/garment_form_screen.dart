@@ -19,10 +19,16 @@ import '../widgets/garment_image.dart';
 class GarmentFormScreen extends StatefulWidget {
   final Garment? editing;
 
-  const GarmentFormScreen({super.key, this.editing});
+  /// Where to show "Added" once this screen closes (the caller's tab).
+  final ScaffoldMessengerState? messenger;
+
+  const GarmentFormScreen({super.key, this.editing, this.messenger});
 
   static Future<void> openAdd(BuildContext context) => Navigator.of(context).push(
-        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const GarmentFormScreen()),
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => GarmentFormScreen(messenger: ScaffoldMessenger.of(context)),
+        ),
       );
 
   static Future<void> openEdit(BuildContext context, Garment garment) => Navigator.of(context).push(
@@ -171,8 +177,9 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     _added++;
 
     if (!next) {
+      final messenger = widget.messenger ?? ScaffoldMessenger.of(context);
       Navigator.of(context).pop();
-      showMessage(context, s.added(garment.name));
+      showMessageOn(messenger, _added > 1 ? s.addedCount(_added) : s.added(garment.name));
       return;
     }
 

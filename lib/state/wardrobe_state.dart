@@ -61,6 +61,10 @@ class WardrobeState extends ChangeNotifier {
   List<Garment> garmentsInBatch(LaundryBatch batch) =>
       batch.itemIds.map(garmentById).whereType<Garment>().toList();
 
+  /// Pieces from [batch] that are still missing (not found since).
+  int stillMissingFrom(LaundryBatch batch) =>
+      _garments.where((g) => g.status == GarmentStatus.missing && g.currentBatchId == batch.id).length;
+
   /// Laundromat names used before, most recent first.
   List<String> get recentLaundromats {
     final seen = <String>{};

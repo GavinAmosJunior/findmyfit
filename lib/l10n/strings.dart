@@ -140,9 +140,9 @@ class S {
   String get finishAllBackTitle => _t('Everything came back', 'Semua sudah kembali');
   String finishMissingTitle(int n) =>
       _id ? '$n item belum kembali' : '$n ${n == 1 ? 'piece hasn’t' : 'pieces haven’t'} come back';
-  String get finishMissingBody =>
-      _t('They’ll move to Missing so you can follow up with the laundromat.',
-          'Pakaian itu akan dipindah ke Hilang supaya bisa kamu tanyakan ke laundry.');
+  String finishMissingBody(int n) => _id
+      ? 'Pakaian itu akan dipindah ke Hilang supaya bisa kamu tanyakan ke laundry.'
+      : '${n == 1 ? 'It’ll' : 'They’ll'} move to Missing so you can follow up with the laundromat.';
   String get finishAllBackBody => _t('All clothes go back to your closet.', 'Semua pakaian kembali ke lemari.');
   String get keepChecking => _t('Keep checking', 'Lanjut cek');
   String get moveToMissing => _t('Move to Missing', 'Pindah ke Hilang');
@@ -151,10 +151,12 @@ class S {
   String get cancelBatchBody =>
       _t('The clothes go back to your hamper.', 'Pakaiannya kembali ke keranjang.');
   String get keepBatch => _t('Keep batch', 'Simpan kiriman');
-  String historySummary(int sent, int back) {
-    final lost = sent - back;
-    if (_id) return '$sent dikirim · $back kembali${lost > 0 ? ' · $lost hilang' : ''}';
-    return '$sent sent · $back back${lost > 0 ? ' · $lost missing' : ''}';
+  /// [stillMissing] counts pieces not found since, so history stays true
+  /// after "Found it".
+  String historySummary(int sent, int stillMissing) {
+    final back = sent - stillMissing;
+    if (_id) return '$sent dikirim · $back kembali${stillMissing > 0 ? ' · $stillMissing hilang' : ''}';
+    return '$sent sent · $back back${stillMissing > 0 ? ' · $stillMissing missing' : ''}';
   }
 
   // ---------------------------------------------------------------- missing
@@ -170,11 +172,13 @@ class S {
       _t('It will be removed from your wardrobe. This can’t be undone.',
           'Pakaian ini akan dihapus dari lemarimu. Tindakan ini tidak bisa dibatalkan.');
   String foundMessage(String name) => _t('$name is back in your closet', '$name kembali ke lemari');
-  String fromBatch(String place, String date) => _t('From $place · $date', 'Dari $place · $date');
+
   String get askLaundromat => _t('Ask the laundromat', 'Tanya ke laundry');
   String askMessage(String place, List<String> names) => _id
       ? 'Halo $place, pakaian berikut belum kembali dari laundry saya:\n${names.map((n) => '• $n').join('\n')}\nMohon dicek ya, terima kasih!'
-      : 'Hi $place, these items didn’t come back with my laundry:\n${names.map((n) => '• $n').join('\n')}\nCould you check for them? Thank you!';
+      : names.length == 1
+          ? 'Hi $place, this item didn’t come back with my laundry:\n• ${names.single}\nCould you check for it? Thank you!'
+          : 'Hi $place, these items didn’t come back with my laundry:\n${names.map((n) => '• $n').join('\n')}\nCould you check for them? Thank you!';
 
   // -------------------------------------------------------------------- add
   String get takePhoto => _t('Take photo', 'Ambil foto');

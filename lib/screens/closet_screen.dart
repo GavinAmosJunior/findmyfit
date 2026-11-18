@@ -77,9 +77,14 @@ class _ClosetScreenState extends State<ClosetScreen> {
     final all = state.garments;
     final visible = _visible(all);
 
-    // The + button lives in HomeShell's scaffold, so it moves up above
-    // snackbars instead of being covered by them.
     return Scaffold(
+      floatingActionButton: all.isEmpty
+          ? null
+          : FloatingActionButton(
+              tooltip: s.addClothes,
+              onPressed: () => GarmentFormScreen.openAdd(context),
+              child: const Icon(Icons.add_rounded, size: 30),
+            ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar.large(

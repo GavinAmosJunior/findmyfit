@@ -64,10 +64,12 @@ class LaundryScreen extends StatelessWidget {
                     for (final b in done)
                       ListTile(
                         title: Text(b.laundromatName),
-                        subtitle: Text('${s.date(b.createdAt)} · ${s.historySummary(b.totalItems, b.verifiedCount)}'),
+                        subtitle: Text('${s.date(b.createdAt)} · ${s.historySummary(b.totalItems, state.stillMissingFrom(b))}'),
                         trailing: Icon(
-                          b.notBackCount > 0 ? Icons.travel_explore_rounded : Icons.check_circle_rounded,
-                          color: b.notBackCount > 0 ? context.palette.missing.foreground : context.palette.clean.foreground,
+                          state.stillMissingFrom(b) > 0 ? Icons.travel_explore_rounded : Icons.check_circle_rounded,
+                          color: state.stillMissingFrom(b) > 0
+                              ? context.palette.missing.foreground
+                              : context.palette.clean.foreground,
                         ),
                         onTap: () => BatchScreen.open(context, b.id),
                       ),

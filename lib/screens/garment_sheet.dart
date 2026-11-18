@@ -15,14 +15,17 @@ import 'garment_form_screen.dart';
 class GarmentSheet extends StatelessWidget {
   final String garmentId;
 
-  const GarmentSheet({super.key, required this.garmentId});
+  /// The screen that opened the sheet; its tab shows the snackbars.
+  final BuildContext origin;
+
+  const GarmentSheet({super.key, required this.garmentId, required this.origin});
 
   static Future<void> show(BuildContext context, String garmentId) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => GarmentSheet(garmentId: garmentId),
+      builder: (_) => GarmentSheet(garmentId: garmentId, origin: context),
     );
   }
 
@@ -34,7 +37,7 @@ class GarmentSheet extends StatelessWidget {
     if (garment == null) return const SizedBox(height: 120);
 
     // Snackbars must outlive the sheet, so use the screen behind it.
-    final outer = Navigator.of(context).context;
+    final outer = origin;
 
     void close() => Navigator.of(context).pop();
 

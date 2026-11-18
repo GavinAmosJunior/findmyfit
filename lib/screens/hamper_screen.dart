@@ -135,8 +135,10 @@ class _HamperScreenState extends State<HamperScreen> {
       pickupDate: result.$2,
     );
     HapticFeedback.mediumImpact();
-    showMessage(context, s.sentToLaundry(batch.totalItems, batch.laundromatName));
-    HomeShellState.maybeOf(context)?.goTo(2);
+    // We switch to Laundry, so show the message above the whole app.
+    final shell = HomeShellState.maybeOf(context);
+    shell?.goTo(2);
+    if (shell != null && shell.mounted) showMessage(shell.context, s.sentToLaundry(batch.totalItems, batch.laundromatName));
   }
 }
 
@@ -175,7 +177,7 @@ class _HamperRow extends StatelessWidget {
         state.moveToCloset(garment.id);
         showMessage(
           context,
-          '${garment.name} · ${s.putBackClean}',
+          s.foundMessage(garment.name),
           actionLabel: s.undo,
           onAction: () => state.moveToHamper(garment.id),
         );
@@ -266,7 +268,13 @@ class _SendSheetState extends State<_SendSheet> {
     final recent = AppScope.read(context).recentLaundromats.take(4).toList();
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        // Clear the keyboard, or the gesture bar when there's no keyboard.
+        16 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).viewPadding.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

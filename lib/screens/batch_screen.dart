@@ -132,7 +132,7 @@ class BatchScreen extends StatelessWidget {
     final ok = await confirmAction(
       context,
       title: notBack == 0 ? s.finishAllBackTitle : s.finishMissingTitle(notBack),
-      body: notBack == 0 ? s.finishAllBackBody : s.finishMissingBody,
+      body: notBack == 0 ? s.finishAllBackBody : s.finishMissingBody(notBack),
       confirmLabel: notBack == 0 ? s.done : s.moveToMissing,
       cancelLabel: s.keepChecking,
     );
