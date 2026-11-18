@@ -89,11 +89,12 @@ class _ActiveBatchCard extends StatelessWidget {
     final garments = state.garmentsInBatch(batch);
 
     return Ticket(
-      title: batch.laundromatName,
+      title: s.loadName(batch),
       // The Laundry tab stays in its own green: solid for what's out now.
       color: SignColors.green,
-      trailing: TicketNumber(s.ticketNo(batch.batchCode.replaceAll('#', ''))),
-      semanticLabel: '${batch.laundromatName}, ${s.backCount(batch.verifiedCount, batch.totalItems)}',
+      // A nicknamed load still shows its number.
+      trailing: batch.hasNickname ? TicketNumber(s.ticketNo('${batch.number}')) : null,
+      semanticLabel: '${s.loadName(batch)}, ${s.backCount(batch.verifiedCount, batch.totalItems)}',
       onTap: () => BatchScreen.open(context, batch.id),
       body: Row(
         children: [
@@ -103,7 +104,7 @@ class _ActiveBatchCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
+                Text(s.loadLine(batch), style: context.text.bodySmall),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
@@ -192,12 +193,12 @@ class _HistoryTicket extends StatelessWidget {
     final missing = state.stillMissingFrom(batch);
 
     return Ticket(
-      title: batch.laundromatName,
+      title: s.loadName(batch),
       // History is quieter: a soft green band with dark green letters.
       color: context.palette.clean.background,
       foreground: context.palette.clean.foreground,
-      trailing: TicketNumber(s.ticketNo(batch.batchCode.replaceAll('#', ''))),
-      semanticLabel: '${batch.laundromatName}, ${s.historySummary(batch.totalItems, missing)}',
+      trailing: batch.hasNickname ? TicketNumber(s.ticketNo('${batch.number}')) : null,
+      semanticLabel: '${s.loadName(batch)}, ${s.historySummary(batch.totalItems, missing)}',
       onTap: () => BatchScreen.open(context, batch.id),
       // Wraps the plate under the summary when both don't fit on one line.
       body: Wrap(
@@ -210,7 +211,7 @@ class _HistoryTicket extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
+              Text(s.loadLine(batch), style: context.text.bodySmall),
               Text(s.historySummary(batch.totalItems, missing), style: context.text.bodyMedium),
             ],
           ),

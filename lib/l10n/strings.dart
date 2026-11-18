@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 import '../models/garment.dart';
+import '../models/laundry_batch.dart';
 
 /// All user-facing text, in English and Bahasa Indonesia.
 ///
@@ -134,13 +135,28 @@ class S {
       : '$total dirty ${total == 1 ? 'item' : 'items'} · $selected selected';
   String get selectAll => _t('Select all', 'Pilih semua');
   String get selectNone => _t('Select none', 'Batal pilih');
-  String sendToLaundry(int n) => _id ? 'Kirim $n ke laundry' : 'Send $n to laundry';
-  String get selectToSend => _t('Select clothes to send', 'Pilih pakaian untuk dikirim');
-  String get sendSheetTitle => _t('Send to laundry', 'Kirim ke laundry');
+  String dropOff(int n) => _id ? 'Antar $n item' : 'Drop off ${items(n)}';
+  String get selectToSend => _t('Select clothes to drop off', 'Pilih pakaian untuk diantar');
+  String dropOffTitle(int number) => _t('Drop off load $number', 'Antar cucian $number');
   String get laundromat => _t('Laundromat', 'Tempat laundry');
+  String get laundromatOptional => _t('Laundromat (optional)', 'Tempat laundry (opsional)');
   String get laundromatHint => _t('Sparkle Clean', 'Laundry Bersih Jaya');
-  String sentToLaundry(int n, String place) =>
-      _id ? '$n item dikirim ke $place' : '${items(n)} sent to $place';
+  String get loadNickname => _t('Name this load (optional)', 'Nama cucian (opsional)');
+  String get loadNicknameHint => _t('Bedsheets, work shirts…', 'Sprei, kemeja kerja…');
+  String atPlace(String place) => _t('at $place', 'di $place');
+  String get change => _t('Change', 'Ubah');
+  String droppedOff(String load, int n) => _id ? '$load diantar · $n item' : '$load dropped off · ${items(n)}';
+  String get editLoad => _t('Edit load', 'Ubah cucian');
+
+  /// "Load 3", or its nickname when it has one.
+  String loadName(LaundryBatch b) => b.hasNickname ? b.nickname!.trim() : loadNo(b.number);
+  String loadNo(int n) => _t('Load $n', 'Cucian $n');
+
+  /// "at Sparkle Clean · Sent Nov 18", or just the date with no place.
+  String loadLine(LaundryBatch b) => [
+        if (b.laundromatName.isNotEmpty) atPlace(b.laundromatName),
+        sentOn(date(b.createdAt)),
+      ].join(' · ');
   String get swipePutBack => _t('Put back', 'Kembalikan');
   String putBackHint(String name) => _t('Put $name back in the closet', 'Kembalikan $name ke lemari');
 
@@ -168,11 +184,11 @@ class S {
   String get finishAllBackBody => _t('All clothes go back to your closet.', 'Semua pakaian kembali ke lemari.');
   String get keepChecking => _t('Keep checking', 'Lanjut cek');
   String get moveToMissing => _t('Move to Missing', 'Pindah ke Hilang');
-  String get cancelBatch => _t('Cancel this batch', 'Batalkan kiriman ini');
-  String get cancelBatchTitle => _t('Cancel this batch?', 'Batalkan kiriman ini?');
+  String get cancelBatch => _t('Cancel this load', 'Batalkan cucian ini');
+  String get cancelBatchTitle => _t('Cancel this load?', 'Batalkan cucian ini?');
   String get cancelBatchBody =>
       _t('The clothes go back to your hamper.', 'Pakaiannya kembali ke keranjang.');
-  String get keepBatch => _t('Keep batch', 'Simpan kiriman');
+  String get keepBatch => _t('Keep load', 'Simpan cucian');
   /// [stillMissing] counts pieces not found since, so history stays true
   /// after "Found it".
   String historySummary(int sent, int stillMissing) {
@@ -196,11 +212,17 @@ class S {
   String foundMessage(String name) => _t('$name is back in your closet', '$name kembali ke lemari');
 
   String get askLaundromat => _t('Ask the laundromat', 'Tanya ke laundry');
-  String askMessage(String place, List<String> names) => _id
-      ? 'Halo $place, pakaian berikut belum kembali dari laundry saya:\n${names.map((n) => '• $n').join('\n')}\nMohon dicek ya, terima kasih!'
+  /// [place] may be empty when the load has no laundromat set.
+  String askMessage(String place, List<String> names) {
+    final hi = place.isEmpty ? (_id ? 'Halo' : 'Hi') : (_id ? 'Halo $place' : 'Hi $place');
+    return _askMessage(hi, names);
+  }
+
+  String _askMessage(String hi, List<String> names) => _id
+      ? '$hi, pakaian berikut belum kembali dari laundry saya:\n${names.map((n) => '• $n').join('\n')}\nMohon dicek ya, terima kasih!'
       : names.length == 1
-          ? 'Hi $place, this item didn’t come back with my laundry:\n• ${names.single}\nCould you check for it? Thank you!'
-          : 'Hi $place, these items didn’t come back with my laundry:\n${names.map((n) => '• $n').join('\n')}\nCould you check for them? Thank you!';
+          ? '$hi, this item didn’t come back with my laundry:\n• ${names.single}\nCould you check for it? Thank you!'
+          : '$hi, these items didn’t come back with my laundry:\n${names.map((n) => '• $n').join('\n')}\nCould you check for them? Thank you!';
 
   // -------------------------------------------------------------------- add
   String get takePhoto => _t('Take photo', 'Ambil foto');

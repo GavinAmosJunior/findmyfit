@@ -28,7 +28,8 @@ class MissingScreen extends StatelessWidget {
     // Group by laundromat so one message covers each place.
     final groups = <String, List<Garment>>{};
     for (final g in missing) {
-      final place = state.batchById(g.currentBatchId)?.laundromatName ?? s.laundromat;
+      // Loads with no laundromat set share one group.
+      final place = state.batchById(g.currentBatchId)?.laundromatName ?? '';
       groups.putIfAbsent(place, () => []).add(g);
     }
 
@@ -85,11 +86,12 @@ class _MissingTicket extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    final title = place.isEmpty ? s.laundromat : place;
     return Ticket(
-      title: place,
+      title: title,
       color: SignColors.red,
       trailing: TicketNumber(s.stampMissing(garments.length)),
-      semanticLabel: '$place, ${s.stampMissing(garments.length)}',
+      semanticLabel: '$title, ${s.stampMissing(garments.length)}',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -140,7 +142,7 @@ class _MissingPiece extends StatelessWidget {
                   HangTag(garment.name, fontSize: 13),
                   if (batch != null) ...[
                     const SizedBox(height: 6),
-                    Text(s.sentOn(s.date(batch.createdAt)), style: context.text.bodySmall),
+                    Text('${s.loadName(batch)} · ${s.sentOn(s.date(batch.createdAt))}', style: context.text.bodySmall),
                   ],
                 ],
               ),

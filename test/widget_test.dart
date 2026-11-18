@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_laundry_tracker/main.dart';
 import 'package:smart_laundry_tracker/models/garment.dart';
+import 'package:smart_laundry_tracker/models/laundry_batch.dart';
 import 'package:smart_laundry_tracker/screens/home_shell.dart';
 import 'package:smart_laundry_tracker/state/wardrobe_state.dart';
 import 'package:smart_laundry_tracker/theme/app_icons.dart';
@@ -155,11 +156,35 @@ void main() {
       expect(state.stillMissingFrom(batch), 0);
     });
 
+    test('loads are numbered from 1 and can be named now or later', () async {
+      final state = await _loadedState();
+      final a = state.addGarment(name: 'A', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+      final b = state.addGarment(name: 'B', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+      expect(state.nextLoadNumber, 1);
+
+      final first = state.sendToLaundry(garmentIds: [a.id]);
+      final second = state.sendToLaundry(garmentIds: [b.id], nickname: '  Bedsheets ', laundromatName: 'Sparkle');
+      expect(first.number, 1);
+      expect(first.hasNickname, isFalse);
+      expect(second.number, 2);
+      expect(second.nickname, 'Bedsheets');
+      expect(state.recentLaundromats, ['Sparkle'], reason: 'loads with no place are not remembered as one');
+
+      state.editLoad(first.id, nickname: 'Gym bag', laundromatName: 'Kiloan');
+      expect(first.nickname, 'Gym bag');
+      state.editLoad(first.id, nickname: ' ', laundromatName: '');
+      expect(first.hasNickname, isFalse, reason: 'clearing the name goes back to the number');
+
+      final copy = LaundryBatch.fromJson(second.toJson());
+      expect(copy.nickname, 'Bedsheets');
+      expect(copy.number, 2);
+    });
+
     test('cancelling a batch returns clothes to the hamper', () async {
       final state = await _loadedState();
       final a = state.addGarment(name: 'A', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
       final batch = state.sendToLaundry(garmentIds: [a.id], laundromatName: '');
-      expect(batch.laundromatName, 'Laundromat');
+      expect(batch.laundromatName, '', reason: 'the laundromat is optional');
 
       state.cancelBatch(batch.id);
       expect(state.garmentById(a.id)!.status, GarmentStatus.dirtyHamper);
@@ -207,6 +232,33 @@ void main() {
     expect(state.garmentById(g.id)!.status, GarmentStatus.dirtyHamper);
   });
 
+  testWidgets('dropping off a load remembers the laundromat and takes an optional name', (tester) async {
+    final state = await _loadedState();
+    final old = state.addGarment(name: 'Old', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    state.finishReturn(state.sendToLaundry(garmentIds: [old.id], laundromatName: 'Sparkle').id);
+    state.markFound(old.id);
+    state.addGarment(name: 'Sheet', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    state.addGarment(name: 'Pillowcase', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.hamper)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Drop off 2 items'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('DROP OFF LOAD 2'), findsOneWidget);
+    expect(find.text('at Sparkle'), findsOneWidget, reason: 'the last laundromat is remembered, not asked again');
+    await tester.enterText(find.byType(TextField), 'Bedsheets');
+    await tester.tap(find.widgetWithText(FilledButton, 'Drop off 2 items').last);
+    await tester.pumpAndSettle();
+
+    final load = state.batches.first;
+    expect(load.nickname, 'Bedsheets');
+    expect(load.laundromatName, 'Sparkle');
+    expect(find.text('BEDSHEETS'), findsOneWidget, reason: 'the Laundry tab shows the load by its name');
+  });
+
   testWidgets('finishing a check with everything back stamps the ticket ALL BACK', (tester) async {
     final state = await _loadedState();
     final g = state.addGarment(name: 'Tee', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
@@ -216,7 +268,7 @@ void main() {
 
     await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.laundry)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('SPARKLE'));
+    await tester.tap(find.text('LOAD 1'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('All back'));
     await tester.pumpAndSettle();

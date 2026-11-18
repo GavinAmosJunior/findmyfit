@@ -75,10 +75,13 @@ class WardrobeState extends ChangeNotifier {
   List<String> get recentLaundromats {
     final seen = <String>{};
     for (final b in _batches) {
-      seen.add(b.laundromatName);
+      if (b.laundromatName.isNotEmpty) seen.add(b.laundromatName);
     }
     return seen.toList();
   }
+
+  /// The number the next load will get.
+  int get nextLoadNumber => _batchCounter + 1 - 1000;
 
   // ---------------------------------------------------------------- storage
 
@@ -244,15 +247,18 @@ class WardrobeState extends ChangeNotifier {
 
   // ---------------------------------------------------------------- laundry
 
+  /// Drops off a load. The laundromat and nickname are optional.
   LaundryBatch sendToLaundry({
     required List<String> garmentIds,
-    required String laundromatName,
+    String laundromatName = '',
+    String? nickname,
   }) {
     _batchCounter++;
     final batch = LaundryBatch(
-      id: 'batch_${DateTime.now().microsecondsSinceEpoch}',
+      id: 'batch_${DateTime.now().microsecondsSinceEpoch}_$_batchCounter',
       batchCode: '#L-$_batchCounter',
-      laundromatName: laundromatName.trim().isEmpty ? 'Laundromat' : laundromatName.trim(),
+      laundromatName: laundromatName.trim(),
+      nickname: _clean(nickname),
       itemIds: List.of(garmentIds),
     );
     for (final id in garmentIds) {
@@ -266,6 +272,18 @@ class WardrobeState extends ChangeNotifier {
     _changed();
     return batch;
   }
+
+  /// Renames a load or changes where it went.
+  void editLoad(String batchId, {required String? nickname, required String laundromatName}) {
+    final b = batchById(batchId);
+    if (b == null) return;
+    b
+      ..nickname = _clean(nickname)
+      ..laundromatName = laundromatName.trim();
+    _changed();
+  }
+
+  static String? _clean(String? s) => s == null || s.trim().isEmpty ? null : s.trim();
 
   void toggleReceived(String batchId, String garmentId) {
     final b = batchById(batchId);

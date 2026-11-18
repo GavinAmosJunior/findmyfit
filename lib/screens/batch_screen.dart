@@ -34,16 +34,17 @@ class BatchScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: SignBar(
-        title: batch.laundromatName,
-        subtitle: '${batch.batchCode} · ${s.sentOn(s.date(batch.createdAt))}',
+        title: s.loadName(batch),
+        subtitle: s.loadLine(batch),
         color: SignColors.green,
         actions: [
-          if (editable) ...[
-            PopupMenuButton<String>(
-              onSelected: (_) => _cancel(context, batch),
-              itemBuilder: (_) => [PopupMenuItem(value: 'cancel', child: Text(s.cancelBatch))],
-            ),
-          ],
+          PopupMenuButton<String>(
+            onSelected: (v) => v == 'edit' ? _editLoad(context, batch) : _cancel(context, batch),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'edit', child: Text(s.editLoad)),
+              if (editable) PopupMenuItem(value: 'cancel', child: Text(s.cancelBatch)),
+            ],
+          ),
         ],
       ),
       body: ListView(
@@ -154,6 +155,15 @@ class BatchScreen extends StatelessWidget {
     shell?.goTo(HomeShellState.missingTab);
   }
 
+  Future<void> _editLoad(BuildContext context, LaundryBatch batch) async {
+    final result = await showDialog<({String nickname, String place})>(
+      context: context,
+      builder: (_) => _EditLoadDialog(batch: batch),
+    );
+    if (result == null || !context.mounted) return;
+    AppScope.read(context).editLoad(batch.id, nickname: result.nickname, laundromatName: result.place);
+  }
+
   Future<void> _cancel(BuildContext context, LaundryBatch batch) async {
     final s = S.of(context);
     final ok = await confirmAction(
@@ -167,6 +177,60 @@ class BatchScreen extends StatelessWidget {
     if (!ok || !context.mounted) return;
     AppScope.read(context).cancelBatch(batch.id);
     Navigator.of(context).pop();
+  }
+}
+
+/// Name a load after the fact, or fix where it went.
+class _EditLoadDialog extends StatefulWidget {
+  final LaundryBatch batch;
+
+  const _EditLoadDialog({required this.batch});
+
+  @override
+  State<_EditLoadDialog> createState() => _EditLoadDialogState();
+}
+
+class _EditLoadDialogState extends State<_EditLoadDialog> {
+  late final _nickname = TextEditingController(text: widget.batch.nickname ?? '');
+  late final _place = TextEditingController(text: widget.batch.laundromatName);
+
+  @override
+  void dispose() {
+    _nickname.dispose();
+    _place.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return AlertDialog(
+      title: Text(s.editLoad),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nickname,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(labelText: s.loadNickname, hintText: s.loadNo(widget.batch.number)),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _place,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(labelText: s.laundromatOptional, hintText: s.laundromatHint),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(s.cancel)),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop((nickname: _nickname.text, place: _place.text)),
+          child: Text(s.save),
+        ),
+      ],
+    );
   }
 }
 

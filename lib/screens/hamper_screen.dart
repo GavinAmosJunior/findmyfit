@@ -111,7 +111,7 @@ class _HamperScreenState extends State<HamperScreen> {
                   // Green: everything that sends to or checks laundry is green.
                   style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
                   icon: const Icon(AppIcons.laundryFill),
-                  label: Text(s.sendToLaundry(selected.length)),
+                  label: Text(s.dropOff(selected.length)),
                 ),
               ),
             ),
@@ -120,23 +120,27 @@ class _HamperScreenState extends State<HamperScreen> {
 
   Future<void> _send(BuildContext context, List<Garment> selected) async {
     final s = S.of(context);
-    final result = await showModalBottomSheet<String>(
+    final result = await showModalBottomSheet<({String nickname, String place})>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: false,
       clipBehavior: Clip.antiAlias,
-      builder: (_) => _SendSheet(count: selected.length),
+      builder: (_) => _DropOffSheet(count: selected.length),
     );
     if (result == null || !context.mounted) return;
     final state = AppScope.read(context);
-    final batch = state.sendToLaundry(garmentIds: selected.map((g) => g.id).toList(), laundromatName: result);
+    final load = state.sendToLaundry(
+      garmentIds: selected.map((g) => g.id).toList(),
+      laundromatName: result.place,
+      nickname: result.nickname,
+    );
     HapticFeedback.mediumImpact();
     // We switch to Laundry, so show the message above the whole app.
     final shell = HomeShellState.maybeOf(context);
     shell?.goTo(HomeShellState.laundryTab);
     if (shell != null && shell.mounted) {
-      showMessage(shell.context, s.sentToLaundry(batch.totalItems, batch.laundromatName));
+      showMessage(shell.context, s.droppedOff(s.loadName(load), load.totalItems));
     }
   }
 }
@@ -233,42 +237,55 @@ class _HamperRow extends StatelessWidget {
   }
 }
 
-/// Where the clothes are going.
-class _SendSheet extends StatefulWidget {
+/// Dropping off a load: it gets the next number on its own. A nickname is
+/// optional, and the laundromat is remembered from last time.
+class _DropOffSheet extends StatefulWidget {
   final int count;
 
-  const _SendSheet({required this.count});
+  const _DropOffSheet({required this.count});
 
   @override
-  State<_SendSheet> createState() => _SendSheetState();
+  State<_DropOffSheet> createState() => _DropOffSheetState();
 }
 
-class _SendSheetState extends State<_SendSheet> {
+class _DropOffSheetState extends State<_DropOffSheet> {
+  final _nickname = TextEditingController();
   final _place = TextEditingController();
+
+  /// Showing the laundromat field rather than the remembered name.
+  bool _editingPlace = false;
 
   @override
   void initState() {
     super.initState();
     final recent = AppScope.read(context).recentLaundromats;
-    if (recent.isNotEmpty) _place.text = recent.first;
+    if (recent.isNotEmpty) {
+      _place.text = recent.first;
+    } else {
+      _editingPlace = true;
+    }
   }
 
   @override
   void dispose() {
+    _nickname.dispose();
     _place.dispose();
     super.dispose();
   }
 
+  void _submit() => Navigator.of(context).pop((nickname: _nickname.text, place: _place.text));
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final recent = AppScope.read(context).recentLaundromats.take(4).toList();
+    final state = AppScope.read(context);
+    final recent = state.recentLaundromats.take(4).toList();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SheetSign(title: s.sendSheetTitle, subtitle: s.items(widget.count), color: SignColors.green),
+        SheetSign(title: s.dropOffTitle(state.nextLoadNumber), subtitle: s.items(widget.count), color: SignColors.green),
         Padding(
           padding: EdgeInsets.fromLTRB(
             20,
@@ -282,26 +299,56 @@ class _SendSheetState extends State<_SendSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
-                controller: _place,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: s.laundromat, hintText: s.laundromatHint),
+                controller: _nickname,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+                decoration: InputDecoration(labelText: s.loadNickname, hintText: s.loadNicknameHint),
               ),
-              if (recent.length > 1) ...[
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+              const SizedBox(height: 14),
+              if (_editingPlace) ...[
+                TextField(
+                  controller: _place,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(labelText: s.laundromatOptional, hintText: s.laundromatHint),
+                ),
+                if (recent.length > 1) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final r in recent)
+                        ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
+                    ],
+                  ),
+                ],
+              ] else
+                // Most people use one laundromat: show it, don't ask again.
+                Row(
                   children: [
-                    for (final r in recent)
-                      ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
+                    Icon(AppIcons.laundry, size: 20, color: context.palette.secondaryText),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        s.atPlace(_place.text),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodyLarge,
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: context.palette.clean.foreground),
+                      onPressed: () => setState(() => _editingPlace = true),
+                      child: Text(s.change),
+                    ),
                   ],
                 ),
-              ],
               const SizedBox(height: 20),
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(_place.text),
+                onPressed: _submit,
                 style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
-                child: Text(s.sendToLaundry(widget.count)),
+                child: Text(s.dropOff(widget.count)),
               ),
             ],
           ),
