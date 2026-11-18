@@ -196,7 +196,7 @@ class S {
 
   // --------------------------------------------------------------- settings
   String get language => _t('Language', 'Bahasa');
-  String get systemLanguage => _t('Auto', 'Otomatis');
+  String get systemLanguage => _t('Same as phone', 'Sama dengan ponsel');
   String get backup => _t('Backup', 'Cadangan');
   String get backupFooter =>
       _t('Your clothes and photos are saved only on this phone. Export a backup file to keep them safe.',

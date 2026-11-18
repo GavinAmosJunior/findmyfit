@@ -74,22 +74,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           GroupedSection(
             header: s.language.toUpperCase(),
             children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<String>(
-                    showSelectedIcon: false,
-                    segments: [
-                      ButtonSegment(value: 'system', label: Text(s.systemLanguage)),
-                      const ButtonSegment(value: 'en', label: Text('English')),
-                      const ButtonSegment(value: 'id', label: Text('Indonesia')),
-                    ],
-                    selected: {state.language},
-                    onSelectionChanged: (v) => state.setLanguage(v.first),
-                  ),
+              for (final (code, label) in [
+                ('system', s.systemLanguage),
+                ('en', 'English'),
+                ('id', 'Bahasa Indonesia'),
+              ])
+                ListTile(
+                  title: Text(label),
+                  selected: state.language == code,
+                  selectedColor: Theme.of(context).colorScheme.onSurface,
+                  trailing: state.language == code
+                      ? Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.primary)
+                      : null,
+                  onTap: () => state.setLanguage(code),
                 ),
-              ),
             ],
           ),
           GroupedSection(

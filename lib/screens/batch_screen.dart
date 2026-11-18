@@ -18,9 +18,8 @@ class BatchScreen extends StatelessWidget {
 
   const BatchScreen({super.key, required this.batchId});
 
-  static Future<void> open(BuildContext context, String batchId) => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => BatchScreen(batchId: batchId)),
-      );
+  static Future<void> open(BuildContext context, String batchId) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => BatchScreen(batchId: batchId)));
 
   @override
   Widget build(BuildContext context) {
@@ -83,19 +82,25 @@ class BatchScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
           ],
-          for (final g in garments)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _ReturnRow(
-                garment: g,
-                received: batch.isItemVerified(g.id),
-                editable: editable,
-                onToggle: () {
-                  HapticFeedback.selectionClick();
-                  state.toggleReceived(batch.id, g.id);
-                },
-              ),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (final (i, g) in garments.indexed) ...[
+                  if (i > 0) const Divider(indent: 74),
+                  _ReturnRow(
+                    garment: g,
+                    received: batch.isItemVerified(g.id),
+                    editable: editable,
+                    onToggle: () {
+                      HapticFeedback.selectionClick();
+                      state.toggleReceived(batch.id, g.id);
+                    },
+                  ),
+                ],
+              ],
             ),
+          ),
         ],
       ),
       bottomNavigationBar: !editable
@@ -158,8 +163,8 @@ class _ReturnRow extends StatelessWidget {
     final s = S.of(context);
     final clean = context.palette.clean;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return Material(
+      type: MaterialType.transparency,
       child: Semantics(
         checked: received,
         child: InkWell(

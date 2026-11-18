@@ -74,19 +74,27 @@ class _HamperScreenState extends State<HamperScreen> {
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              sliver: SliverList.separated(
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, i) => _HamperRow(
-                  garment: items[i],
-                  selected: !_unselected.contains(items[i].id),
-                  onToggle: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      final id = items[i].id;
-                      if (!_unselected.remove(id)) _unselected.add(id);
-                    });
-                  },
+              // One grouped list, like iOS, rather than a stack of cards.
+              sliver: DecoratedSliver(
+                decoration: BoxDecoration(
+                  color: context.palette.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.palette.separator),
+                ),
+                sliver: SliverList.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) => const Divider(indent: 124),
+                  itemBuilder: (context, i) => _HamperRow(
+                    garment: items[i],
+                    selected: !_unselected.contains(items[i].id),
+                    onToggle: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        final id = items[i].id;
+                        if (!_unselected.remove(id)) _unselected.add(id);
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
@@ -150,14 +158,14 @@ class _HamperRow extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: context.palette.clean.background,
-          borderRadius: BorderRadius.circular(16),
-        ),
+        color: context.palette.clean.background,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(s.swipePutBack, style: TextStyle(color: context.palette.clean.foreground, fontWeight: FontWeight.w600)),
+            Text(
+              s.swipePutBack,
+              style: TextStyle(color: context.palette.clean.foreground, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(width: 8),
             Icon(Icons.checkroom_rounded, color: context.palette.clean.foreground),
           ],
@@ -165,18 +173,22 @@ class _HamperRow extends StatelessWidget {
       ),
       onDismissed: (_) {
         state.moveToCloset(garment.id);
-        showMessage(context, '${garment.name} · ${s.putBackClean}',
-            actionLabel: s.undo, onAction: () => state.moveToHamper(garment.id));
+        showMessage(
+          context,
+          '${garment.name} · ${s.putBackClean}',
+          actionLabel: s.undo,
+          onAction: () => state.moveToHamper(garment.id),
+        );
       },
-      child: Card(
-        clipBehavior: Clip.antiAlias,
+      child: Material(
+        type: MaterialType.transparency,
         child: Semantics(
           checked: selected,
           child: InkWell(
             onTap: onToggle,
             onLongPress: () => GarmentSheet.show(context, garment.id),
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               child: Row(
                 children: [
                   Checkbox.adaptive(value: selected, onChanged: (_) => onToggle()),
@@ -190,7 +202,12 @@ class _HamperRow extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(garment.name, style: context.text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          garment.name,
+                          style: context.text.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         Text(s.categoryLabel(garment.category), style: context.text.bodySmall),
                       ],
                     ),
@@ -269,8 +286,7 @@ class _SendSheetState extends State<_SendSheet> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final r in recent)
-                  ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
+                for (final r in recent) ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
               ],
             ),
           ],

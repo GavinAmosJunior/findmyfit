@@ -51,24 +51,26 @@ class MissingScreen extends StatelessWidget {
               ),
             ),
             for (final entry in groups.entries) ...[
-              SliverToBoxAdapter(
-                child: SectionTitle(
-                  entry.key,
-                  trailing: TextButton.icon(
-                    onPressed: () => SharePlus.instance.share(
-                      ShareParams(text: s.askMessage(entry.key, entry.value.map((g) => g.name).toList())),
-                    ),
-                    icon: const Icon(Icons.chat_outlined, size: 20),
-                    label: Text(s.askLaundromat),
-                  ),
-                ),
-              ),
+              SliverToBoxAdapter(child: SectionTitle(entry.key)),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList.separated(
                   itemCount: entry.value.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, i) => _MissingCard(garment: entry.value[i]),
+                ),
+              ),
+              // Own row, so it fits next to long laundromat names on small phones.
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                  child: OutlinedButton.icon(
+                    onPressed: () => SharePlus.instance.share(
+                      ShareParams(text: s.askMessage(entry.key, entry.value.map((g) => g.name).toList())),
+                    ),
+                    icon: const Icon(Icons.chat_outlined),
+                    label: Text(s.askLaundromat),
+                  ),
                 ),
               ),
             ],

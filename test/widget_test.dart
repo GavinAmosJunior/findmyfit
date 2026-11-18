@@ -55,6 +55,57 @@ void main() {
     expect(find.text('Keranjang'), findsOneWidget);
   });
 
+  for (final lang in ['en', 'id']) {
+    testWidgets('every tab fits a small phone with large text ($lang)', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final state = await _loadedState();
+      state.setLanguage(lang);
+      final a = state.addGarment(name: 'Oversized vintage denim jacket', category: GarmentCategory.outerwear);
+      final b = state.addGarment(name: 'Silk blouse', category: GarmentCategory.delicates, status: GarmentStatus.dirtyHamper);
+      final c = state.addGarment(name: 'Grey joggers', category: GarmentCategory.bottoms, status: GarmentStatus.dirtyHamper);
+      final batch = state.sendToLaundry(garmentIds: [b.id], laundromatName: 'Sparkle Clean Laundromat');
+      state.sendToLaundry(garmentIds: [c.id], laundromatName: 'Sparkle Clean Laundromat');
+      state.finishReturn(batch.id);
+      state.toggleFavorite(a.id);
+
+      await tester.pumpWidget(FindMyFitApp(state: state));
+      await tester.pumpAndSettle();
+      for (final icon in [
+        Icons.shopping_basket_outlined,
+        Icons.local_laundry_service_outlined,
+        Icons.travel_explore_outlined,
+      ]) {
+        await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(icon)));
+        await tester.pumpAndSettle();
+      }
+      // Pushed screens: return check, settings, add clothes.
+      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(Icons.local_laundry_service_outlined)));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byIcon(Icons.chevron_right_rounded).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
+      await tester.pumpAndSettle();
+      tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.byIcon(Icons.checkroom_outlined)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+
+      // Any RenderFlex overflow above would have failed the test.
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   group('laundry round trip', () {
     test('ticked items come back clean, the rest go missing', () async {
       final state = await _loadedState();

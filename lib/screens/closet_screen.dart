@@ -131,12 +131,14 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 sliver: SliverLayoutBuilder(
                   builder: (context, constraints) {
                     final columns = (constraints.crossAxisExtent / 190).floor().clamp(2, 5);
+                    // Name + care label grow with the phone's text size setting.
+                    final labelArea = 30 + MediaQuery.textScalerOf(context).scale(42);
                     return SliverGrid.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
                         mainAxisSpacing: 14,
                         crossAxisSpacing: 12,
-                        mainAxisExtent: (constraints.crossAxisExtent - 12 * (columns - 1)) / columns + 72,
+                        mainAxisExtent: (constraints.crossAxisExtent - 12 * (columns - 1)) / columns + labelArea,
                       ),
                       itemCount: visible.length,
                       itemBuilder: (context, i) => _GarmentTile(garment: visible[i]),
