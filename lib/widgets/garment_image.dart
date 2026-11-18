@@ -45,19 +45,27 @@ class GarmentImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ref = garment.imageUrl;
     final fallback = _Fallback(garment: garment, iconSize: iconSize);
-    Widget error(BuildContext _, Object _, StackTrace? _) => fallback;
-
     if (ref == null || ref.isEmpty) return fallback;
-    if (ref.startsWith('data:')) {
-      final bytes = _bytes(ref);
-      if (bytes == null) return fallback;
-      return Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true, errorBuilder: error);
-    }
-    if (ref.startsWith('http')) {
-      return Image.network(ref, fit: BoxFit.cover, errorBuilder: error);
-    }
-    if (kIsWeb) return fallback; // Old blob: URLs don't survive a reload.
-    return Image.file(File(ref), fit: BoxFit.cover, errorBuilder: error);
+
+    // Decode photos at the size they're shown, not their full resolution,
+    // so a grid of thumbnails stays light on memory and scrolls smoothly.
+    return LayoutBuilder(builder: (context, constraints) {
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      final side = constraints.biggest.longestSide;
+      final cache = side.isFinite ? (side * dpr).round() : null;
+      Widget error(BuildContext _, Object _, StackTrace? _) => fallback;
+
+      if (ref.startsWith('data:')) {
+        final bytes = _bytes(ref);
+        if (bytes == null) return fallback;
+        return Image.memory(bytes, fit: BoxFit.cover, cacheWidth: cache, gaplessPlayback: true, errorBuilder: error);
+      }
+      if (ref.startsWith('http')) {
+        return Image.network(ref, fit: BoxFit.cover, cacheWidth: cache, errorBuilder: error);
+      }
+      if (kIsWeb) return fallback; // Old blob: URLs don't survive a reload.
+      return Image.file(File(ref), fit: BoxFit.cover, cacheWidth: cache, errorBuilder: error);
+    });
   }
 }
 
