@@ -49,3 +49,6 @@ app.*.map.json
 
 # Local tool settings
 .claude/settings.local.json
+
+# Third-party skill (no license to redistribute)
+.claude/skills/
