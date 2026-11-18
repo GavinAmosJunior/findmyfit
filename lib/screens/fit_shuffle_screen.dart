@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../l10n/strings.dart';
@@ -30,22 +32,71 @@ class _RailState {
   // Rails loop: start far from zero so you can swipe either way.
   static const _start = 6000;
 
+  // A hanger on a rod: a swing and a half-size swing back, settled in
+  // about 1.5 s. Natural period ~0.6 s (stiffness 110), damping ratio 0.22.
+  static final _pendulum = SpringDescription.withDampingRatio(mass: 1, stiffness: 110, ratio: 0.22);
+
+  // Angular push per page/second of rail speed, and the cap: about 8°
+  // of swing at most, so it reads as life, not as wobble.
+  static const _pushPerSpeed = 0.3;
+  static const _maxPush = 1.6;
+
+  _RailState(TickerProvider vsync) : swing = AnimationController.unbounded(vsync: vsync);
+
   final controller = PageController(viewportFraction: 0.56, initialPage: _start);
+
+  /// The hangers' swing angle, in radians, around the hook.
+  final AnimationController swing;
   int page = _start;
   bool locked = false;
 
+  // Fastest the rail moved during the current scroll, in pages/second,
+  // signed by direction.
+  double _peakSpeed = 0;
+  double? _lastPage;
+  Duration? _lastTime;
+
   Garment current(List<Garment> items) => items[page % items.length];
+
+  void trackSpeed() {
+    if (!controller.hasClients || !controller.position.haveDimensions) return;
+    final now = SchedulerBinding.instance.currentFrameTimeStamp;
+    final p = controller.page!;
+    if (_lastPage != null && _lastTime != null && now > _lastTime!) {
+      final v = (p - _lastPage!) / ((now - _lastTime!).inMicroseconds / 1e6);
+      if (v.abs() > _peakSpeed.abs()) _peakSpeed = v;
+    }
+    _lastPage = p;
+    _lastTime = now;
+  }
+
+  /// The rail stopped: the hangers keep going a little, then swing back.
+  /// Moving toward later pages slides clothes left, so their bottoms
+  /// carry on left, which is a clockwise (positive) turn about the hook.
+  void settle({required bool still}) {
+    final push = (_peakSpeed * _pushPerSpeed).clamp(-_maxPush, _maxPush);
+    _peakSpeed = 0;
+    _lastPage = null;
+    _lastTime = null;
+    if (still || push.abs() < 0.15) return;
+    swing.animateWith(SpringSimulation(_pendulum, swing.value, 0, push + swing.velocity));
+  }
+
+  void dispose() {
+    controller.dispose();
+    swing.dispose();
+  }
 }
 
-class _FitShuffleScreenState extends State<FitShuffleScreen> {
-  final _rails = [_RailState(), _RailState()];
+class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProviderStateMixin {
+  late final _rails = [_RailState(this), _RailState(this)];
   final _random = Random();
   bool _spinning = false;
 
   @override
   void dispose() {
     for (final r in _rails) {
-      r.controller.dispose();
+      r.dispose();
     }
     super.dispose();
   }
@@ -66,12 +117,14 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> {
       if (still) {
         rail.controller.jumpToPage(target);
       } else {
-        moves.add(rail.controller.animateToPage(
-          target,
-          // The lower rail settles a beat later, like a second hand on the rod.
-          duration: Duration(milliseconds: 1100 + 260 * i),
-          curve: Curves.easeOutCubic,
-        ));
+        moves.add(
+          rail.controller.animateToPage(
+            target,
+            // The lower rail settles a beat later, like a second hand on the rod.
+            duration: Duration(milliseconds: 1100 + 260 * i),
+            curve: Curves.easeOutCubic,
+          ),
+        );
       }
     }
     await Future.wait(moves);
@@ -104,7 +157,11 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> {
     }
     HapticFeedback.selectionClick();
     for (final (i, target) in targets.indexed) {
-      _rails[i].controller.animateToPage(target, duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic);
+      _rails[i].controller.animateToPage(
+        target,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -247,14 +304,14 @@ class _Rail extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
           child: Row(
             children: [
-              Expanded(
-                child: Text(label.toUpperCase(), style: context.text.labelMedium?.copyWith(letterSpacing: 1.2)),
-              ),
+              Expanded(child: Text(label.toUpperCase(), style: context.text.labelMedium?.copyWith(letterSpacing: 1.2))),
               IconButton(
                 tooltip: rail.locked ? s.unlockRail(label) : s.lockRail(label),
                 onPressed: onLock,
-                icon: Icon(rail.locked ? AppIcons.locked : AppIcons.unlocked,
-                    color: rail.locked ? palette.thread : palette.tertiaryText),
+                icon: Icon(
+                  rail.locked ? AppIcons.locked : AppIcons.unlocked,
+                  color: rail.locked ? palette.thread : palette.tertiaryText,
+                ),
               ),
             ],
           ),
@@ -273,40 +330,51 @@ class _Rail extends StatelessWidget {
                   height: 4,
                   decoration: BoxDecoration(
                     color: rodColor,
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 3, offset: const Offset(0, 2))],
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 3, offset: const Offset(0, 2)),
+                    ],
                   ),
                 ),
               ),
-              PageView.builder(
-                controller: rail.controller,
-                onPageChanged: onPageChanged,
-                physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
-                clipBehavior: Clip.none,
-                // One piece on a rail just hangs there; no copies beside it.
-                itemBuilder: (context, i) => items.length == 1 && i != rail.page
-                    ? const SizedBox.shrink()
-                    : AnimatedBuilder(
-                  animation: rail.controller,
-                  builder: (context, child) {
-                    final c = rail.controller;
-                    final page = c.hasClients && c.position.haveDimensions ? c.page! : rail.page.toDouble();
-                    final d = i - page;
-                    // Hangers off to the side are smaller, fainter and tilted,
-                    // as if pushed along the rod.
-                    return Opacity(
-                      opacity: (1 - d.abs() * 0.5).clamp(0.35, 1.0),
-                      child: Transform.rotate(
-                        angle: (d * 0.09).clamp(-0.16, 0.16),
-                        alignment: Alignment.topCenter,
-                        child: Transform.scale(
-                          scale: (1 - d.abs() * 0.16).clamp(0.8, 1.0),
-                          alignment: Alignment.topCenter,
-                          child: child,
+              NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (n is ScrollUpdateNotification) rail.trackSpeed();
+                  if (n is ScrollEndNotification) rail.settle(still: MediaQuery.disableAnimationsOf(context));
+                  return false;
+                },
+                child: PageView.builder(
+                  controller: rail.controller,
+                  onPageChanged: onPageChanged,
+                  physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
+                  clipBehavior: Clip.none,
+                  // One piece on a rail just hangs there; no copies beside it.
+                  itemBuilder: (context, i) => items.length == 1 && i != rail.page
+                      ? const SizedBox.shrink()
+                      : AnimatedBuilder(
+                          animation: Listenable.merge([rail.controller, rail.swing]),
+                          builder: (context, child) {
+                            final c = rail.controller;
+                            final page = c.hasClients && c.position.haveDimensions ? c.page! : rail.page.toDouble();
+                            final d = i - page;
+                            // Hangers off to the side are smaller, fainter and tilted,
+                            // as if pushed along the rod. All of them swing together
+                            // when the rail stops; the side ones a little less.
+                            final swing = rail.swing.value * (d.abs() < 0.5 ? 1.0 : 0.7);
+                            return Opacity(
+                              opacity: (1 - d.abs() * 0.5).clamp(0.35, 1.0),
+                              child: Transform.rotate(
+                                angle: (d * 0.09).clamp(-0.16, 0.16) + swing,
+                                alignment: Alignment.topCenter,
+                                child: Transform.scale(
+                                  scale: (1 - d.abs() * 0.16).clamp(0.8, 1.0),
+                                  alignment: Alignment.topCenter,
+                                  child: child,
+                                ),
+                              ),
+                            );
+                          },
+                          child: _Hanging(garment: items[i % items.length], size: cardSize),
                         ),
-                      ),
-                    );
-                  },
-                  child: _Hanging(garment: items[i % items.length], size: cardSize),
                 ),
               ),
             ],
@@ -336,9 +404,14 @@ class _Hanging extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.14), blurRadius: 14, offset: const Offset(0, 6))],
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.14), blurRadius: 14, offset: const Offset(0, 6)),
+              ],
             ),
-            child: ClipRRect(borderRadius: BorderRadius.circular(16), child: GarmentImage(garment: garment)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: GarmentImage(garment: garment),
+            ),
           ),
         ),
         ConstrainedBox(
