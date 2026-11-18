@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
@@ -33,57 +32,86 @@ class _RailState {
   // Rails loop: start far from zero so you can swipe either way.
   static const _start = 6000;
 
-  // A hanger on a rod: a swing and a half-size swing back, settled in
-  // about 1.5 s. Natural period ~0.6 s (stiffness 110), damping ratio 0.22.
-  static final _pendulum = SpringDescription.withDampingRatio(mass: 1, stiffness: 110, ratio: 0.22);
+  // Each hanger is a damped pendulum whose hook is pulled along by the
+  // rail, so it swings *because* the rail speeds up and slows down: it
+  // leans back as the rail starts, swings forward as it slows, and is
+  // already settling when it stops. One continuous motion, no hand-off.
+  // Natural period ~0.6 s (stiffness 110), damping ratio 0.22.
+  static const _stiffness = 110.0;
+  static final _damping = 2 * 0.22 * sqrt(_stiffness);
 
-  // Angular push per page/second of rail speed, and the cap: about 8°
-  // of swing at most, so it reads as life, not as wobble.
-  static const _pushPerSpeed = 0.3;
-  static const _maxPush = 1.6;
+  // Swing per unit of rail acceleration (pages/s²), and limits so a fast
+  // shuffle reads as life, not as wobble: about 7° at a typical slow-down,
+  // 12° at most.
+  static const _drive = 0.33;
+  static const _maxAccel = 45.0;
+  static const _maxAngle = 0.21;
 
-  _RailState(TickerProvider vsync) : swing = AnimationController.unbounded(vsync: vsync);
+  _RailState(TickerProvider vsync) {
+    _ticker = vsync.createTicker(_tick);
+    controller.addListener(_wake);
+  }
 
   final controller = PageController(viewportFraction: 0.56, initialPage: _start);
 
   /// The hangers' swing angle, in radians, around the hook.
-  final AnimationController swing;
+  final swing = ValueNotifier<double>(0);
   int page = _start;
   bool locked = false;
 
-  // Fastest the rail moved during the current scroll, in pages/second,
-  // signed by direction.
-  double _peakSpeed = 0;
+  /// Reduce Motion: no swing at all.
+  bool still = false;
+
+  late final Ticker _ticker;
+  double _angularVelocity = 0;
   double? _lastPage;
+  double _pageVelocity = 0;
   Duration? _lastTime;
 
   Garment current(List<Garment> items) => items[page % items.length];
 
-  void trackSpeed() {
-    if (!controller.hasClients || !controller.position.haveDimensions) return;
-    final now = SchedulerBinding.instance.currentFrameTimeStamp;
-    final p = controller.page!;
-    if (_lastPage != null && _lastTime != null && now > _lastTime!) {
-      final v = (p - _lastPage!) / ((now - _lastTime!).inMicroseconds / 1e6);
-      if (v.abs() > _peakSpeed.abs()) _peakSpeed = v;
-    }
-    _lastPage = p;
-    _lastTime = now;
+  // The rail moved: start simulating if we aren't already.
+  void _wake() {
+    if (still || _ticker.isActive) return;
+    _lastTime = null;
+    _lastPage = null;
+    _pageVelocity = 0;
+    _ticker.start();
   }
 
-  /// The rail stopped: the hangers keep going a little, then swing back.
-  /// Moving toward later pages slides clothes left, so their bottoms
-  /// carry on left, which is a clockwise (positive) turn about the hook.
-  void settle({required bool still}) {
-    final push = (_peakSpeed * _pushPerSpeed).clamp(-_maxPush, _maxPush);
-    _peakSpeed = 0;
-    _lastPage = null;
-    _lastTime = null;
-    if (still || push.abs() < 0.15) return;
-    swing.animateWith(SpringSimulation(_pendulum, swing.value, 0, push + swing.velocity));
+  void _tick(Duration elapsed) {
+    if (!controller.hasClients || !controller.position.haveDimensions) return;
+    final p = controller.page!;
+    final dt = _lastTime == null ? 0.0 : (elapsed - _lastTime!).inMicroseconds / 1e6;
+    _lastTime = elapsed;
+    // First frame, or a long hitch: just take a reading.
+    if (dt <= 0 || dt > 0.1) {
+      _lastPage = p;
+      return;
+    }
+    final v = (p - (_lastPage ?? p)) / dt;
+    _lastPage = p;
+    // Frame timing is noisy, so smooth the speed before taking its change.
+    final smoothed = _pageVelocity + (v - _pageVelocity) * 0.5;
+    final accel = ((smoothed - _pageVelocity) / dt).clamp(-_maxAccel, _maxAccel);
+    _pageVelocity = smoothed;
+
+    // Rail pulled toward later pages slides clothes left; their bottoms
+    // lag to the right, which is a counter-clockwise (negative) turn.
+    final angle = swing.value;
+    final torque = -_stiffness * angle - _damping * _angularVelocity - _drive * accel;
+    _angularVelocity += torque * dt;
+    swing.value = (angle + _angularVelocity * dt).clamp(-_maxAngle, _maxAngle);
+
+    if (swing.value.abs() < 0.0005 && _angularVelocity.abs() < 0.005 && v.abs() < 0.001) {
+      swing.value = 0;
+      _angularVelocity = 0;
+      _ticker.stop();
+    }
   }
 
   void dispose() {
+    _ticker.dispose();
     controller.dispose();
     swing.dispose();
   }
@@ -172,6 +200,10 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProvider
     final state = AppScope.of(context);
     final lists = [state.shuffleTops, state.shuffleBottoms];
     final ready = lists.every((l) => l.isNotEmpty);
+    final still = MediaQuery.disableAnimationsOf(context);
+    for (final r in _rails) {
+      r.still = still;
+    }
 
     return Scaffold(
       body: CustomScrollView(
@@ -349,13 +381,7 @@ class _Rail extends StatelessWidget {
                   ),
                 ),
               ),
-              NotificationListener<ScrollNotification>(
-                onNotification: (n) {
-                  if (n is ScrollUpdateNotification) rail.trackSpeed();
-                  if (n is ScrollEndNotification) rail.settle(still: MediaQuery.disableAnimationsOf(context));
-                  return false;
-                },
-                child: PageView.builder(
+              PageView.builder(
                   controller: rail.controller,
                   onPageChanged: onPageChanged,
                   physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
@@ -388,7 +414,6 @@ class _Rail extends StatelessWidget {
                           },
                           child: _Hanging(garment: items[i % items.length], size: cardSize),
                         ),
-                ),
               ),
             ],
           ),
