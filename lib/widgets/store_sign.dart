@@ -6,6 +6,11 @@ import '../theme/app_theme.dart';
 /// Ink or white letters, whichever reads on a sign color.
 Color onSignColor(Color sign) => sign == SignColors.mustard ? SignColors.ink : Colors.white;
 
+/// The paint for a sign. An ink sign would vanish into the dark background,
+/// so in dark mode it becomes a lighter charcoal board.
+Color signFill(BuildContext context, Color sign) =>
+    sign == SignColors.ink && Theme.of(context).brightness == Brightness.dark ? const Color(0xFF30343B) : sign;
+
 /// The laundromat checkerboard: two rows of black and white floor tiles.
 ///
 /// Tiles are snapped to whole device pixels and drawn without
@@ -88,7 +93,7 @@ class StoreSign extends StatelessWidget {
       child: SliverAppBar(
         pinned: true,
         expandedHeight: 128,
-        backgroundColor: color,
+        backgroundColor: signFill(context, color),
         foregroundColor: onSign,
         surfaceTintColor: Colors.transparent,
         systemOverlayStyle: onSign == Colors.white ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -135,7 +140,7 @@ class SignBar extends StatelessWidget implements PreferredSizeWidget {
         textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: onSign)),
       ),
       child: AppBar(
-        backgroundColor: color,
+        backgroundColor: signFill(context, color),
         foregroundColor: onSign,
         surfaceTintColor: Colors.transparent,
         systemOverlayStyle: onSign == Colors.white ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -184,7 +189,7 @@ class SheetSign extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          color: color,
+          color: signFill(context, color),
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
