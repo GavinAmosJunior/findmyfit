@@ -44,6 +44,8 @@ dependencies:
   web: ^1.1.2
   flutter_localizations:
     sdk: flutter
+  google_mlkit_subject_segmentation: ^0.3.2
+  image: ^4.13.1
 
 dev_dependencies:
   flutter_test:

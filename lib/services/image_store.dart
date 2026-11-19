@@ -25,15 +25,39 @@ class ImageStore {
     return dir;
   }
 
-  static String _dataUrl(Uint8List bytes) => 'data:image/jpeg;base64,${base64Encode(bytes)}';
+  /// Whether these bytes are a PNG: how cutouts are stored, since they need
+  /// a transparent background. Camera photos are JPEGs.
+  static bool isCutoutBytes(Uint8List bytes) =>
+      bytes.length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47;
 
-  static Future<String> savePicked(XFile picked) async {
-    final bytes = await picked.readAsBytes();
+  /// Whether a stored image is a cutout (garment on a transparent background).
+  static bool isCutout(String? ref) =>
+      ref != null && (ref.toLowerCase().endsWith('.png') || ref.startsWith('data:image/png'));
+
+  static String _dataUrl(Uint8List bytes) =>
+      'data:image/${isCutoutBytes(bytes) ? 'png' : 'jpeg'};base64,${base64Encode(bytes)}';
+
+  static Future<String> savePicked(XFile picked) async => saveBytes(await picked.readAsBytes());
+
+  /// Stores a photo or cutout and returns its reference.
+  static Future<String> saveBytes(Uint8List bytes) async {
     if (kIsWeb) return _dataUrl(bytes);
     final dir = await _dir();
-    final file = File('${dir.path}/g_${DateTime.now().microsecondsSinceEpoch}.jpg');
+    final ext = isCutoutBytes(bytes) ? 'png' : 'jpg';
+    final file = File('${dir.path}/g_${DateTime.now().microsecondsSinceEpoch}.$ext');
     await file.writeAsBytes(bytes, flush: true);
     return file.path;
+  }
+
+  /// Reads a stored image back, for rotating it.
+  static Future<Uint8List?> read(String ref) async {
+    try {
+      if (ref.startsWith('data:')) return UriData.parse(ref).contentAsBytes();
+      if (kIsWeb || ref.startsWith('http')) return null;
+      return await File(ref).readAsBytes();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Turns a stored image reference into something that can travel inside
@@ -57,7 +81,8 @@ class ImageStore {
     try {
       final bytes = UriData.parse(ref).contentAsBytes();
       final dir = await _dir();
-      final file = File('${dir.path}/g_${DateTime.now().microsecondsSinceEpoch}_${ref.hashCode.abs()}.jpg');
+      final ext = isCutoutBytes(bytes) ? 'png' : 'jpg';
+      final file = File('${dir.path}/g_${DateTime.now().microsecondsSinceEpoch}_${ref.hashCode.abs()}.$ext');
       await file.writeAsBytes(bytes, flush: true);
       return file.path;
     } catch (_) {

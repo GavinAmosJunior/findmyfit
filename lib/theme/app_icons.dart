@@ -56,6 +56,9 @@ abstract final class AppIcons {
   static const IconData cameraOutline = IconData(0xe10e, fontFamily: _regular);
   static const IconData addPhoto = IconData(0xec58, fontFamily: _regular);
   static const IconData library = IconData(0xe836, fontFamily: _regular);
+  static const IconData rotate = IconData(0xe036, fontFamily: _regular);
+  static const IconData cutout = IconData(0xe6b6, fontFamily: _regular);
+  static const IconData cutoutOn = IconData(0xe6b6, fontFamily: _fill);
 
   // Checks.
   static const IconData check = IconData(0xe182, fontFamily: _bold);

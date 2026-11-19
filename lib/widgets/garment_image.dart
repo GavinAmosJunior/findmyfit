@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/garment.dart';
+import '../services/image_store.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_icons.dart';
 
@@ -48,6 +49,25 @@ class GarmentImage extends StatelessWidget {
     final fallback = _Fallback(garment: garment, iconSize: iconSize);
     if (ref == null || ref.isEmpty) return fallback;
 
+    final photo = _photo(ref, fallback);
+    if (!ImageStore.isCutout(ref)) return photo;
+
+    // A cutout floats whole on a quiet backdrop instead of being cropped
+    // to fill the tile.
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return ColoredBox(
+      color: dark ? const Color(0xFF26282C) : const Color(0xFFF1F0EC),
+      child: LayoutBuilder(
+        builder: (context, c) => Padding(
+          padding: EdgeInsets.all(c.biggest.shortestSide.isFinite ? c.biggest.shortestSide * 0.04 : 0),
+          child: photo,
+        ),
+      ),
+    );
+  }
+
+  Widget _photo(String ref, Widget fallback) {
+    final fit = ImageStore.isCutout(ref) ? BoxFit.contain : BoxFit.cover;
     // Decode photos at the size they're shown, not their full resolution,
     // so a grid of thumbnails stays light on memory and scrolls smoothly.
     return LayoutBuilder(builder: (context, constraints) {
@@ -59,13 +79,13 @@ class GarmentImage extends StatelessWidget {
       if (ref.startsWith('data:')) {
         final bytes = _bytes(ref);
         if (bytes == null) return fallback;
-        return Image.memory(bytes, fit: BoxFit.cover, cacheWidth: cache, gaplessPlayback: true, errorBuilder: error);
+        return Image.memory(bytes, fit: fit, cacheWidth: cache, gaplessPlayback: true, errorBuilder: error);
       }
       if (ref.startsWith('http')) {
-        return Image.network(ref, fit: BoxFit.cover, cacheWidth: cache, errorBuilder: error);
+        return Image.network(ref, fit: fit, cacheWidth: cache, errorBuilder: error);
       }
       if (kIsWeb) return fallback; // Old blob: URLs don't survive a reload.
-      return Image.file(File(ref), fit: BoxFit.cover, cacheWidth: cache, errorBuilder: error);
+      return Image.file(File(ref), fit: fit, cacheWidth: cache, errorBuilder: error);
     });
   }
 }

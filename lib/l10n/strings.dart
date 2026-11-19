@@ -238,6 +238,14 @@ class S {
   String added(String name) => _t('$name added', '$name ditambahkan');
   String queueProgress(int current, int total) => _id ? 'Foto $current dari $total' : 'Photo $current of $total';
   String get skip => _t('Skip', 'Lewati');
+  String get liftingOut => _t('Removing background…', 'Menghapus latar…');
+  String get rotate => _t('Rotate', 'Putar');
+  String get showOriginal => _t('Show original photo', 'Tampilkan foto asli');
+  String get showCutout => _t('Remove background', 'Hapus latar');
+  String get cutoutNotReady => _t('Background removal is still getting ready on this phone. Try again in a minute.',
+      'Penghapus latar belum siap di ponsel ini. Coba lagi sebentar lagi.');
+  String get noCutout => _t('Couldn’t find the clothes in this photo. Try a plain surface.',
+      'Pakaian tidak terdeteksi di foto ini. Coba alas polos.');
   String get editGarment => _t('Edit clothes', 'Ubah pakaian');
   String get photoError => _t('Couldn’t open the camera or photos. Check app permissions.',
       'Tidak bisa membuka kamera atau galeri. Cek izin aplikasi.');

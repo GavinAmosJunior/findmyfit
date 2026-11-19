@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../l10n/strings.dart';
 import '../models/garment.dart';
+import '../services/cutout.dart';
 import '../services/image_store.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
@@ -16,6 +21,10 @@ import '../widgets/store_sign.dart';
 /// Adding is camera-first: snap a photo, type a name, tap "Add and next",
 /// and the camera opens again for the next piece. "Choose photos" queues
 /// several gallery photos to name one after another.
+///
+/// Each photo has its background removed while the name is typed (on
+/// Android), so the garment shows on its own. The photo's corner buttons
+/// switch back to the original and turn it a quarter turn.
 ///
 /// The same screen edits an existing garment.
 class GarmentFormScreen extends StatefulWidget {
@@ -52,8 +61,23 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
   final _picker = ImagePicker();
 
   late GarmentCategory _category;
-  String? _image;
   bool _dirty = false;
+
+  // The photo as taken, its cutout once ready, which of the two to keep,
+  // and quarter turns to apply when saving.
+  String? _original;
+  String? _cutout;
+  bool _useCutout = true;
+  int _turns = 0;
+  bool _lifting = false;
+
+  // Set when no garment was found in this photo; trying again won't help.
+  bool _noGarment = false;
+  Future<void>? _liftDone;
+  int _photoToken = 0;
+  bool _saving = false;
+
+  String? get _image => _useCutout && _cutout != null ? _cutout : _original;
   bool _busy = false;
   bool _showNameError = false;
   int _added = 0;
@@ -73,7 +97,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _name.text = g.name;
       _brand.text = g.brand ?? '';
       _notes.text = g.notes ?? '';
-      _image = g.imageUrl;
+      _original = g.imageUrl;
     } else if (_hasCamera) {
       // Camera-first: open it straight away on phones.
       WidgetsBinding.instance.addPostFrameCallback((_) => _takePhoto());
@@ -132,14 +156,87 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
   }
 
   Future<void> _usePhoto(XFile file) async {
+    final token = ++_photoToken;
     setState(() => _busy = true);
-    final stored = await ImageStore.savePicked(file);
-    if (!mounted) return;
+    final bytes = await file.readAsBytes();
+    final stored = await ImageStore.saveBytes(bytes);
+    if (!mounted || token != _photoToken) return;
     setState(() {
-      _image = stored;
+      _original = stored;
+      _cutout = null;
+      _useCutout = true;
+      _turns = 0;
+      _noGarment = false;
       _busy = false;
     });
     _nameFocus.requestFocus();
+    if (Cutout.supported) _liftDone = _lift(bytes, token);
+  }
+
+  /// Removes the background in the background, while the name is typed.
+  /// Quiet when it runs on its own; when asked for with the button, says
+  /// why there's no cutout.
+  Future<void> _lift(Uint8List bytes, int token, {bool asked = false}) async {
+    setState(() => _lifting = true);
+    final result = await Cutout.lift(bytes);
+    final png = result.png;
+    final stored = png == null ? null : await ImageStore.saveBytes(png);
+    if (!mounted || token != _photoToken) return;
+    setState(() {
+      _lifting = false;
+      _cutout = stored;
+      _useCutout = true;
+      _noGarment = stored == null && !result.unavailable;
+    });
+    if (stored == null && asked) {
+      final s = S.of(context);
+      showMessage(context, result.unavailable ? s.cutoutNotReady : s.noCutout);
+    }
+  }
+
+  /// Removing the background from a photo saved before this feature.
+  Future<void> _liftExisting() async {
+    final ref = _original;
+    if (ref == null) return;
+    final bytes = await ImageStore.read(ref);
+    if (bytes == null || !mounted) return;
+    _liftDone = _lift(bytes, _photoToken, asked: true);
+  }
+
+  void _toggleCutout() {
+    HapticFeedback.selectionClick();
+    if (_cutout == null) {
+      _liftExisting();
+    } else {
+      setState(() => _useCutout = !_useCutout);
+    }
+  }
+
+  void _rotate() {
+    HapticFeedback.selectionClick();
+    setState(() => _turns++);
+  }
+
+  void _clearPhoto() {
+    _photoToken++;
+    _original = null;
+    _cutout = null;
+    _useCutout = true;
+    _turns = 0;
+    _lifting = false;
+    _noGarment = false;
+    _liftDone = null;
+  }
+
+  /// The image to save: waits for a cutout still being made, and bakes in
+  /// any quarter turns.
+  Future<String?> _finalImage() async {
+    if (_liftDone != null) await _liftDone;
+    final ref = _image;
+    if (ref == null || _turns % 4 == 0) return ref;
+    final bytes = await ImageStore.read(ref);
+    if (bytes == null) return ref;
+    return ImageStore.saveBytes(await Cutout.rotateQuarter(bytes, turns: _turns));
   }
 
   String? _clean(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
@@ -162,7 +259,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
         text(_brand) != (g.brand ?? '') ||
         text(_notes) != (g.notes ?? '') ||
         _category != g.category ||
-        _image != g.imageUrl;
+        _image != g.imageUrl ||
+        _turns % 4 != 0;
   }
 
   /// Back, swipe back or ✕: ask before throwing away a photo or edits.
@@ -182,15 +280,18 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     Navigator.of(context).pop();
   }
 
-  void _saveEdit() {
-    if (!_validate()) return;
+  Future<void> _saveEdit() async {
+    if (_saving || !_validate()) return;
+    setState(() => _saving = true);
+    final image = await _finalImage();
+    if (!mounted) return;
     AppScope.read(context).updateGarment(
       widget.editing!.edited(
         name: _name.text.trim(),
         category: _category,
         brand: _clean(_brand),
         notes: _clean(_notes),
-        imageUrl: _image,
+        imageUrl: image,
       ),
     );
     Navigator.of(context).pop();
@@ -198,7 +299,11 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
 
   /// Saves the current piece. With [next], resets for the next one.
   Future<void> _add({required bool next}) async {
-    if (!_validate()) return;
+    if (_saving || !_validate()) return;
+    setState(() => _saving = true);
+    final image = await _finalImage();
+    if (!mounted) return;
+    setState(() => _saving = false);
     final s = S.of(context);
     final garment = AppScope.read(context).addGarment(
       name: _name.text,
@@ -206,7 +311,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       status: _dirty ? GarmentStatus.dirtyHamper : GarmentStatus.closet,
       brand: _brand.text,
       notes: _notes.text,
-      imageUrl: _image,
+      imageUrl: image,
     );
     _lastCategory = _category;
     HapticFeedback.lightImpact();
@@ -223,7 +328,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _name.clear();
       _brand.clear();
       _notes.clear();
-      _image = null;
+      _clearPhoto();
       _showNameError = false;
     });
     if (_queue.isNotEmpty) {
@@ -239,7 +344,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
   }
 
   Future<void> _skip() async {
-    setState(() => _image = null);
+    setState(_clearPhoto);
     if (_queue.isNotEmpty) {
       await _usePhoto(_queue.removeAt(0));
     } else {
@@ -269,7 +374,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           title: _isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes),
           actions: [
             if (_isEdit)
-              TextButton(onPressed: _saveEdit, child: Text(s.save))
+              TextButton(onPressed: _saving ? null : _saveEdit, child: Text(s.save))
             else if (_added > 0)
               Padding(
                 padding: const EdgeInsets.only(right: 16),
@@ -375,13 +480,13 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(onPressed: _busy ? null : () => _add(next: false), child: Text(s.add)),
+                        child: OutlinedButton(onPressed: _busy || _saving ? null : () => _add(next: false), child: Text(s.add)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         flex: 2,
                         child: FilledButton.icon(
-                          onPressed: _busy ? null : () => _add(next: true),
+                          onPressed: _busy || _saving ? null : () => _add(next: true),
                           icon: Icon(_hasCamera ? AppIcons.camera : AppIcons.forward),
                           label: Text(s.addAndNext),
                         ),
@@ -393,6 +498,75 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _preview(BuildContext context, S s, Garment preview) {
+    final ref = _image!;
+    final cutoutOn = _useCutout && _cutout != null;
+    final canCutout =
+        _cutout != null || (Cutout.supported && !ImageStore.isCutout(_original) && !_lifting && !_noGarment);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
+    final picture = ImageStore.isCutout(ref) && !kIsWeb && !ref.startsWith('data:')
+        ? _CutoutPreview(key: ValueKey(ref), file: File(ref), glow: !reduceMotion && ref == _cutout)
+        : KeyedSubtree(key: ValueKey(ref), child: GarmentImage(garment: preview, iconSize: 64));
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        AnimatedRotation(
+          turns: _turns / 4,
+          duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          child: AnimatedSwitcher(
+            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 350),
+            // Fill the square, as the photo did before it could switch.
+            layoutBuilder: (current, previous) =>
+                Stack(fit: StackFit.expand, children: [...previous, ?current]),
+            child: picture,
+          ),
+        ),
+        if (_lifting)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 14,
+            child: Center(
+              child: _Pill(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox.square(
+                      dimension: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(s.liftingOut, style: context.text.labelMedium?.copyWith(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          right: 10,
+          top: 10,
+          child: Column(
+            children: [
+              _PhotoButton(icon: AppIcons.rotate, tooltip: s.rotate, onPressed: _saving ? null : _rotate),
+              if (canCutout) ...[
+                const SizedBox(height: 8),
+                _PhotoButton(
+                  icon: cutoutOn ? AppIcons.cutoutOn : AppIcons.cutout,
+                  tooltip: cutoutOn ? s.showOriginal : s.showCutout,
+                  selected: cutoutOn,
+                  onPressed: _saving ? null : _toggleCutout,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -413,7 +587,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                     child: const Center(child: CircularProgressIndicator.adaptive()),
                   )
                 : hasPhoto
-                ? GarmentImage(garment: preview, iconSize: 64)
+                ? _preview(context, s, preview)
                 : Material(
                     color: context.palette.card,
                     child: InkWell(
@@ -453,6 +627,105 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// A dark, translucent capsule that reads over any photo.
+class _Pill extends StatelessWidget {
+  final Widget child;
+
+  const _Pill({required this.child});
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(99)),
+    child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7), child: child),
+  );
+}
+
+/// A round button laid over the photo's corner.
+class _PhotoButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool selected;
+  final VoidCallback? onPressed;
+
+  const _PhotoButton({required this.icon, required this.tooltip, this.selected = false, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      toggled: selected,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: selected ? Colors.white : Colors.black.withValues(alpha: 0.5),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onPressed,
+            child: SizedBox.square(
+              dimension: 44,
+              child: Icon(icon, size: 22, color: selected ? Colors.black : Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A cutout on its backdrop. When [glow] is set, a white outline traces
+/// the garment once and fades, showing what was lifted out.
+class _CutoutPreview extends StatelessWidget {
+  final File file;
+  final bool glow;
+
+  const _CutoutPreview({super.key, required this.file, required this.glow});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final image = FileImage(file);
+    Widget shape() => Image(
+      image: image,
+      fit: BoxFit.contain,
+      color: Colors.white,
+      colorBlendMode: BlendMode.srcIn,
+      gaplessPlayback: true,
+    );
+
+    return ColoredBox(
+      color: dark ? const Color(0xFF26282C) : const Color(0xFFF1F0EC),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (glow)
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 1300),
+                builder: (context, t, child) => Opacity(opacity: math.sin(t * math.pi).clamp(0.0, 1.0), child: child),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // A soft halo, then a crisp edge from eight nudged copies.
+                    ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8), child: shape()),
+                    for (var i = 0; i < 8; i++)
+                      Transform.translate(
+                        offset: Offset(3 * math.cos(i * math.pi / 4), 3 * math.sin(i * math.pi / 4)),
+                        child: shape(),
+                      ),
+                  ],
+                ),
+              ),
+            Image(image: image, fit: BoxFit.contain, gaplessPlayback: true),
+          ],
+        ),
+      ),
     );
   }
 }
