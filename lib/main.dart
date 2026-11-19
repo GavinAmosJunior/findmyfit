@@ -58,7 +58,11 @@ class _FindMyFitAppState extends State<FindMyFitApp> {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
-            themeMode: ThemeMode.system,
+            themeMode: switch (widget.state.appearance) {
+              'light' => ThemeMode.light,
+              'dark' => ThemeMode.dark,
+              _ => ThemeMode.system,
+            },
             locale: lang == 'system' ? null : Locale(lang),
             supportedLocales: S.supported,
             localizationsDelegates: GlobalMaterialLocalizations.delegates,

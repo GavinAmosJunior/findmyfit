@@ -243,6 +243,9 @@ class S {
       'Tidak bisa membuka kamera atau galeri. Cek izin aplikasi.');
 
   // --------------------------------------------------------------- settings
+  String get appearance => _t('Appearance', 'Tampilan');
+  String get light => _t('Light', 'Terang');
+  String get dark => _t('Dark', 'Gelap');
   String get language => _t('Language', 'Bahasa');
   String get systemLanguage => _t('Same as phone', 'Sama dengan ponsel');
   String get backup => _t('Backup', 'Cadangan');

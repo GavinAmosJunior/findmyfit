@@ -48,6 +48,23 @@ void main() {
     expect(state.garments.single.wearCount, 0);
   });
 
+  testWidgets('Appearance in Settings can force dark mode, and it is remembered', (tester) async {
+    final state = await _loadedState();
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+    expect(Theme.of(tester.element(find.byType(AppTabBar))).brightness, Brightness.light);
+
+    await tester.tap(find.byIcon(AppIcons.settings));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(state.appearance, 'dark');
+    expect(Theme.of(tester.element(find.text('Dark'))).brightness, Brightness.dark);
+
+    final reloaded = await _loadedState();
+    expect(reloaded.appearance, 'dark');
+  });
+
   testWidgets('switching to Bahasa Indonesia translates the tabs', (tester) async {
     final state = await _loadedState();
     state.setLanguage('id');

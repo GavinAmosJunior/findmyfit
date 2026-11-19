@@ -75,6 +75,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.only(top: 8, bottom: 32),
         children: [
           GroupedSection(
+            header: s.appearance.toUpperCase(),
+            children: [
+              for (final (mode, label) in [
+                ('system', s.systemLanguage),
+                ('light', s.light),
+                ('dark', s.dark),
+              ])
+                ListTile(
+                  title: Text(label),
+                  selected: state.appearance == mode,
+                  selectedColor: Theme.of(context).colorScheme.onSurface,
+                  trailing: state.appearance == mode
+                      ? Icon(AppIcons.check, color: Theme.of(context).colorScheme.primary)
+                      : null,
+                  onTap: () => state.setAppearance(mode),
+                ),
+            ],
+          ),
+          GroupedSection(
             header: s.language.toUpperCase(),
             children: [
               for (final (code, label) in [

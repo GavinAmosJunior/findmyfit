@@ -15,6 +15,7 @@ class WardrobeState extends ChangeNotifier {
   static const _keyBatches = 'saved_batches_v1';
   static const _keyBatchCounter = 'saved_batch_counter_v1';
   static const _keyLanguage = 'language_v1';
+  static const _keyAppearance = 'appearance_v1';
   static const _keyFits = 'saved_fits_v1';
 
   static const backupFormat = 'findmyfit-backup';
@@ -26,6 +27,7 @@ class WardrobeState extends ChangeNotifier {
   int _batchCounter = 1000;
   bool _isLoaded = false;
   String _language = 'system';
+  String _appearance = 'system';
 
   WardrobeState({bool load = true}) {
     if (load) loadFromStorage();
@@ -40,6 +42,9 @@ class WardrobeState extends ChangeNotifier {
 
   /// 'system', 'en' or 'id'.
   String get language => _language;
+
+  /// 'system', 'light' or 'dark'.
+  String get appearance => _appearance;
 
   List<Garment> withStatus(GarmentStatus status) =>
       _garments.where((g) => g.status == status).toList();
@@ -95,6 +100,7 @@ class WardrobeState extends ChangeNotifier {
       );
       _batchCounter = prefs.getInt(_keyBatchCounter) ?? 1000;
       _language = prefs.getString(_keyLanguage) ?? 'system';
+      _appearance = prefs.getString(_keyAppearance) ?? 'system';
     } catch (e) {
       debugPrint('Error loading wardrobe storage: $e');
     } finally {
@@ -129,6 +135,7 @@ class WardrobeState extends ChangeNotifier {
       await prefs.setString(_keyFits, jsonEncode(_fits.map((f) => f.toJson()).toList()));
       await prefs.setInt(_keyBatchCounter, _batchCounter);
       await prefs.setString(_keyLanguage, _language);
+      await prefs.setString(_keyAppearance, _appearance);
     } catch (e) {
       debugPrint('Error saving wardrobe storage: $e');
     }
@@ -141,6 +148,11 @@ class WardrobeState extends ChangeNotifier {
 
   void setLanguage(String code) {
     _language = code;
+    _changed();
+  }
+
+  void setAppearance(String mode) {
+    _appearance = mode;
     _changed();
   }
 
