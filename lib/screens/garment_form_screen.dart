@@ -190,7 +190,10 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     });
     if (stored == null && asked) {
       final s = S.of(context);
-      showMessage(context, result.unavailable ? s.cutoutNotReady : s.noCutout);
+      showMessage(
+        context,
+        result.downloading ? s.cutoutNotReady : (result.unavailable ? s.cutoutFailed : s.noCutout),
+      );
     }
   }
 

@@ -107,9 +107,14 @@ void main() {
     final none = await Cutout.lift(img.encodeJpg(photo));
     expect((none.png, none.unavailable), (null, false), reason: 'nothing found: keep the plain photo');
 
-    Cutout.finder = (_) async => throw Exception('model still downloading');
+    Cutout.finder = (_) async => throw Exception('Waiting for the subject segmentation optional module to be downloaded.');
     final later = await Cutout.lift(img.encodeJpg(photo));
-    expect((later.png, later.unavailable), (null, true), reason: 'told apart, so the app can say try again');
+    expect((later.png, later.unavailable, later.downloading), (null, true, true),
+        reason: 'told apart, so the app can say try again');
+
+    Cutout.finder = (_) async => throw Exception('NullPointerException');
+    final broken = await Cutout.lift(img.encodeJpg(photo));
+    expect((broken.unavailable, broken.downloading), (true, false), reason: 'not blamed on a download');
   });
 
   test('rotate turns a quarter clockwise and keeps the format', () async {

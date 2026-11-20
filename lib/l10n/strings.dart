@@ -242,6 +242,8 @@ class S {
   String get rotate => _t('Rotate', 'Putar');
   String get showOriginal => _t('Show original photo', 'Tampilkan foto asli');
   String get showCutout => _t('Remove background', 'Hapus latar');
+  String get cutoutFailed => _t('Background removal didn’t work on this phone. The photo is kept as is.',
+      'Penghapus latar tidak berjalan di ponsel ini. Foto tetap dipakai apa adanya.');
   String get cutoutNotReady => _t('Background removal is still getting ready on this phone. Try again in a minute.',
       'Penghapus latar belum siap di ponsel ini. Coba lagi sebentar lagi.');
   String get noCutout => _t('Couldn’t find the clothes in this photo. Try a plain surface.',

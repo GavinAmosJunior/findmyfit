@@ -29,13 +29,17 @@ class CutoutResult {
   /// PNG bytes of the garment on a transparent square.
   final Uint8List? png;
 
-  /// True when the phone couldn't run background removal at all (no model
-  /// downloaded yet, no Play services), as opposed to finding no garment.
+  /// True when the phone couldn't run background removal at all, as
+  /// opposed to finding no garment.
   final bool unavailable;
 
-  const CutoutResult.done(Uint8List this.png) : unavailable = false;
-  const CutoutResult.notFound() : png = null, unavailable = false;
-  const CutoutResult.unavailable() : png = null, unavailable = true;
+  /// True when it couldn't run because Play services is still downloading
+  /// the model, so trying again later will help.
+  final bool downloading;
+
+  const CutoutResult.done(Uint8List this.png) : unavailable = false, downloading = false;
+  const CutoutResult.notFound() : png = null, unavailable = false, downloading = false;
+  const CutoutResult.unavailable({this.downloading = false}) : png = null, unavailable = true;
 }
 
 /// Lifts a garment out of its photo: the background goes transparent, a
@@ -69,7 +73,8 @@ class Cutout {
       } catch (e) {
         // No model yet, no Play services, or an unsupported phone.
         debugPrint('Cutout unavailable: $e');
-        return const CutoutResult.unavailable();
+        // ML Kit says "Waiting for the ... module to be downloaded".
+        return CutoutResult.unavailable(downloading: e.toString().toLowerCase().contains('download'));
       }
       if (subjects.isEmpty) return const CutoutResult.notFound();
       final png = await compute(_composeIsolate, (upright, subjects));
