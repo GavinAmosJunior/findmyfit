@@ -1,9 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../state/app_scope.dart';
+import '../state/wardrobe_state.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
@@ -14,6 +16,9 @@ import '../widgets/garment_image.dart';
 import '../widgets/pill.dart';
 import '../widgets/pressable.dart';
 import '../widgets/tags.dart';
+import '../widgets/wardrobe_view.dart';
+import 'category_screen.dart';
+import 'home_shell.dart';
 import 'garment_form_screen.dart';
 import 'garment_sheet.dart';
 import 'settings_screen.dart';
@@ -45,6 +50,10 @@ class ClosetScreen extends StatefulWidget {
 class _ClosetScreenState extends State<ClosetScreen> {
   String? _filter;
   bool _searching = false;
+
+  // Set when you switch to Wardrobe, so the doors open for you then (not
+  // every time the app starts).
+  bool _openDoors = false;
   final _search = TextEditingController();
 
   @override
@@ -119,7 +128,11 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 onAction: () => GarmentFormScreen.openAdd(context),
               ),
             )
-          else ...[
+          else if (state.closetView == 'wardrobe' && !_searching) ...[
+            SliverToBoxAdapter(child: _viewSwitch(context, s, state)),
+            SliverToBoxAdapter(child: _wardrobe(context, s, state)),
+          ] else ...[
+            if (!_searching) SliverToBoxAdapter(child: _viewSwitch(context, s, state)),
             SliverToBoxAdapter(child: _header(context, s, state.countOf)),
             if (visible.isEmpty)
               SliverFillRemaining(
@@ -143,12 +156,71 @@ class _ClosetScreenState extends State<ClosetScreen> {
                         mainAxisExtent: (constraints.crossAxisExtent - 12 * (columns - 1)) / columns + labelArea,
                       ),
                       itemCount: visible.length,
-                      itemBuilder: (context, i) => _GarmentTile(garment: visible[i]),
+                      itemBuilder: (context, i) => GarmentTile(garment: visible[i]),
                     );
                   },
                 ),
               ),
           ],
+        ],
+      ),
+    );
+  }
+
+  /// Grid or Wardrobe, as an iOS segmented control.
+  Widget _viewSwitch(BuildContext context, S s, WardrobeState state) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final style = context.text.titleSmall?.copyWith(fontSize: 13);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+      child: SizedBox(
+        width: double.infinity,
+        child: CupertinoSlidingSegmentedControl<String>(
+          groupValue: state.closetView,
+          backgroundColor: context.palette.tile,
+          thumbColor: dark ? const Color(0xFF3A3A3C) : Colors.white,
+          padding: const EdgeInsets.all(3),
+          children: {
+            'grid': Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Text(s.viewGrid, style: style)),
+            'wardrobe': Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Text(s.viewWardrobe, style: style)),
+          },
+          onValueChanged: (v) {
+            if (v == null || v == state.closetView) return;
+            HapticFeedback.selectionClick();
+            setState(() => _openDoors = v == 'wardrobe');
+            state.setClosetView(v);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _wardrobe(BuildContext context, S s, WardrobeState state) {
+    final inHamper = state.countOf(GarmentStatus.dirtyHamper);
+    final shell = HomeShellState.maybeOf(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 24 + MediaQuery.paddingOf(context).bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          WardrobeView(
+            openDoors: _openDoors,
+            onOpen: (category, rect) => CategoryScreen.open(context, category, rect),
+          ),
+          const SizedBox(height: 12),
+          // The floor in front of it: what the dashes mean, and the hamper.
+          Row(
+            children: [
+              Expanded(child: Text(s.awayHint, style: context.text.bodySmall)),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(44, 40), padding: const EdgeInsets.symmetric(horizontal: 14)),
+                onPressed: shell == null ? null : () => shell.goTo(HomeShellState.hamperTab),
+                icon: const Icon(AppIcons.hamper, size: 18),
+                label: Text('${s.hamper} · $inHamper'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -193,10 +265,12 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 }
 
-class _GarmentTile extends StatelessWidget {
+/// A piece in the Closet grid: its picture on a gray tile, its name, and
+/// its category or where it is.
+class GarmentTile extends StatelessWidget {
   final Garment garment;
 
-  const _GarmentTile({required this.garment});
+  const GarmentTile({super.key, required this.garment});
 
   @override
   Widget build(BuildContext context) {

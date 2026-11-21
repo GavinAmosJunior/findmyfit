@@ -290,9 +290,10 @@ void main() {
     await tester.tap(find.widgetWithText(SwitchListTile, 'Shoes'));
     await tester.tap(find.widgetWithText(SwitchListTile, 'Hats'));
     await tester.pumpAndSettle();
-    expect(state.railOn(GarmentCategory.shoes), isTrue);
+    expect(state.railOn(GarmentCategory.shoes), isFalse, reason: 'choices apply when the menu closes');
     tester.state<NavigatorState>(find.byType(Navigator).first).pop();
     await tester.pumpAndSettle();
+    expect(state.railOn(GarmentCategory.shoes), isTrue);
 
     expect(find.text('Sneakers'), findsWidgets, reason: 'the shelf shows');
     expect(find.text('Extras'), findsOneWidget, reason: 'the hook row shows');
@@ -316,6 +317,30 @@ void main() {
     await tester.tap(find.text('Found it'));
     await tester.pumpAndSettle();
     expect(state.garmentById(g.id)!.status, GarmentStatus.closet);
+  });
+
+  testWidgets('Wardrobe view shows compartments and opens one to its pieces', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = await _loadedState();
+    state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+    state.addGarment(name: 'Sneakers', category: GarmentCategory.shoes);
+    final out = state.addGarment(name: 'Polo', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Wardrobe'));
+    await tester.pumpAndSettle();
+    expect(state.closetView, 'wardrobe', reason: 'the choice is remembered');
+    expect(find.text('Shoes'), findsOneWidget);
+    expect(find.text('1/2'), findsOneWidget, reason: 'one of two tops is home; the polo is in the hamper');
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.bySemanticsLabel(RegExp('^Tops, ')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 of 2 in the wardrobe'), findsOneWidget);
+    expect(find.text(out.name), findsOneWidget);
   });
 
   testWidgets('a piece put in the hamper by mistake goes back with one tap', (tester) async {

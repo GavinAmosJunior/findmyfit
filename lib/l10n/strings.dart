@@ -258,6 +258,15 @@ class S {
       'Penghapus latar belum siap di ponsel ini. Coba lagi sebentar lagi.');
   String get noCutout => _t('Couldn’t find the clothes in this photo. Try a plain surface.',
       'Pakaian tidak terdeteksi di foto ini. Coba alas polos.');
+  // --------------------------------------------------------------- wardrobe
+  String get viewGrid => _t('Grid', 'Grid');
+  String get viewWardrobe => _t('Wardrobe', 'Lemari');
+  String get awayHint => _t('Dashed hanger: not in the wardrobe now', 'Gantungan putus-putus: sedang tidak di lemari');
+  String inWardrobe(int home, int total) => _id ? '$home dari $total di lemari' : '$home of $total in the wardrobe';
+  String get nothingHere => _t('Nothing here yet', 'Belum ada di sini');
+  String get nothingHereBody =>
+      _t('Add a piece and pick this category, and it shows up here.', 'Tambah pakaian dengan kategori ini, nanti muncul di sini.');
+
   // ------------------------------------------------------------ fit rails
   String get railsTitle => _t('Rails', 'Rak');
   String get railsHint => _t('Tops and bottoms are always on. Turn on more to build a full outfit.',
