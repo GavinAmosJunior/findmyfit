@@ -114,13 +114,14 @@ void main() {
       await settle('Hamper');
       await tester.tap(tab(AppIcons.laundry));
       await settle('Laundry');
-      await tester.tap(tab(AppIcons.missing));
+      // Missing lives inside Laundry, at the top.
+      await tester.tap(find.byIcon(AppIcons.warning).first);
       await settle('Missing');
-
-      await tester.tap(tab(AppIcons.laundry));
+      back();
       await settle('Laundry');
-      await tester.ensureVisible(find.byIcon(AppIcons.chevron).first);
-      await tester.tap(find.byIcon(AppIcons.chevron).first);
+      // The first chevron is the missing card's; the second, the load's.
+      await tester.ensureVisible(find.byIcon(AppIcons.chevron).at(1));
+      await tester.tap(find.byIcon(AppIcons.chevron).at(1));
       await settle('Return check');
       back();
       await settle('Laundry');
@@ -264,7 +265,7 @@ void main() {
     await tester.tap(find.text('Drop off 2 items'));
     await tester.pumpAndSettle();
 
-    expect(find.text('DROP OFF LOAD 2'), findsOneWidget);
+    expect(find.text('Drop off load 2'), findsOneWidget);
     expect(find.text('at Sparkle'), findsOneWidget, reason: 'the last laundromat is remembered, not asked again');
     await tester.enterText(find.byType(TextField), 'Bedsheets');
     await tester.tap(find.widgetWithText(FilledButton, 'Drop off 2 items').last);
@@ -273,10 +274,10 @@ void main() {
     final load = state.batches.first;
     expect(load.nickname, 'Bedsheets');
     expect(load.laundromatName, 'Sparkle');
-    expect(find.text('BEDSHEETS'), findsOneWidget, reason: 'the Laundry tab shows the load by its name');
+    expect(find.text('Bedsheets'), findsOneWidget, reason: 'the Laundry tab shows the load by its name');
   });
 
-  testWidgets('finishing a check with everything back stamps the ticket ALL BACK', (tester) async {
+  testWidgets('finishing a check with everything back shows All back', (tester) async {
     final state = await _loadedState();
     final g = state.addGarment(name: 'Tee', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
     state.sendToLaundry(garmentIds: [g.id], laundromatName: 'Sparkle');
@@ -285,7 +286,7 @@ void main() {
 
     await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.laundry)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('LOAD 1'));
+    await tester.tap(find.text('Load 1'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('All back'));
     await tester.pumpAndSettle();
@@ -294,7 +295,7 @@ void main() {
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ALL BACK'), findsOneWidget, reason: 'stays on the check and shows the stamp');
+    expect(find.text('All back'), findsOneWidget, reason: 'stays on the check and shows the result');
     expect(state.garmentById(g.id)!.status, GarmentStatus.closet);
   });
 

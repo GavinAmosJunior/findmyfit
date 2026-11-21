@@ -9,9 +9,9 @@ import '../theme/app_theme.dart';
 import '../widgets/tags.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
-import 'home_shell.dart';
 import '../theme/app_icons.dart';
-import '../widgets/store_sign.dart';
+import '../widgets/app_header.dart';
+import 'missing_screen.dart';
 
 /// The return check: tick each piece as it comes back from the laundromat.
 /// Anything left unticked when you finish moves to Missing.
@@ -33,12 +33,11 @@ class BatchScreen extends StatelessWidget {
     final editable = !batch.isCompleted;
 
     return Scaffold(
-      appBar: SignBar(
-        title: s.loadName(batch),
-        subtitle: s.loadLine(batch),
-        color: SignColors.green,
+      appBar: AppBar(
+        title: BarTitle(s.loadName(batch), subtitle: s.loadLine(batch)),
         actions: [
           PopupMenuButton<String>(
+            icon: const Icon(AppIcons.more),
             onSelected: (v) => v == 'edit' ? _editLoad(context, batch) : _cancel(context, batch),
             itemBuilder: (_) => [
               PopupMenuItem(value: 'edit', child: Text(s.editLoad)),
@@ -48,7 +47,7 @@ class BatchScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
           if (!editable) _CompletedStamp(batch: batch),
           if (editable) ...[
@@ -58,13 +57,8 @@ class BatchScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: batch.progress,
-                minHeight: 6,
-                backgroundColor: context.palette.separator,
-                color: context.palette.clean.foreground,
-              ),
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(value: batch.progress, minHeight: 4),
             ),
             const SizedBox(height: 8),
             // "All back" sits here, not in the top bar, so long translations
@@ -76,11 +70,12 @@ class BatchScreen extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(s.backCount(batch.verifiedCount, batch.totalItems), style: context.text.labelMedium),
+                  child: Text(
+                    s.backCount(batch.verifiedCount, batch.totalItems),
+                    style: context.text.labelMedium?.copyWith(color: context.ink),
+                  ),
                 ),
                 TextButton.icon(
-                  // Green like the rest of the laundry screens.
-                  style: TextButton.styleFrom(foregroundColor: context.palette.clean.foreground),
                   onPressed: batch.verifiedCount == garments.length
                       ? null
                       : () {
@@ -99,7 +94,7 @@ class BatchScreen extends StatelessWidget {
             child: Column(
               children: [
                 for (final (i, g) in garments.indexed) ...[
-                  if (i > 0) const Divider(indent: 74),
+                  if (i > 0) const Divider(indent: 84),
                   _ReturnRow(
                     garment: g,
                     received: batch.isItemVerified(g.id),
@@ -121,11 +116,7 @@ class BatchScreen extends StatelessWidget {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton(
-                  onPressed: () => _finish(context, batch),
-                  style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
-                  child: Text(s.finishReturn),
-                ),
+                child: FilledButton(onPressed: () => _finish(context, batch), child: Text(s.finishReturn)),
               ),
             ),
     );
@@ -150,9 +141,8 @@ class BatchScreen extends StatelessWidget {
       return;
     }
     HapticFeedback.mediumImpact();
-    final shell = HomeShellState.maybeOf(context);
-    Navigator.of(context).pop();
-    shell?.goTo(HomeShellState.missingTab);
+    // Straight to what's missing, with Laundry underneath when you go back.
+    MissingScreen.open(context, replace: true);
   }
 
   Future<void> _editLoad(BuildContext context, LaundryBatch batch) async {
@@ -245,7 +235,6 @@ class _ReturnRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final clean = context.palette.clean;
 
     return Material(
       type: MaterialType.transparency,
@@ -254,14 +243,14 @@ class _ReturnRow extends StatelessWidget {
         child: InkWell(
           onTap: editable ? onToggle : null,
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
             child: Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox.square(dimension: 52, child: GarmentImage(garment: garment, iconSize: 24)),
+                  borderRadius: BorderRadius.circular(14),
+                  child: SizedBox.square(dimension: 60, child: GarmentImage(garment: garment, iconSize: 24, backdrop: context.colors.surface)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +272,7 @@ class _ReturnRow extends StatelessWidget {
                       received ? AppIcons.checked : AppIcons.unchecked,
                       key: ValueKey(received),
                       size: 30,
-                      color: received ? clean.foreground : context.palette.tertiaryText,
+                      color: received ? context.ink : context.palette.tertiaryText,
                     ),
                   ),
               ],
@@ -295,8 +284,8 @@ class _ReturnRow extends StatelessWidget {
   }
 }
 
-/// The plate on a finished check. It drops in only right after you
-/// finish, not every time you open an old ticket.
+/// The result of a finished check. It settles in only right after you
+/// finish, not every time you open an old load.
 class _CompletedStamp extends StatelessWidget {
   final LaundryBatch batch;
 
@@ -309,11 +298,11 @@ class _CompletedStamp extends StatelessWidget {
     final done = batch.completedAt;
     final justFinished = done != null && DateTime.now().difference(done) < const Duration(seconds: 3);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 28),
       child: Center(
         child: missing == 0
-            ? StatusPlate(s.allBack, color: SignColors.green, icon: AppIcons.check, fontSize: 26, land: justFinished)
-            : StatusPlate(s.stampMissing(missing), color: SignColors.red, fontSize: 26),
+            ? ResultStamp(s.allBack, land: justFinished)
+            : ResultStamp(s.stampMissing(missing), missing: true),
       ),
     );
   }

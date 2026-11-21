@@ -124,5 +124,5 @@ flutter_launcher_icons:
   adaptive_icon_foreground_inset: 0
   web:
     generate: true
-    background_color: "#1F4FA0"
-    theme_color: "#1F4FA0"
+    background_color: "#0C0C0D"
+    theme_color: "#0C0C0D"

@@ -15,8 +15,8 @@ import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
+import '../widgets/pill.dart';
 import '../theme/app_icons.dart';
-import '../widgets/store_sign.dart';
 
 /// Adding is camera-first: snap a photo, type a name, tap "Add and next",
 /// and the camera opens again for the next piece. "Choose photos" queues
@@ -35,12 +35,14 @@ class GarmentFormScreen extends StatefulWidget {
 
   const GarmentFormScreen({super.key, this.editing, this.messenger});
 
-  static Future<void> openAdd(BuildContext context) => Navigator.of(context).push(
-    MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (_) => GarmentFormScreen(messenger: ScaffoldMessenger.of(context)),
-    ),
-  );
+  /// [messenger] shows the "added" messages; by default, the one around
+  /// [context].
+  static Future<void> openAdd(BuildContext context, {ScaffoldMessengerState? messenger}) {
+    final shown = messenger ?? ScaffoldMessenger.of(context);
+    return Navigator.of(context).push(
+      MaterialPageRoute(fullscreenDialog: true, builder: (_) => GarmentFormScreen(messenger: shown)),
+    );
+  }
 
   static Future<void> openEdit(BuildContext context, Garment garment) =>
       Navigator.of(context)
@@ -367,24 +369,26 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
         if (!didPop) _confirmLeave();
       },
       child: Scaffold(
-        appBar: SignBar(
-          color: SignColors.blue,
+        appBar: AppBar(
           leading: IconButton(
             tooltip: _isEdit ? s.cancel : s.done,
             icon: const Icon(AppIcons.close),
             onPressed: _confirmLeave,
           ),
-          title: _isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes),
+          title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
           actions: [
             if (_isEdit)
-              TextButton(onPressed: _saving ? null : _saveEdit, child: Text(s.save))
+              TextButton(
+                onPressed: _saving ? null : _saveEdit,
+                child: Text(s.save, style: const TextStyle(fontWeight: FontWeight.w700)),
+              )
             else if (_added > 0)
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: Center(
                   child: Text(
                     s.addedCount(_added),
-                    style: context.text.labelMedium?.copyWith(color: onSignColor(SignColors.blue)),
+                    style: context.text.labelMedium,
                   ),
                 ),
               ),
@@ -417,24 +421,17 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(s.category, style: context.text.labelMedium),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         for (final c in GarmentCategory.values)
-                          ChoiceChip(
-                            avatar: Icon(
-                              categoryIcon(c),
-                              size: 18,
-                              color: _category == c ? context.colors.surface : context.palette.secondaryText,
-                            ),
-                            label: Text(s.categoryLabel(c)),
+                          Pill(
+                            icon: categoryIcon(c),
+                            label: s.categoryLabel(c),
                             selected: _category == c,
-                            onSelected: (_) {
-                              HapticFeedback.selectionClick();
-                              setState(() => _category = c);
-                            },
+                            onTap: () => setState(() => _category = c),
                           ),
                       ],
                     ),
@@ -581,25 +578,30 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     return Column(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(28),
           child: AspectRatio(
             aspectRatio: 1,
             child: _busy
                 ? ColoredBox(
-                    color: context.palette.card,
+                    color: context.palette.tile,
                     child: const Center(child: CircularProgressIndicator.adaptive()),
                   )
                 : hasPhoto
                 ? _preview(context, s, preview)
                 : Material(
-                    color: context.palette.card,
+                    color: context.palette.tile,
                     child: InkWell(
                       onTap: _hasCamera ? _takePhoto : _choosePhotos,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(AppIcons.addPhoto, size: 48, color: context.colors.primary),
-                          const SizedBox(height: 10),
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(color: context.ink, shape: BoxShape.circle),
+                            child: Icon(AppIcons.camera, size: 30, color: context.colors.surface),
+                          ),
+                          const SizedBox(height: 14),
                           Text(s.addPhoto, style: context.text.titleMedium),
                         ],
                       ),
@@ -690,7 +692,6 @@ class _CutoutPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final image = FileImage(file);
     Widget shape() => Image(
       image: image,
@@ -701,9 +702,9 @@ class _CutoutPreview extends StatelessWidget {
     );
 
     return ColoredBox(
-      color: dark ? const Color(0xFF26282C) : const Color(0xFFF1F0EC),
+      color: context.palette.tile,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(24),
         child: Stack(
           fit: StackFit.expand,
           children: [

@@ -7,8 +7,9 @@ import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/store_sign.dart';
+import '../widgets/app_header.dart';
 import '../widgets/garment_image.dart';
+import '../widgets/pill.dart';
 import 'garment_sheet.dart';
 import 'home_shell.dart';
 import '../theme/app_icons.dart';
@@ -38,9 +39,8 @@ class _HamperScreenState extends State<HamperScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          StoreSign(
+          LargeTitle(
             title: s.hamper,
-            color: SignColors.mustard,
             actions: [
               if (items.isNotEmpty)
                 TextButton(
@@ -53,11 +53,8 @@ class _HamperScreenState extends State<HamperScreen> {
                   }),
                   child: Text(allSelected ? s.selectNone : s.selectAll),
                 ),
-              const SizedBox(width: 8),
             ],
           ),
-          // Breathing room under the checker strip.
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (items.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -66,7 +63,7 @@ class _HamperScreenState extends State<HamperScreen> {
           else ...[
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
                 child: Text(
                   s.hamperSubtitle(items.length, selected.length),
                   style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText),
@@ -75,12 +72,12 @@ class _HamperScreenState extends State<HamperScreen> {
             ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              // One grouped list, like iOS, rather than a stack of cards.
+              // One grouped list on a gray tile, rather than a stack of cards.
               sliver: DecoratedSliver(
-                decoration: BoxDecoration(color: context.palette.card, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(22)),
                 sliver: SliverList.separated(
                   itemCount: items.length,
-                  separatorBuilder: (_, _) => const Divider(indent: 124),
+                  separatorBuilder: (_, _) => const Divider(indent: 128),
                   itemBuilder: (context, i) => _HamperRow(
                     garment: items[i],
                     selected: !_unselected.contains(items[i].id),
@@ -108,9 +105,7 @@ class _HamperScreenState extends State<HamperScreen> {
                   onPressed: selected.isEmpty
                       ? () => showMessage(context, s.selectToSend)
                       : () => _send(context, selected),
-                  // Green: everything that sends to or checks laundry is green.
-                  style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
-                  icon: const Icon(AppIcons.laundryFill),
+                  icon: const Icon(AppIcons.laundryFill, size: 20),
                   label: Text(s.dropOff(selected.length)),
                 ),
               ),
@@ -124,8 +119,6 @@ class _HamperScreenState extends State<HamperScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: false,
-      clipBehavior: Clip.antiAlias,
       builder: (_) => _DropOffSheet(count: selected.length),
     );
     if (result == null || !context.mounted) return;
@@ -174,16 +167,13 @@ class _HamperRow extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: context.palette.clean.background,
+        color: context.ink,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              s.swipePutBack,
-              style: TextStyle(color: context.palette.clean.foreground, fontWeight: FontWeight.w600),
-            ),
+            Text(s.swipePutBack, style: context.text.titleSmall?.copyWith(color: context.colors.surface)),
             const SizedBox(width: 8),
-            Icon(AppIcons.closetFill, color: context.palette.clean.foreground),
+            Icon(AppIcons.closetFill, color: context.colors.surface),
           ],
         ),
       ),
@@ -196,14 +186,14 @@ class _HamperRow extends StatelessWidget {
             onTap: onToggle,
             onLongPress: () => GarmentSheet.show(context, garment.id),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
                 children: [
                   Checkbox.adaptive(value: selected, onChanged: (_) => onToggle()),
                   const SizedBox(width: 4),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox.square(dimension: 52, child: GarmentImage(garment: garment, iconSize: 24)),
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox.square(dimension: 56, child: GarmentImage(garment: garment, iconSize: 24, backdrop: context.colors.surface)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -285,7 +275,17 @@ class _DropOffSheetState extends State<_DropOffSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SheetSign(title: s.dropOffTitle(state.nextLoadNumber), subtitle: s.items(widget.count), color: SignColors.green),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.dropOffTitle(state.nextLoadNumber), style: context.text.headlineSmall),
+              const SizedBox(height: 2),
+              Text(s.items(widget.count), style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
+            ],
+          ),
+        ),
         Padding(
           padding: EdgeInsets.fromLTRB(
             20,
@@ -319,7 +319,7 @@ class _DropOffSheetState extends State<_DropOffSheet> {
                     runSpacing: 8,
                     children: [
                       for (final r in recent)
-                        ActionChip(label: Text(r), onPressed: () => setState(() => _place.text = r)),
+                        Pill(label: r, selected: _place.text == r, onTap: () => setState(() => _place.text = r)),
                     ],
                   ),
                 ],
@@ -327,7 +327,7 @@ class _DropOffSheetState extends State<_DropOffSheet> {
                 // Most people use one laundromat: show it, don't ask again.
                 Row(
                   children: [
-                    Icon(AppIcons.laundry, size: 20, color: context.palette.secondaryText),
+                    Icon(AppIcons.laundry, size: 20, color: context.ink),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -338,7 +338,6 @@ class _DropOffSheetState extends State<_DropOffSheet> {
                       ),
                     ),
                     TextButton(
-                      style: TextButton.styleFrom(foregroundColor: context.palette.clean.foreground),
                       onPressed: () => setState(() => _editingPlace = true),
                       child: Text(s.change),
                     ),
@@ -347,7 +346,6 @@ class _DropOffSheetState extends State<_DropOffSheet> {
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _submit,
-                style: FilledButton.styleFrom(backgroundColor: SignColors.green, foregroundColor: Colors.white),
                 child: Text(s.dropOff(widget.count)),
               ),
             ],

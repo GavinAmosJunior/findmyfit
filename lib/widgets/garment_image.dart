@@ -26,7 +26,12 @@ class GarmentImage extends StatelessWidget {
   final Garment garment;
   final double iconSize;
 
-  const GarmentImage({super.key, required this.garment, this.iconSize = 34});
+  /// What a cutout or a missing photo sits on. Defaults to the gray tile;
+  /// rows that are already on a tile pass the page color so the piece
+  /// stands out.
+  final Color? backdrop;
+
+  const GarmentImage({super.key, required this.garment, this.iconSize = 34, this.backdrop});
 
   // Decoding a data: URL is costly, so keep recent results.
   static final _cache = <String, Uint8List>{};
@@ -46,20 +51,19 @@ class GarmentImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ref = garment.imageUrl;
-    final fallback = _Fallback(garment: garment, iconSize: iconSize);
+    final fallback = _Fallback(garment: garment, iconSize: iconSize, backdrop: backdrop);
     if (ref == null || ref.isEmpty) return fallback;
 
     final photo = _photo(ref, fallback);
     if (!ImageStore.isCutout(ref)) return photo;
 
-    // A cutout floats whole on a quiet backdrop instead of being cropped
-    // to fill the tile.
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    // A cutout floats whole on the gray tile, like a product shot,
+    // instead of being cropped to fill it.
     return ColoredBox(
-      color: dark ? const Color(0xFF26282C) : const Color(0xFFF1F0EC),
+      color: backdrop ?? context.palette.tile,
       child: LayoutBuilder(
         builder: (context, c) => Padding(
-          padding: EdgeInsets.all(c.biggest.shortestSide.isFinite ? c.biggest.shortestSide * 0.04 : 0),
+          padding: EdgeInsets.all(c.biggest.shortestSide.isFinite ? c.biggest.shortestSide * 0.08 : 0),
           child: photo,
         ),
       ),
@@ -90,21 +94,20 @@ class GarmentImage extends StatelessWidget {
   }
 }
 
+/// No photo: the category's outline on the gray tile.
 class _Fallback extends StatelessWidget {
   final Garment garment;
   final double iconSize;
+  final Color? backdrop;
 
-  const _Fallback({required this.garment, required this.iconSize});
+  const _Fallback({required this.garment, required this.iconSize, this.backdrop});
 
   @override
   Widget build(BuildContext context) {
-    final seed = garment.fallbackColor ?? garmentSwatches[garment.name.hashCode.abs() % garmentSwatches.length];
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final base = Color(seed);
     return ColoredBox(
-      color: dark ? Color.lerp(base, Colors.black, 0.35)! : base,
+      color: backdrop ?? context.palette.tile,
       child: Center(
-        child: Icon(categoryIcon(garment.category), size: iconSize, color: Colors.white.withValues(alpha: 0.9)),
+        child: Icon(categoryIcon(garment.category), size: iconSize, color: context.palette.tertiaryText),
       ),
     );
   }

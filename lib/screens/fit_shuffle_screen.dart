@@ -10,10 +10,9 @@ import '../models/saved_fit.dart';
 import '../state/app_scope.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
-import '../widgets/tags.dart';
+import '../widgets/app_header.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/pressable.dart';
 
@@ -208,9 +207,7 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProvider
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          StoreSign(title: s.fitShuffle, color: SignColors.red),
-          // Breathing room under the checker strip.
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+          LargeTitle(title: s.fitShuffle),
           if (!ready)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -263,44 +260,35 @@ class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProvider
                   tooltip: saved ? s.unsaveFit : s.saveFit,
                   onPressed: () => _toggleSave(fit),
                   style: IconButton.styleFrom(
-                    minimumSize: const Size(52, 52),
-                    backgroundColor: context.palette.missing.background,
-                    foregroundColor: context.palette.signal,
+                    minimumSize: const Size(54, 54),
+                    backgroundColor: context.palette.tile,
+                    foregroundColor: context.ink,
                   ),
-                  icon: Icon(
-                    saved ? AppIcons.favorite : AppIcons.favoriteOutline,
-                    color: saved ? context.palette.signal : null,
+                  // The heart filling in is the feedback.
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                    child: Icon(saved ? AppIcons.favorite : AppIcons.favoriteOutline, key: ValueKey(saved)),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  // Stays red while the rails spin; a second tap is ignored
-                  // rather than greying the button out mid-moment.
+                  // Stays black while the rails spin; a second tap is
+                  // ignored rather than greying the button out mid-moment.
                   child: FilledButton.icon(
                     onPressed: () => _shuffle(lists),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: SignColors.red,
-                      foregroundColor: Colors.white,
-                      textStyle: context.text.headlineSmall?.copyWith(fontSize: 18, letterSpacing: 1.4),
-                    ),
-                    icon: const Icon(AppIcons.shuffle),
-                    label: Text(s.shuffle.toUpperCase()),
+                    icon: const Icon(AppIcons.shuffle, size: 20),
+                    label: Text(s.shuffle),
                   ),
                 ),
               ],
             ),
           ),
-          // The laundromat floor under the rails.
-          const SizedBox(height: 18),
-          const CheckerStrip(height: 24),
           if (fits.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: Text(s.savedFits.toUpperCase(), style: context.text.labelMedium?.copyWith(letterSpacing: 1.2)),
-            ),
+            const SizedBox(height: 12),
+            SectionTitle(s.savedFits),
             SizedBox(
-              height: 132,
+              height: 148,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -340,7 +328,8 @@ class _Rail extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final palette = context.palette;
-    final rodColor = rail.locked ? palette.signal : palette.steel;
+    // A hairline rod; it turns solid ink when the rail is locked.
+    final rodColor = rail.locked ? context.ink : palette.separator;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -349,13 +338,13 @@ class _Rail extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
           child: Row(
             children: [
-              Expanded(child: Text(label.toUpperCase(), style: context.text.labelMedium?.copyWith(letterSpacing: 1.2))),
+              Expanded(child: Text(label, style: context.text.titleMedium)),
               IconButton(
                 tooltip: rail.locked ? s.unlockRail(label) : s.lockRail(label),
                 onPressed: onLock,
                 icon: Icon(
                   rail.locked ? AppIcons.locked : AppIcons.unlocked,
-                  color: rail.locked ? palette.signal : palette.tertiaryText,
+                  color: rail.locked ? context.ink : palette.secondaryText,
                 ),
               ),
             ],
@@ -365,20 +354,14 @@ class _Rail extends StatelessWidget {
           height: _hanger + cardSize + 44,
           child: Stack(
             children: [
-              // The rod. Red thread when the rail is locked.
               Positioned(
-                top: 5,
+                top: 6,
                 left: 0,
                 right: 0,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: rodColor,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 3, offset: const Offset(0, 2)),
-                    ],
-                  ),
+                  height: rail.locked ? 2.5 : 2,
+                  color: rodColor,
                 ),
               ),
               PageView.builder(
@@ -423,7 +406,7 @@ class _Rail extends StatelessWidget {
   }
 }
 
-/// A garment on a hanger, with its woven name label.
+/// A garment on a hanger, on its gray tile, with its name under it.
 class _Hanging extends StatelessWidget {
   final Garment garment;
   final double size;
@@ -434,27 +417,26 @@ class _Hanging extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(AppIcons.closet, size: _Rail._hanger, color: context.palette.secondaryText),
+        Icon(AppIcons.closet, size: _Rail._hanger, color: context.palette.tertiaryText),
         Transform.translate(
           offset: const Offset(0, -8),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.14), blurRadius: 14, offset: const Offset(0, 6)),
-              ],
-            ),
+          child: SizedBox.square(
+            dimension: size,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
               child: GarmentImage(garment: garment),
             ),
           ),
         ),
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: size),
-          child: HangTag(garment.name),
+          child: Text(
+            garment.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: context.text.titleSmall,
+          ),
         ),
       ],
     );
@@ -474,19 +456,16 @@ class _SavedFitTile extends StatelessWidget {
     return Pressable(
       label: pieces.map((g) => g.name).join(', '),
       onTap: onTap,
+      // The outfit laid out on one tile: top over bottom.
       child: Container(
-        width: 72,
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: context.palette.card, borderRadius: BorderRadius.circular(14)),
+        width: 92,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(22)),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            for (final g in pieces.take(2)) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(9),
-                child: SizedBox.square(dimension: 54, child: GarmentImage(garment: g, iconSize: 22)),
-              ),
-              if (g != pieces.take(2).last) const SizedBox(height: 6),
-            ],
+            for (final g in pieces.take(2))
+              SizedBox.square(dimension: 64, child: GarmentImage(garment: g, iconSize: 24)),
           ],
         ),
       ),

@@ -4,107 +4,55 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models/garment.dart';
 
-/// Colors for one status's care-label tag.
-class TagColors {
-  final Color background;
-  final Color foreground;
-  final Color border;
-
-  const TagColors(this.background, this.foreground, this.border);
-
-  static TagColors lerp(TagColors a, TagColors b, double t) => TagColors(
-        Color.lerp(a.background, b.background, t)!,
-        Color.lerp(a.foreground, b.foreground, t)!,
-        Color.lerp(a.border, b.border, t)!,
-      );
-}
-
-/// The storefront colors: painted sign boards, mostly. They stay the same
-/// in dark mode, like a sign lit at night. White or ink text on each was
-/// checked for at least 4.5:1.
-class SignColors {
-  static const blue = Color(0xFF1F4FA0); // white 7.82:1
-  static const green = Color(0xFF1E6B4B); // white 6.44:1
-  static const red = Color(0xFFC42B23); // white 5.65:1
-  static const mustard = Color(0xFFE9B23A); // ink 9.23:1
-  static const ink = Color(0xFF16181B);
-  static const chalk = Color(0xFFF4F2EC);
-}
-
 /// App-specific colors that Material's ColorScheme has no slot for.
 ///
-/// Every text/background pair here was checked for at least 4.5:1 contrast
-/// in both light and dark mode.
+/// The look is monochrome: ink on white (white on black in dark mode),
+/// with soft gray tiles that every garment sits on like a product shot.
+/// The one color is [signal] red, kept for what's missing and for
+/// deleting. Every text/background pair was checked for at least 4.5:1.
 @immutable
 class AppPalette extends ThemeExtension<AppPalette> {
+  /// Labels, captions, inactive tabs.
   final Color secondaryText;
+
+  /// Icons that only decorate (hangers, empty placeholders). Not for text.
   final Color tertiaryText;
   final Color separator;
-  final Color card;
 
-  /// Signal red for text and small marks on the page (sign red is too
-  /// light for small text on dark backgrounds).
+  /// The gray tile behind garments, cards, fields and grouped lists.
+  final Color tile;
+
+  /// Missing clothes and destructive actions. The only color in the app.
   final Color signal;
-
-  /// Stainless steel: the clothes rails and machine doors.
-  final Color steel;
-  final TagColors clean;
-  final TagColors hamper;
-  final TagColors laundry;
-  final TagColors missing;
 
   const AppPalette({
     required this.secondaryText,
     required this.tertiaryText,
     required this.separator,
-    required this.card,
+    required this.tile,
     required this.signal,
-    required this.steel,
-    required this.clean,
-    required this.hamper,
-    required this.laundry,
-    required this.missing,
   });
 
-  TagColors forStatus(GarmentStatus status) {
-    switch (status) {
-      case GarmentStatus.closet:
-        return clean;
-      case GarmentStatus.dirtyHamper:
-        return hamper;
-      case GarmentStatus.inLaundry:
-        return laundry;
-      case GarmentStatus.missing:
-        return missing;
-    }
-  }
+  /// Kept under its old name: cards are tiles now.
+  Color get card => tile;
 
-  // "Laundromat": wall white, tile green, sign blue, signal red, mustard.
-  // Ratios are text on its background.
+  /// Text color for a status: everything is ink except missing.
+  Color statusColor(GarmentStatus status, Color ink) => status == GarmentStatus.missing ? signal : ink;
+
   static const light = AppPalette(
-    secondaryText: Color(0xFF5E5B55), // 6.77:1 on card, 6.04:1 on wall
-    tertiaryText: Color(0xFF6B6862), // 4.96:1 on wall
-    separator: Color(0xFFDCD8CE),
-    card: Color(0xFFFFFFFF),
-    signal: Color(0xFFB8271F), // 5.60:1 on wall
-    steel: Color(0xFFA7AFB8),
-    clean: TagColors(Color(0xFFDCEBE2), Color(0xFF14523A), Color(0xFF1E6B4B)), // 7.41:1
-    hamper: TagColors(Color(0xFFFBEBC4), Color(0xFF6E4A05), Color(0xFFE9B23A)), // 6.72:1
-    laundry: TagColors(Color(0xFFDCEAF8), Color(0xFF173E7E), Color(0xFF1F4FA0)), // 8.47:1
-    missing: TagColors(Color(0xFFF9DEDB), Color(0xFFA32019), Color(0xFFC42B23)), // 5.94:1
+    secondaryText: Color(0xFF6C6C70), // 5.25:1 on white, 4.78:1 on tile
+    tertiaryText: Color(0xFFAEAEB2),
+    separator: Color(0xFFE5E5EA),
+    tile: Color(0xFFF3F3F5),
+    signal: Color(0xFFD70015), // 5.14:1 on white
   );
 
   static const dark = AppPalette(
-    secondaryText: Color(0xFFBDB9B1), // 8.35:1 on card
-    tertiaryText: Color(0xFF9A968E), // 5.54:1 on card
-    separator: Color(0xFF2C3036),
-    card: Color(0xFF1D2025),
-    signal: Color(0xFFFF8A80), // 7.16:1 on card
-    steel: Color(0xFF6E767F),
-    clean: TagColors(Color(0xFF173326), Color(0xFF8FD3AE), Color(0xFF1E6B4B)), // 7.87:1
-    hamper: TagColors(Color(0xFF3A2C0C), Color(0xFFF2C866), Color(0xFFE9B23A)), // 8.56:1
-    laundry: TagColors(Color(0xFF172846), Color(0xFFA9C6F5), Color(0xFF1F4FA0)), // 8.46:1
-    missing: TagColors(Color(0xFF3D1512), Color(0xFFFF9C93), Color(0xFFC42B23)), // 7.93:1
+    secondaryText: Color(0xFFA1A1A6), // 6.6:1 on tile, 7.9:1 on black
+    tertiaryText: Color(0xFF5A5A5E),
+    separator: Color(0xFF2C2C2E),
+    tile: Color(0xFF1C1C1E),
+    signal: Color(0xFFFF6961), // 6.1:1 on tile
   );
 
   @override
@@ -117,13 +65,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       secondaryText: Color.lerp(secondaryText, other.secondaryText, t)!,
       tertiaryText: Color.lerp(tertiaryText, other.tertiaryText, t)!,
       separator: Color.lerp(separator, other.separator, t)!,
-      card: Color.lerp(card, other.card, t)!,
+      tile: Color.lerp(tile, other.tile, t)!,
       signal: Color.lerp(signal, other.signal, t)!,
-      steel: Color.lerp(steel, other.steel, t)!,
-      clean: TagColors.lerp(clean, other.clean, t),
-      hamper: TagColors.lerp(hamper, other.hamper, t),
-      laundry: TagColors.lerp(laundry, other.laundry, t),
-      missing: TagColors.lerp(missing, other.missing, t),
     );
   }
 }
@@ -132,92 +75,76 @@ extension AppThemeContext on BuildContext {
   AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
   ColorScheme get colors => Theme.of(this).colorScheme;
   TextTheme get text => Theme.of(this).textTheme;
+
+  /// Ink: black in light mode, near-white in dark mode.
+  Color get ink => Theme.of(this).colorScheme.onSurface;
 }
 
-/// Fallback colors for garments without a photo, picked per category.
-const garmentSwatches = <int>[
-  0xFF3B5B8C,
-  0xFF2F6B55,
-  0xFF8A5A2B,
-  0xFF5B4B8A,
-  0xFF8C3B4F,
-  0xFF3E6670,
-];
-
 class AppTheme {
-  static const _accentLight = SignColors.blue; // 7.82:1 with white, 6.99:1 on wall
-  static const _accentDark = Color(0xFF8DB2F0); // 7.59:1 on card
-
-  /// Anton for titles only, the tall bold letters of a laundromat sign;
-  /// body text uses the platform font (SF Pro on iPhone, Roboto on
-  /// Android) for legibility at small sizes, as Apple's branding guidance
-  /// suggests.
+  /// Inter throughout: one family, weight and size carry the hierarchy.
+  /// Titles are bold and tightly tracked, the way large titles are drawn
+  /// on iPhone.
   static TextTheme _textTheme(Color primary, Color secondary) {
-    TextStyle display(double size, FontWeight weight, double spacing) =>
-        GoogleFonts.anton(
-          fontSize: size,
-          fontWeight: weight,
-          letterSpacing: spacing,
-          color: primary,
-          height: 1.2,
-        );
+    TextStyle inter(double size, FontWeight weight, {double spacing = 0, double? height, Color? color}) =>
+        GoogleFonts.inter(fontSize: size, fontWeight: weight, letterSpacing: spacing, height: height, color: color);
 
     return TextTheme(
-      displaySmall: display(40, FontWeight.w400, 1.0),
-      headlineMedium: display(34, FontWeight.w400, 1.0),
-      headlineSmall: display(24, FontWeight.w400, 0.6),
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: primary),
-      titleMedium: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: primary),
-      titleSmall: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: primary),
-      bodyLarge: TextStyle(fontSize: 17, height: 1.35, color: primary),
-      bodyMedium: TextStyle(fontSize: 15, height: 1.35, color: primary),
-      bodySmall: TextStyle(fontSize: 13, height: 1.3, color: secondary),
-      labelLarge: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-      labelMedium: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: secondary),
-      labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondary),
+      displaySmall: inter(34, FontWeight.w700, spacing: -1.0, height: 1.1, color: primary),
+      headlineMedium: inter(30, FontWeight.w700, spacing: -0.9, height: 1.15, color: primary),
+      headlineSmall: inter(22, FontWeight.w700, spacing: -0.5, height: 1.2, color: primary),
+      titleLarge: inter(20, FontWeight.w700, spacing: -0.4, color: primary),
+      titleMedium: inter(17, FontWeight.w600, spacing: -0.3, color: primary),
+      titleSmall: inter(15, FontWeight.w600, spacing: -0.2, color: primary),
+      bodyLarge: inter(17, FontWeight.w400, spacing: -0.2, height: 1.35, color: primary),
+      bodyMedium: inter(15, FontWeight.w400, spacing: -0.1, height: 1.35, color: primary),
+      bodySmall: inter(13, FontWeight.w400, height: 1.3, color: secondary),
+      labelLarge: inter(16, FontWeight.w600, spacing: -0.2),
+      labelMedium: inter(13, FontWeight.w600, color: secondary),
+      labelSmall: inter(12, FontWeight.w500, color: secondary),
     );
   }
 
   static ThemeData _build({
     required Brightness brightness,
-    required Color accent,
-    required Color onAccent,
     required Color background,
-    required Color text,
+    required Color ink,
     required AppPalette palette,
   }) {
     final scheme = ColorScheme(
       brightness: brightness,
-      primary: accent,
-      onPrimary: onAccent,
-      secondary: accent,
-      onSecondary: onAccent,
-      error: palette.missing.foreground,
-      onError: palette.missing.background,
+      primary: ink,
+      onPrimary: background,
+      secondary: ink,
+      onSecondary: background,
+      error: palette.signal,
+      onError: Colors.white,
       surface: background,
-      onSurface: text,
+      onSurface: ink,
       onSurfaceVariant: palette.secondaryText,
-      surfaceContainerLowest: palette.card,
-      surfaceContainerLow: palette.card,
-      surfaceContainer: palette.card,
-      surfaceContainerHigh: palette.card,
+      surfaceContainerLowest: background,
+      surfaceContainerLow: palette.tile,
+      surfaceContainer: palette.tile,
+      surfaceContainerHigh: palette.tile,
       surfaceContainerHighest: palette.separator,
       outline: palette.tertiaryText,
       outlineVariant: palette.separator,
     );
-    final textTheme = _textTheme(text, palette.secondaryText);
-    final pill = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+    final textTheme = _textTheme(ink, palette.secondaryText);
+    const pill = StadiumBorder();
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
+      canvasColor: background,
       textTheme: textTheme,
+      primaryTextTheme: textTheme,
       extensions: [palette],
       // iOS shows a soft highlight on press, not a ripple.
       splashFactory: NoSplash.splashFactory,
-      highlightColor: text.withValues(alpha: 0.06),
+      highlightColor: ink.withValues(alpha: 0.05),
+      hoverColor: ink.withValues(alpha: 0.04),
       // Pages slide in from the right and can be swiped back, on both phones.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -230,144 +157,178 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         elevation: 0,
-        centerTitle: false,
-        foregroundColor: text,
-        // No titleTextStyle here: it would also shrink the large titles
-        // of SliverAppBar.large, which should use headlineMedium.
+        centerTitle: true,
+        foregroundColor: ink,
+        iconTheme: IconThemeData(color: ink, size: 24),
+        actionsIconTheme: IconThemeData(color: ink, size: 24),
+        titleTextStyle: textTheme.titleMedium,
+      ),
+      // The back button is a thin chevron on every phone.
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (_) => const Icon(IconData(0xe138, fontFamily: 'PhosphorRegular'), size: 24),
+      ),
+      iconTheme: IconThemeData(color: ink, size: 24),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(foregroundColor: ink, minimumSize: const Size(44, 44)),
       ),
       cardTheme: CardThemeData(
-        color: palette.card,
+        color: palette.tile,
         elevation: 0,
         margin: EdgeInsets.zero,
-        // White on the grouped background is enough; no outline (iOS
-        // inset grouped lists have none).
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: palette.card,
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: accent.withValues(alpha: 0.14),
-        height: 68,
-        labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => TextStyle(
-            fontSize: 12,
-            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-            color: states.contains(WidgetState.selected) ? accent : palette.secondaryText,
-          ),
-        ),
-        iconTheme: WidgetStateProperty.resolveWith(
-          (states) => IconThemeData(
-            size: 24,
-            color: states.contains(WidgetState.selected) ? accent : palette.secondaryText,
-          ),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(44, 50),
+          backgroundColor: ink,
+          foregroundColor: background,
+          disabledBackgroundColor: palette.separator,
+          disabledForegroundColor: palette.secondaryText,
+          minimumSize: const Size(44, 54),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
           shape: pill,
           textStyle: textTheme.labelLarge,
+          elevation: 0,
         ),
       ),
+      // The quiet button: ink on a gray capsule.
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(44, 50),
+          foregroundColor: ink,
+          backgroundColor: palette.tile,
+          minimumSize: const Size(44, 54),
+          padding: const EdgeInsets.symmetric(horizontal: 22),
           shape: pill,
-          // iOS "bordered" buttons are a tinted fill, not an outline.
-          backgroundColor: accent.withValues(alpha: brightness == Brightness.light ? 0.10 : 0.16),
           side: BorderSide.none,
           textStyle: textTheme.labelLarge,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
+          foregroundColor: ink,
           minimumSize: const Size(44, 44),
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+          shape: pill,
+          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: palette.separator.withValues(alpha: brightness == Brightness.light ? 0.7 : 1),
-        selectedColor: text,
-        secondarySelectedColor: text,
-        labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: text),
-        secondaryLabelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: background),
+        backgroundColor: palette.tile,
+        selectedColor: ink,
+        secondarySelectedColor: ink,
+        labelStyle: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500, color: ink),
+        secondaryLabelStyle: textTheme.titleSmall?.copyWith(color: background),
         side: BorderSide.none,
-        shape: const StadiumBorder(),
+        shape: pill,
         showCheckmark: false,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: palette.card,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: palette.separator),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
+        fillColor: palette.tile,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: accent, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: ink, width: 1.5),
         ),
-        hintStyle: TextStyle(color: palette.tertiaryText),
-        labelStyle: TextStyle(color: palette.secondaryText),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: palette.signal, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: palette.signal, width: 1.5),
+        ),
+        hintStyle: textTheme.bodyLarge?.copyWith(color: palette.secondaryText),
+        labelStyle: textTheme.bodyLarge?.copyWith(color: palette.secondaryText),
+        floatingLabelStyle: textTheme.bodyMedium?.copyWith(color: palette.secondaryText),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: ink,
+        selectionColor: ink.withValues(alpha: 0.18),
+        selectionHandleColor: ink,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: brightness == Brightness.light ? SignColors.ink : const Color(0xFFF1EFEA),
-        contentTextStyle: TextStyle(
-          fontSize: 15,
-          color: brightness == Brightness.light ? const Color(0xFFF1EFEA) : SignColors.ink,
-        ),
-        actionTextColor: brightness == Brightness.light ? _accentDark : _accentLight,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: ink,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(color: background),
+        actionTextColor: background,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: background,
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+        dragHandleColor: palette.tertiaryText,
+        dragHandleSize: const Size(36, 5),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       ),
-      dividerTheme: DividerThemeData(color: palette.separator, space: 1, thickness: 1),
+      dialogTheme: DialogThemeData(
+        backgroundColor: background,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        titleTextStyle: textTheme.titleLarge,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(color: palette.secondaryText),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: background,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: textTheme.bodyLarge,
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: ink,
+        linearTrackColor: palette.separator,
+        circularTrackColor: Colors.transparent,
+      ),
+      dividerTheme: DividerThemeData(color: palette.separator, space: 1, thickness: 0.8),
       listTileTheme: ListTileThemeData(
-        minVerticalPadding: 10,
+        minVerticalPadding: 12,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18),
         titleTextStyle: textTheme.bodyLarge,
         subtitleTextStyle: textTheme.bodySmall,
-        iconColor: palette.secondaryText,
+        iconColor: ink,
+        textColor: ink,
       ),
       checkboxTheme: CheckboxThemeData(
         shape: const CircleBorder(),
         side: BorderSide(color: palette.tertiaryText, width: 1.5),
+        fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? ink : Colors.transparent),
+        checkColor: WidgetStatePropertyAll(background),
       ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: accent,
-        foregroundColor: onAccent,
-        elevation: 2,
-        shape: const CircleBorder(),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? background : palette.tertiaryText,
+        ),
+        trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? ink : palette.tile),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? ink : palette.separator,
+        ),
+      ),
+      cupertinoOverrideTheme: CupertinoThemeData(primaryColor: ink, brightness: brightness),
+      expansionTileTheme: ExpansionTileThemeData(iconColor: ink, collapsedIconColor: palette.secondaryText),
+      badgeTheme: BadgeThemeData(backgroundColor: palette.signal, textColor: Colors.white),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(10)),
+        textStyle: textTheme.bodySmall?.copyWith(color: background),
       ),
     );
   }
 
   static final ThemeData light = _build(
     brightness: Brightness.light,
-    accent: _accentLight,
-    onAccent: Colors.white, // 7.82:1
-    background: SignColors.chalk, // laundromat wall
-    text: SignColors.ink, // 15.89:1 on wall
+    background: Colors.white,
+    ink: const Color(0xFF0A0A0B), // 19.8:1 on white
     palette: AppPalette.light,
   );
 
   static final ThemeData dark = _build(
     brightness: Brightness.dark,
-    accent: _accentDark,
-    onAccent: const Color(0xFF121417), // 8.57:1
-    background: const Color(0xFF121417),
-    text: const Color(0xFFF1EFEA), // 16.06:1
+    background: Colors.black,
+    ink: const Color(0xFFF5F5F7), // 19.3:1 on black
     palette: AppPalette.dark,
   );
 }

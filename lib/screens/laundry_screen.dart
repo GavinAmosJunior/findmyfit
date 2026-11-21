@@ -4,17 +4,18 @@ import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../models/laundry_batch.dart';
 import '../state/app_scope.dart';
-import '../theme/app_theme.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/store_sign.dart';
-import '../widgets/garment_image.dart';
-import '../widgets/grouped_section.dart';
-import '../widgets/tags.dart';
-import '../widgets/ticket.dart';
-import 'batch_screen.dart';
 import '../theme/app_icons.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/garment_image.dart';
+import '../widgets/pressable.dart';
+import '../widgets/tags.dart';
+import 'batch_screen.dart';
+import 'missing_screen.dart';
 
-/// Batches out at the laundromat, plus a short history.
+/// Loads out at the laundromat, anything that didn't come back, and a
+/// short history.
 class LaundryScreen extends StatelessWidget {
   const LaundryScreen({super.key});
 
@@ -24,48 +25,57 @@ class LaundryScreen extends StatelessWidget {
     final state = AppScope.of(context);
     final active = state.activeBatches;
     final done = state.completedBatches.take(10).toList();
+    final missing = state.countOf(GarmentStatus.missing);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          StoreSign(title: s.laundry, color: SignColors.green),
-          // Breathing room under the checker strip.
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          if (active.isEmpty && done.isEmpty)
+          LargeTitle(title: s.laundry),
+          if (active.isEmpty && done.isEmpty && missing == 0)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: EmptyState(
-                icon: AppIcons.laundry,
-                title: s.emptyLaundryTitle,
-                body: s.emptyLaundryBody,
-              ),
+              child: EmptyState(icon: AppIcons.laundry, title: s.emptyLaundryTitle, body: s.emptyLaundryBody),
             )
           else ...[
+            // Missing comes first: it's the one thing here that needs you.
+            if (missing > 0)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  child: _MissingCard(count: missing),
+                ),
+              ),
             if (active.isNotEmpty) ...[
               SliverToBoxAdapter(child: SectionTitle(s.atLaundryNow)),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 sliver: SliverList.separated(
                   itemCount: active.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) => _ActiveBatchCard(batch: active[i]),
+                  itemBuilder: (context, i) => _LoadCard(batch: active[i]),
                 ),
               ),
             ] else
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  child: Text(s.emptyLaundryBody, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text(
+                    s.emptyLaundryBody,
+                    style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText),
+                  ),
                 ),
               ),
             if (done.isNotEmpty) ...[
               SliverToBoxAdapter(child: SectionTitle(s.history)),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList.separated(
-                  itemCount: done.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) => _HistoryTicket(batch: done[i]),
+                sliver: DecoratedSliver(
+                  decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(22)),
+                  sliver: SliverList.separated(
+                    itemCount: done.length,
+                    separatorBuilder: (_, _) => const Divider(indent: 18),
+                    itemBuilder: (context, i) => _HistoryRow(batch: done[i]),
+                  ),
                 ),
               ),
             ],
@@ -77,10 +87,48 @@ class LaundryScreen extends StatelessWidget {
   }
 }
 
-class _ActiveBatchCard extends StatelessWidget {
+/// "2 missing", in the app's one color, leading to the Missing screen.
+class _MissingCard extends StatelessWidget {
+  final int count;
+
+  const _MissingCard({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final signal = context.palette.signal;
+    return Pressable(
+      label: '${s.stampMissing(count)}. ${s.missingSubtitle}',
+      onTap: () => MissingScreen.open(context),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+        decoration: BoxDecoration(color: signal.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(22)),
+        child: Row(
+          children: [
+            Icon(AppIcons.warning, size: 28, color: signal),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(s.stampMissing(count), style: context.text.titleMedium?.copyWith(color: signal)),
+                  Text(s.missingSubtitle, style: context.text.bodySmall),
+                ],
+              ),
+            ),
+            Icon(AppIcons.chevron, size: 16, color: signal),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A load out now: its name, the clothes in it, and how many are back.
+class _LoadCard extends StatelessWidget {
   final LaundryBatch batch;
 
-  const _ActiveBatchCard({required this.batch});
+  const _LoadCard({required this.batch});
 
   @override
   Widget build(BuildContext context) {
@@ -88,137 +136,164 @@ class _ActiveBatchCard extends StatelessWidget {
     final state = AppScope.of(context);
     final garments = state.garmentsInBatch(batch);
 
-    return Ticket(
-      title: s.loadName(batch),
-      // The Laundry tab stays in its own green: solid for what's out now.
-      color: SignColors.green,
-      // A nicknamed load still shows its number.
-      trailing: batch.hasNickname ? TicketNumber(s.ticketNo('${batch.number}')) : null,
-      semanticLabel: '${s.loadName(batch)}, ${s.backCount(batch.verifiedCount, batch.totalItems)}',
+    return Pressable(
+      label: '${s.loadName(batch)}, ${s.backCount(batch.verifiedCount, batch.totalItems)}',
       onTap: () => BatchScreen.open(context, batch.id),
-      body: Row(
-        children: [
-          _Porthole(garments: garments),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+        decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(24)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.loadLine(batch), style: context.text.bodySmall),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: batch.progress,
-                    minHeight: 6,
-                    backgroundColor: context.palette.separator,
-                    color: context.palette.clean.foreground,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.loadName(batch), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                      Text(s.loadLine(batch), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(s.backCount(batch.verifiedCount, batch.totalItems), style: context.text.labelMedium),
+                // A nicknamed load still shows its number.
+                if (batch.hasNickname)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: context.ink.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(99),
                     ),
-                    Icon(AppIcons.chevron, size: 16, color: context.palette.tertiaryText),
-                  ],
-                ),
+                    child: Text(s.ticketNo('${batch.number}'), style: context.text.labelMedium?.copyWith(color: context.ink)),
+                  ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 14),
+            _Thumbs(garments: garments),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(value: batch.progress, minHeight: 4),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s.backCount(batch.verifiedCount, batch.totalItems),
+                    style: context.text.labelMedium?.copyWith(color: context.ink),
+                  ),
+                ),
+                Icon(AppIcons.chevron, size: 16, color: context.palette.secondaryText),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// A washing machine door: a steel ring with the first piece inside the
-/// glass, and a count when more are in the load.
-class _Porthole extends StatelessWidget {
+/// The clothes in a load as a row of overlapping circles, then a count.
+class _Thumbs extends StatelessWidget {
   final List<Garment> garments;
 
-  const _Porthole({required this.garments});
+  const _Thumbs({required this.garments});
+
+  static const _size = 46.0;
+  static const _step = 34.0;
+  static const _shown = 5;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-    return SizedBox.square(
-      dimension: 68,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(shape: BoxShape.circle, color: palette.steel),
-            child: Container(
-              padding: const EdgeInsets.all(2.5),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: palette.card),
-              child: ClipOval(
-                child: garments.isEmpty
-                    ? ColoredBox(color: palette.separator)
-                    : GarmentImage(garment: garments.first, iconSize: 22),
+    final extra = garments.length - _shown;
+    final shown = garments.take(_shown).toList();
+    final count = shown.length + (extra > 0 ? 1 : 0);
+    final ring = context.palette.tile;
+
+    Widget circle(Widget child) => Container(
+      width: _size,
+      height: _size,
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(color: ring, shape: BoxShape.circle),
+      child: ClipOval(child: child),
+    );
+
+    return ExcludeSemantics(
+      child: SizedBox(
+        height: _size,
+        width: count == 0 ? 0 : _size + _step * (count - 1),
+        child: Stack(
+          children: [
+            for (final (i, g) in shown.indexed)
+              Positioned(
+                left: _step * i,
+                child: circle(GarmentImage(garment: g, iconSize: 18, backdrop: context.colors.surface)),
               ),
-            ),
-          ),
-          if (garments.length > 1)
-            Positioned(
-              right: -4,
-              bottom: -2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: SignColors.ink, borderRadius: BorderRadius.circular(8)),
-                child: Text(
-                  '+${garments.length - 1}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+            if (extra > 0)
+              Positioned(
+                left: _step * shown.length,
+                child: circle(
+                  ColoredBox(
+                    color: context.ink,
+                    child: Center(
+                      child: Text('+$extra', style: context.text.labelMedium?.copyWith(color: context.colors.surface)),
+                    ),
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/// A finished batch: its ticket with a status plate.
-class _HistoryTicket extends StatelessWidget {
+/// A finished load in the history list, with how it ended.
+class _HistoryRow extends StatelessWidget {
   final LaundryBatch batch;
 
-  const _HistoryTicket({required this.batch});
+  const _HistoryRow({required this.batch});
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final state = AppScope.of(context);
-    final missing = state.stillMissingFrom(batch);
+    final missing = AppScope.of(context).stillMissingFrom(batch);
 
-    return Ticket(
-      title: s.loadName(batch),
-      // History is quieter: a soft green band with dark green letters.
-      color: context.palette.clean.background,
-      foreground: context.palette.clean.foreground,
-      trailing: batch.hasNickname ? TicketNumber(s.ticketNo('${batch.number}')) : null,
-      semanticLabel: '${s.loadName(batch)}, ${s.historySummary(batch.totalItems, missing)}',
-      onTap: () => BatchScreen.open(context, batch.id),
-      // Wraps the plate under the summary when both don't fit on one line.
-      body: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 10,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(s.loadLine(batch), style: context.text.bodySmall),
-              Text(s.historySummary(batch.totalItems, missing), style: context.text.bodyMedium),
-            ],
+    return Material(
+      type: MaterialType.transparency,
+      child: Semantics(
+        button: true,
+        label: '${s.loadName(batch)}, ${s.historySummary(batch.totalItems, missing)}',
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: () => BatchScreen.open(context, batch.id),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.loadName(batch), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
+                      Text(s.loadLine(batch), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: missing == 0
+                      ? ResultLabel(s.allBack)
+                      : ResultLabel(s.stampMissing(missing), missing: true),
+                ),
+                const SizedBox(width: 6),
+                Icon(AppIcons.chevron, size: 14, color: context.palette.tertiaryText),
+              ],
+            ),
           ),
-          missing == 0
-              ? StatusPlate(s.allBack, color: SignColors.green, icon: AppIcons.check)
-              : StatusPlate(s.stampMissing(missing), color: SignColors.red),
-        ],
+        ),
       ),
     );
   }

@@ -5,19 +5,24 @@ import 'package:share_plus/share_plus.dart';
 import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../state/app_scope.dart';
+import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
-import '../widgets/tags.dart';
-import '../widgets/ticket.dart';
-import '../theme/app_icons.dart';
 
 /// Clothes that didn't come back. Grouped by laundromat, each group can
 /// send that laundromat a ready-made message listing what's missing.
+/// Opened from the Laundry tab.
 class MissingScreen extends StatelessWidget {
   const MissingScreen({super.key});
+
+  static Future<void> open(BuildContext context, {bool replace = false}) {
+    final route = MaterialPageRoute<void>(builder: (_) => const MissingScreen());
+    final nav = Navigator.of(context);
+    return replace ? nav.pushReplacement(route) : nav.push(route);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,77 +39,62 @@ class MissingScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          StoreSign(title: s.missing, color: SignColors.ink),
-          // Breathing room under the checker strip.
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          if (missing.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: EmptyState(
-                icon: AppIcons.allFound,
-                title: s.emptyMissingTitle,
-                body: s.emptyMissingBody,
-              ),
-            )
-          else ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Text(s.missingSubtitle,
-                    style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
-              ),
+      appBar: AppBar(title: BarTitle(s.missing, subtitle: missing.isEmpty ? null : s.missingSubtitle)),
+      body: missing.isEmpty
+          ? EmptyState(icon: AppIcons.allFound, title: s.emptyMissingTitle, body: s.emptyMissingBody)
+          : ListView.separated(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + MediaQuery.paddingOf(context).bottom),
+              itemCount: groups.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 14),
+              itemBuilder: (context, i) {
+                final entry = groups.entries.elementAt(i);
+                return _PlaceCard(place: entry.key, garments: entry.value);
+              },
             ),
-            // One ticket per laundromat: what's missing from there, and a
-            // ready-made message to ask about it.
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              sliver: SliverList.separated(
-                itemCount: groups.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 14),
-                itemBuilder: (context, i) {
-                  final entry = groups.entries.elementAt(i);
-                  return _MissingTicket(place: entry.key, garments: entry.value);
-                },
-              ),
-            ),
-            SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
-          ],
-        ],
-      ),
     );
   }
 }
 
-class _MissingTicket extends StatelessWidget {
+/// One laundromat: what's missing from there, and a ready-made message to
+/// ask about it.
+class _PlaceCard extends StatelessWidget {
   final String place;
   final List<Garment> garments;
 
-  const _MissingTicket({required this.place, required this.garments});
+  const _PlaceCard({required this.place, required this.garments});
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final title = place.isEmpty ? s.laundromat : place;
-    return Ticket(
-      title: title,
-      color: SignColors.red,
-      trailing: TicketNumber(s.stampMissing(garments.length)),
-      semanticLabel: '$title, ${s.stampMissing(garments.length)}',
-      body: Column(
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(24)),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Semantics(
+            header: true,
+            child: Row(
+              children: [
+                Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium)),
+                const SizedBox(width: 8),
+                Text(s.stampMissing(garments.length), style: context.text.labelMedium?.copyWith(color: context.palette.signal)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           for (final (i, g) in garments.indexed) ...[
             if (i > 0) const Divider(height: 28),
             _MissingPiece(garment: g),
           ],
           const SizedBox(height: 16),
           OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(backgroundColor: context.colors.surface),
             onPressed: () => SharePlus.instance.share(
               ShareParams(text: s.askMessage(place, garments.map((g) => g.name).toList())),
             ),
-            icon: const Icon(AppIcons.chat),
+            icon: const Icon(AppIcons.chat, size: 20),
             label: Text(s.askLaundromat),
           ),
         ],
@@ -123,7 +113,6 @@ class _MissingPiece extends StatelessWidget {
     final s = S.of(context);
     final state = AppScope.read(context);
     final batch = state.batchById(garment.currentBatchId);
-    final palette = context.palette;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,17 +120,20 @@ class _MissingPiece extends StatelessWidget {
         Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox.square(dimension: 56, child: GarmentImage(garment: garment, iconSize: 26)),
+              borderRadius: BorderRadius.circular(16),
+              child: SizedBox.square(
+                dimension: 64,
+                child: GarmentImage(garment: garment, iconSize: 26, backdrop: context.colors.surface),
+              ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  HangTag(garment.name, fontSize: 13),
+                  Text(garment.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
                   if (batch != null) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 2),
                     Text('${s.loadName(batch)} · ${s.sentOn(s.date(batch.createdAt))}', style: context.text.bodySmall),
                   ],
                 ],
@@ -154,6 +146,7 @@ class _MissingPiece extends StatelessWidget {
           children: [
             Expanded(
               child: FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(44, 46)),
                 onPressed: () {
                   final fromBatch = garment.currentBatchId;
                   state.markFound(garment.id);
@@ -165,7 +158,7 @@ class _MissingPiece extends StatelessWidget {
                     state.updateGarment(garment);
                   });
                 },
-                icon: const Icon(AppIcons.check),
+                icon: const Icon(AppIcons.check, size: 18),
                 label: Text(s.foundIt),
               ),
             ),
@@ -173,8 +166,9 @@ class _MissingPiece extends StatelessWidget {
             Expanded(
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: palette.missing.foreground,
-                  backgroundColor: palette.missing.background,
+                  minimumSize: const Size(44, 46),
+                  foregroundColor: context.palette.signal,
+                  backgroundColor: context.colors.surface,
                 ),
                 onPressed: () async {
                   final ok = await confirmAction(

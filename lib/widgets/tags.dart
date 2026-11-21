@@ -8,33 +8,18 @@ import '../theme/app_theme.dart';
 IconData statusIcon(GarmentStatus status) {
   switch (status) {
     case GarmentStatus.closet:
-      return AppIcons.closetFill;
+      return AppIcons.closet;
     case GarmentStatus.dirtyHamper:
       return AppIcons.hamper;
     case GarmentStatus.inLaundry:
       return AppIcons.laundry;
     case GarmentStatus.missing:
-      return AppIcons.missingFill;
+      return AppIcons.warning;
   }
 }
 
-/// The sign color for a status: closet blue, hamper mustard, laundry
-/// green, missing red. Same as the tab the piece lives in.
-Color statusSignColor(GarmentStatus status) {
-  switch (status) {
-    case GarmentStatus.closet:
-      return SignColors.blue;
-    case GarmentStatus.dirtyHamper:
-      return SignColors.mustard;
-    case GarmentStatus.inLaundry:
-      return SignColors.green;
-    case GarmentStatus.missing:
-      return SignColors.red;
-  }
-}
-
-/// A garment's status as a small painted chip: icon and word on a tint of
-/// its color. Never color alone.
+/// A garment's status as a small capsule: icon and word, in ink. Only
+/// missing is red. Never color alone.
 class StatusChip extends StatelessWidget {
   final GarmentStatus status;
 
@@ -42,25 +27,25 @@ class StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.palette.forStatus(status);
+    final color = context.palette.statusColor(status, context.ink);
     final label = S.of(context).statusLabel(status);
     return Semantics(
       label: label,
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(7, 3, 9, 3),
-        decoration: BoxDecoration(color: colors.background, borderRadius: BorderRadius.circular(6)),
+        padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(99)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(statusIcon(status), size: 14, color: colors.foreground),
-            const SizedBox(width: 4),
+            Icon(statusIcon(status), size: 14, color: color),
+            const SizedBox(width: 5),
             Flexible(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, height: 1.15, fontWeight: FontWeight.w600, color: colors.foreground),
+                style: context.text.labelMedium?.copyWith(color: color, height: 1.15),
               ),
             ),
           ],
@@ -70,100 +55,68 @@ class StatusChip extends StatelessWidget {
   }
 }
 
-/// A dry cleaner's hang tag: a white card with an ink outline, a punched
-/// hole and the name in sign letters. Used for names on the Fits rails
-/// and on missing clothes.
-class HangTag extends StatelessWidget {
+/// How a load ended, in one line: "All back" with a check, or "2 missing"
+/// in red.
+class ResultLabel extends StatelessWidget {
   final String text;
-  final double fontSize;
+  final bool missing;
 
-  const HangTag(this.text, {super.key, this.fontSize = 13});
+  const ResultLabel(this.text, {super.key, this.missing = false});
 
   @override
   Widget build(BuildContext context) {
-    final ink = Theme.of(context).colorScheme.onSurface;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(7, 4, 9, 4),
-      decoration: BoxDecoration(
-        color: context.palette.card,
-        border: Border.all(color: ink, width: 1.5),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: ink, width: 1.5)),
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.headlineSmall?.copyWith(fontSize: fontSize, height: 1.15, letterSpacing: 1.1),
-            ),
-          ),
-        ],
-      ),
+    final color = missing ? context.palette.signal : context.ink;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(missing ? AppIcons.warning : AppIcons.checked, size: 18, color: color),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleSmall?.copyWith(color: color)),
+        ),
+      ],
     );
   }
 }
 
-/// A straight enamel sign plate: solid color, white sign letters, like
-/// "OPEN" on a laundromat door. With [land], it drops into place the first
-/// time it shows (a plain fade with Reduce Motion).
-class StatusPlate extends StatelessWidget {
+/// The big result at the top of a finished check: a disc with a check (or
+/// a warning) and the words under it. With [land], it settles into place
+/// the first time it shows (a plain fade with Reduce Motion).
+class ResultStamp extends StatelessWidget {
   final String text;
-  final Color color;
-  final IconData? icon;
-  final double fontSize;
+  final bool missing;
   final bool land;
 
-  const StatusPlate(this.text, {super.key, required this.color, this.icon, this.fontSize = 13, this.land = false});
+  const ResultStamp(this.text, {super.key, this.missing = false, this.land = false});
 
   @override
   Widget build(BuildContext context) {
-    final plate = Container(
-      padding: EdgeInsets.symmetric(horizontal: fontSize * 0.7, vertical: fontSize * 0.35),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(fontSize * 0.4)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: fontSize * 1.1, color: Colors.white),
-            SizedBox(width: fontSize * 0.35),
-          ],
-          Flexible(
-            child: Text(
-              text.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.headlineSmall?.copyWith(
-                fontSize: fontSize,
-                height: 1.15,
-                letterSpacing: fontSize * 0.09,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final color = missing ? context.palette.signal : context.ink;
+    final stamp = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          child: Icon(missing ? AppIcons.missingFill : AppIcons.check, size: 36, color: context.colors.surface),
+        ),
+        const SizedBox(height: 14),
+        Text(text, textAlign: TextAlign.center, style: context.text.headlineSmall?.copyWith(color: color)),
+      ],
     );
-    if (!land) return plate;
+    if (!land) return stamp;
     final still = MediaQuery.disableAnimationsOf(context);
-    // A rare, celebratory moment: a short drop with a little settle.
+    // A rare, happy moment: a short settle from slightly large.
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: still ? 200 : 380),
+      duration: Duration(milliseconds: still ? 200 : 420),
       curve: still ? Curves.linear : Curves.easeOutBack,
       builder: (context, t, child) => Opacity(
         opacity: t.clamp(0.0, 1.0),
-        child: still ? child : Transform.scale(scale: 1.15 - 0.15 * t, child: child),
+        child: still ? child : Transform.scale(scale: 1.18 - 0.18 * t, child: child),
       ),
-      child: plate,
+      child: stamp,
     );
   }
 }

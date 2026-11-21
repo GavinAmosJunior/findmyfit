@@ -41,6 +41,9 @@ abstract final class AppIcons {
   static const IconData chat = IconData(0xe16e, fontFamily: _regular);
   static const IconData forward = IconData(0xe06c, fontFamily: _bold);
   static const IconData chevron = IconData(0xe13a, fontFamily: _bold);
+  static const IconData back = IconData(0xe138, fontFamily: _regular);
+  static const IconData more = IconData(0xe1fe, fontFamily: _bold);
+  static const IconData warning = IconData(0xe4e2, fontFamily: _fill);
 
   static const IconData fits = IconData(0xe422, fontFamily: _regular);
   static const IconData fitsFill = IconData(0xe422, fontFamily: _fill);

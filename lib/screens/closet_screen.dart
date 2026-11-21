@@ -4,17 +4,19 @@ import 'package:flutter/services.dart';
 import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../state/app_scope.dart';
+import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
-import '../widgets/tags.dart';
+import '../widgets/app_header.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/store_sign.dart';
 import '../widgets/garment_image.dart';
+import '../widgets/pill.dart';
 import '../widgets/pressable.dart';
+import '../widgets/tags.dart';
 import 'garment_form_screen.dart';
 import 'garment_sheet.dart';
+import 'home_shell.dart';
 import 'settings_screen.dart';
-import '../theme/app_icons.dart';
 
 /// Marks a clean garment as worn, with haptic feedback and an Undo.
 void wearGarment(BuildContext context, Garment garment) {
@@ -50,9 +52,11 @@ class _ClosetScreenState extends State<ClosetScreen> {
     super.dispose();
   }
 
+  // Order stays fixed (newest first) so tiles don't jump when you tap
+  // "Wore it"; each tile's label shows its status.
   List<Garment> _visible(List<Garment> all) {
     final q = _search.text.trim().toLowerCase();
-    final list = all.where((g) {
+    return all.where((g) {
       if (_filter == 'fav' && !g.isFavorite) return false;
       if (_filter != null && _filter != 'fav' && g.category.name != _filter) return false;
       if (q.isNotEmpty) {
@@ -61,9 +65,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
       }
       return true;
     }).toList();
-    // Order stays fixed (newest first) so tiles don't jump when you tap
-    // "Wore it"; the care label shows each status.
-    return list;
   }
 
   void _toggleSearch() {
@@ -81,18 +82,10 @@ class _ClosetScreenState extends State<ClosetScreen> {
     final visible = _visible(all);
 
     return Scaffold(
-      floatingActionButton: all.isEmpty
-          ? null
-          : FloatingActionButton(
-              tooltip: s.addClothes,
-              onPressed: () => GarmentFormScreen.openAdd(context),
-              child: const Icon(AppIcons.add, size: 30),
-            ),
       body: CustomScrollView(
         slivers: [
-          StoreSign(
+          LargeTitle(
             title: s.closet,
-            color: SignColors.blue,
             actions: [
               IconButton(
                 tooltip: s.search,
@@ -101,16 +94,11 @@ class _ClosetScreenState extends State<ClosetScreen> {
               ),
               IconButton(
                 tooltip: s.settings,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
                 icon: const Icon(AppIcons.settings),
               ),
-              const SizedBox(width: 4),
             ],
           ),
-          // Breathing room under the checker strip.
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
           if (!state.isLoaded)
             const SliverFillRemaining(child: Center(child: CircularProgressIndicator.adaptive()))
           else if (all.isEmpty)
@@ -133,17 +121,17 @@ class _ClosetScreenState extends State<ClosetScreen> {
               )
             else
               SliverPadding(
-                // Room for the + button and the tab bar floating over the grid.
-                padding: EdgeInsets.fromLTRB(16, 4, 16, 96 + MediaQuery.paddingOf(context).bottom),
+                // Room for the tab bar floating over the grid.
+                padding: EdgeInsets.fromLTRB(16, 6, 16, 24 + MediaQuery.paddingOf(context).bottom),
                 sliver: SliverLayoutBuilder(
                   builder: (context, constraints) {
                     final columns = (constraints.crossAxisExtent / 190).floor().clamp(2, 5);
-                    // Name + care label grow with the phone's text size setting.
-                    final labelArea = 16 + MediaQuery.textScalerOf(context).scale(42);
+                    // Name and status line grow with the phone's text size.
+                    final labelArea = 14 + MediaQuery.textScalerOf(context).scale(40);
                     return SliverGrid.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
-                        mainAxisSpacing: 18,
+                        mainAxisSpacing: 20,
                         crossAxisSpacing: 12,
                         mainAxisExtent: (constraints.crossAxisExtent - 12 * (columns - 1)) / columns + labelArea,
                       ),
@@ -165,56 +153,88 @@ class _ClosetScreenState extends State<ClosetScreen> {
       ('fav', s.favorites),
       for (final c in GarmentCategory.values) (c.name, s.categoryLabel(c)),
     ];
+    final shell = HomeShellState.maybeOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_searching)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
             child: TextField(
               controller: _search,
               autofocus: true,
               onChanged: (_) => setState(() {}),
               textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: s.searchClothes,
-                prefixIcon: const Icon(AppIcons.search),
-              ),
+              decoration: InputDecoration(hintText: s.searchClothes, prefixIcon: const Icon(AppIcons.search)),
             ),
           ),
+        // Where everything is, at a glance. Hamper and laundry jump to
+        // their tabs.
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            s.closetSummary(
-              count(GarmentStatus.closet),
-              count(GarmentStatus.dirtyHamper),
-              count(GarmentStatus.inLaundry),
-            ),
-            style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          child: Row(
+            children: [
+              for (final (i, (status, tab)) in [
+                (GarmentStatus.closet, null),
+                (GarmentStatus.dirtyHamper, HomeShellState.hamperTab),
+                (GarmentStatus.inLaundry, HomeShellState.laundryTab),
+              ].indexed) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: _CountTile(
+                    count: count(status),
+                    label: s.statusLabel(status),
+                    icon: statusIcon(status),
+                    onTap: tab == null || shell == null ? null : () => shell.goTo(tab),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-        SizedBox(
-          height: 60,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            itemCount: filters.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final (key, label) = filters[i];
-              return ChoiceChip(
-                label: Text(label),
-                selected: _filter == key,
-                onSelected: (_) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _filter = key);
-                },
-              );
-            },
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          child: Row(
+            children: [
+              for (final (i, (key, label)) in filters.indexed) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Pill(label: label, selected: _filter == key, onTap: () => setState(() => _filter = key)),
+              ],
+            ],
           ),
         ),
       ],
     );
+  }
+}
+
+/// One status count on a gray tile: icon, number, word.
+class _CountTile extends StatelessWidget {
+  final int count;
+  final String label;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _CountTile({required this.count, required this.label, required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+      decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: context.ink),
+          const SizedBox(height: 10),
+          Text('$count', style: context.text.headlineSmall),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
+        ],
+      ),
+    );
+    if (onTap == null) return Semantics(container: true, label: '$count $label', child: ExcludeSemantics(child: tile));
+    return Pressable(label: '$count $label', onTap: onTap!, child: tile);
   }
 }
 
@@ -227,9 +247,10 @@ class _GarmentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final canWear = garment.status == GarmentStatus.closet;
+    final statusColor = context.palette.statusColor(garment.status, context.palette.secondaryText);
 
-    // Photo first: no card around it, just the picture, the name and,
-    // only when a piece isn't clean in the closet, its care label.
+    // The piece on its gray tile, then its name, and its category or,
+    // when it isn't clean in the closet, where it is.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -242,17 +263,24 @@ class _GarmentTile extends StatelessWidget {
                 label: garment.name,
                 onTap: () => GarmentSheet.show(context, garment.id),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(22),
                   child: GarmentImage(garment: garment),
                 ),
               ),
               if (garment.isFavorite)
-                const Positioned(
+                Positioned(
                   top: 10,
                   left: 10,
                   child: IgnorePointer(
-                    child: Icon(AppIcons.favorite, color: Colors.white, size: 20,
-                        shadows: [Shadow(color: Color(0x66000000), blurRadius: 6)]),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: context.colors.surface.withValues(alpha: 0.92),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(AppIcons.favorite, color: context.ink, size: 15),
+                    ),
                   ),
                 ),
               if (canWear)
@@ -268,16 +296,29 @@ class _GarmentTile extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+          padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(garment.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               if (canWear)
                 Text(s.categoryLabel(garment.category), maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall)
               else
-                StatusChip(status: garment.status),
+                Row(
+                  children: [
+                    Icon(statusIcon(garment.status), size: 13, color: statusColor),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        s.statusLabel(garment.status),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodySmall?.copyWith(color: statusColor),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -286,8 +327,8 @@ class _GarmentTile extends StatelessWidget {
   }
 }
 
-/// The one-tap "I wore this" button on a closet photo: a white disc with a
-/// basket icon, 44pt touch target.
+/// The one-tap "I wore this" button on a closet tile: a small round
+/// button with a basket, in a 44pt touch target.
 class _WoreItButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
@@ -300,14 +341,15 @@ class _WoreItButton extends StatelessWidget {
       tooltip: tooltip,
       onPressed: onPressed,
       style: IconButton.styleFrom(
-        backgroundColor: Colors.white.withValues(alpha: 0.94),
-        foregroundColor: const Color(0xFF92400E),
-        minimumSize: const Size(44, 44),
-        elevation: 2,
-        shadowColor: const Color(0x55000000),
+        backgroundColor: context.colors.surface,
+        foregroundColor: context.ink,
+        minimumSize: const Size(40, 40),
+        fixedSize: const Size(40, 40),
+        elevation: 1,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
+        tapTargetSize: MaterialTapTargetSize.padded,
       ),
-      icon: const Icon(AppIcons.hamper, size: 22),
+      icon: const Icon(AppIcons.hamper, size: 20),
     );
   }
 }
-

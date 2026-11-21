@@ -7,7 +7,6 @@ import '../widgets/dialogs.dart';
 import '../widgets/grouped_section.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
-import '../widgets/store_sign.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -70,12 +69,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final state = AppScope.of(context);
 
     return Scaffold(
-      appBar: SignBar(title: s.settings, color: SignColors.ink),
+      appBar: AppBar(title: Text(s.settings)),
       body: ListView(
         padding: const EdgeInsets.only(top: 8, bottom: 32),
         children: [
           GroupedSection(
-            header: s.appearance.toUpperCase(),
+            header: s.appearance,
             children: [
               for (final (mode, label) in [
                 ('system', s.systemLanguage),
@@ -85,16 +84,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   title: Text(label),
                   selected: state.appearance == mode,
-                  selectedColor: Theme.of(context).colorScheme.onSurface,
+                  selectedColor: context.ink,
                   trailing: state.appearance == mode
-                      ? Icon(AppIcons.check, color: Theme.of(context).colorScheme.primary)
+                      ? Icon(AppIcons.check, color: context.ink, size: 20)
                       : null,
                   onTap: () => state.setAppearance(mode),
                 ),
             ],
           ),
           GroupedSection(
-            header: s.language.toUpperCase(),
+            header: s.language,
             children: [
               for (final (code, label) in [
                 ('system', s.systemLanguage),
@@ -104,16 +103,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   title: Text(label),
                   selected: state.language == code,
-                  selectedColor: Theme.of(context).colorScheme.onSurface,
+                  selectedColor: context.ink,
                   trailing: state.language == code
-                      ? Icon(AppIcons.check, color: Theme.of(context).colorScheme.primary)
+                      ? Icon(AppIcons.check, color: context.ink, size: 20)
                       : null,
                   onTap: () => state.setLanguage(code),
                 ),
             ],
           ),
           GroupedSection(
-            header: s.backup.toUpperCase(),
+            header: s.backup,
             footer: s.backupFooter,
             children: [
               ListTile(
@@ -131,7 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           GroupedSection(
-            header: s.about.toUpperCase(),
+            header: s.about,
             children: [
               ListTile(
                 title: const Text('FindMyFit'),

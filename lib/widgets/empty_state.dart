@@ -23,21 +23,18 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(32, 24, 32, 120),
+        padding: const EdgeInsets.fromLTRB(36, 24, 36, 120),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: context.colors.primary.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 34, color: context.colors.primary),
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(color: context.palette.tile, shape: BoxShape.circle),
+              child: Icon(icon, size: 36, color: context.ink),
             ),
-            const SizedBox(height: 20),
-            Text(title, style: context.text.titleLarge, textAlign: TextAlign.center),
+            const SizedBox(height: 22),
+            Text(title, style: context.text.headlineSmall, textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Text(
               body,
@@ -45,7 +42,7 @@ class EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (actionLabel != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 26),
               FilledButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
