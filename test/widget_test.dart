@@ -8,6 +8,7 @@ import 'package:smart_laundry_tracker/models/laundry_batch.dart';
 import 'package:smart_laundry_tracker/screens/home_shell.dart';
 import 'package:smart_laundry_tracker/state/wardrobe_state.dart';
 import 'package:smart_laundry_tracker/theme/app_icons.dart';
+import 'package:smart_laundry_tracker/widgets/pressable.dart';
 
 Future<WardrobeState> _loadedState() async {
   final state = WardrobeState(load: false);
@@ -255,6 +256,66 @@ void main() {
     await tester.tap(find.text('Today’s fit'));
     await tester.pumpAndSettle();
     expect(state.garments.where((g) => g.status == GarmentStatus.closet), hasLength(2));
+  });
+
+  test('shoes, hats, bags and accessories count the wear but skip the hamper', () async {
+    final state = await _loadedState();
+    final shoes = state.addGarment(name: 'Sneakers', category: GarmentCategory.shoes);
+    final tee = state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+    expect(state.shuffleTops.map((g) => g.name), ['Tee'], reason: 'shoes never hang on the tops rail');
+    state.markWorn(shoes.id);
+    state.markWorn(tee.id);
+    expect(state.garmentById(shoes.id)!.status, GarmentStatus.closet);
+    expect(state.garmentById(shoes.id)!.wearCount, 1);
+    expect(state.garmentById(tee.id)!.status, GarmentStatus.dirtyHamper);
+  });
+
+  testWidgets('Rails turns on a shoe shelf and a hook row; tops and bottoms stay', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = await _loadedState();
+    state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+    state.addGarment(name: 'Jeans', category: GarmentCategory.bottoms);
+    state.addGarment(name: 'Sneakers', category: GarmentCategory.shoes);
+    state.addGarment(name: 'Cap', category: GarmentCategory.hats);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(AppTabBar), matching: find.byIcon(AppIcons.fits)));
+    await tester.pumpAndSettle();
+    expect(find.text('Shoes'), findsNothing, reason: 'only tops and bottoms by default');
+
+    await tester.tap(find.byIcon(AppIcons.rails));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Shoes'));
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Hats'));
+    await tester.pumpAndSettle();
+    expect(state.railOn(GarmentCategory.shoes), isTrue);
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sneakers'), findsWidgets, reason: 'the shelf shows');
+    expect(find.text('Extras'), findsOneWidget, reason: 'the hook row shows');
+    expect(tester.takeException(), isNull, reason: 'everything fits a regular phone');
+    await tester.tap(find.byIcon(AppIcons.shuffle));
+    await tester.pumpAndSettle();
+    expect(state.garments.every((g) => g.status == GarmentStatus.closet), isTrue);
+  });
+
+  testWidgets('a missing piece opens its details and can be found again there', (tester) async {
+    final state = await _loadedState();
+    final g = state.addGarment(name: 'Grey joggers', category: GarmentCategory.bottoms, status: GarmentStatus.dirtyHamper);
+    state.finishReturn(state.sendToLaundry(garmentIds: [g.id], laundromatName: 'Sparkle').id);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byWidgetPredicate((w) => w is Pressable && w.label == 'Grey joggers'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit'), findsOneWidget);
+    await tester.ensureVisible(find.text('Found it'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Found it'));
+    await tester.pumpAndSettle();
+    expect(state.garmentById(g.id)!.status, GarmentStatus.closet);
   });
 
   testWidgets('a piece put in the hamper by mistake goes back with one tap', (tester) async {

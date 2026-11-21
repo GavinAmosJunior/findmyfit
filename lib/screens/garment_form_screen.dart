@@ -178,7 +178,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _queue
         ..clear()
         ..addAll(many.skip(1));
-      _queueTotal = many.length;
+      // A queue ("Photo 1 of 3", Skip) only when there's more than one.
+      _queueTotal = many.length > 1 ? many.length : 0;
       await _usePhoto(many.first);
     } catch (_) {
       if (mounted) showMessage(context, S.of(context).photoError);
@@ -199,8 +200,13 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _noGarment = false;
       _busy = false;
     });
-    _nameFocus.requestFocus();
-    if (Cutout.supported) _liftDone = _lift(bytes, token);
+    if (Cutout.supported) {
+      // The name keyboard waits for the lift, so the photo stays in view
+      // while its background melts away.
+      _liftDone = _lift(bytes, token);
+    } else {
+      _nameFocus.requestFocus();
+    }
   }
 
   /// Removes the background in the background, while the name is typed.
@@ -218,6 +224,13 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _useCutout = true;
       _noGarment = stored == null && !result.unavailable;
     });
+    if (!asked && _name.text.isEmpty && !_nameFocus.hasFocus) {
+      // Let the lift play (about 1.5 s), then ask for the name.
+      final wait = stored == null || MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 1400);
+      Future.delayed(wait, () {
+        if (mounted && token == _photoToken && !_nameFocus.hasFocus) _nameFocus.requestFocus();
+      });
+    }
     if (stored == null && asked) {
       final s = S.of(context);
       showMessage(
@@ -548,13 +561,30 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
           child: AnimatedSwitcher(
-            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 350),
+            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 450),
             // Fill the square, as the photo did before it could switch.
             layoutBuilder: (current, previous) =>
                 Stack(fit: StackFit.expand, children: [...previous, ?current]),
+            // The old picture melts away: it fades and goes soft as the
+            // new one comes into focus.
+            transitionBuilder: (child, anim) => AnimatedBuilder(
+              animation: anim,
+              child: child,
+              builder: (context, child) {
+                final blur = (1 - anim.value) * 14;
+                return Opacity(
+                  opacity: anim.value,
+                  child: blur < 0.1
+                      ? child
+                      : ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur), child: child),
+                );
+              },
+            ),
             child: picture,
           ),
         ),
+        // While it works, a soft light passes over the photo.
+        if (_lifting && !reduceMotion) const Positioned.fill(child: IgnorePointer(child: _Shimmer())),
         if (_lifting)
           Positioned(
             left: 0,
@@ -710,21 +740,108 @@ class _PhotoButton extends StatelessWidget {
   }
 }
 
-/// A cutout on its backdrop. When [glow] is set, a white outline traces
-/// the garment once and fades, showing what was lifted out.
-class _CutoutPreview extends StatelessWidget {
+/// A band of soft light that sweeps across the photo, over and over,
+/// while the background is being removed.
+class _Shimmer extends StatefulWidget {
+  const _Shimmer();
+
+  @override
+  State<_Shimmer> createState() => _ShimmerState();
+}
+
+class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white.withValues(alpha: 0), Colors.white.withValues(alpha: 0.32), Colors.white.withValues(alpha: 0)],
+            stops: const [0.35, 0.5, 0.65],
+            transform: _Slide(Curves.easeInOut.transform(_c.value) * 2.4 - 1.2),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Slide extends GradientTransform {
+  final double t;
+
+  const _Slide(this.t);
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) =>
+      Matrix4.translationValues(bounds.width * t, bounds.height * t, 0);
+}
+
+/// A cutout on its backdrop. When [glow] is set, it plays the lift, once:
+/// a line of light runs all the way around the garment's edge, the piece
+/// rises off the tile with a soft shadow, and settles back with a tap.
+class _CutoutPreview extends StatefulWidget {
   final File file;
   final bool glow;
 
   const _CutoutPreview({super.key, required this.file, required this.glow});
 
   @override
+  State<_CutoutPreview> createState() => _CutoutPreviewState();
+}
+
+class _CutoutPreviewState extends State<_CutoutPreview> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+  bool _tapped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.glow) {
+      _c.addListener(() {
+        // The tap lands as the piece reaches the top of its lift.
+        if (!_tapped && _c.value >= 0.42) {
+          _tapped = true;
+          HapticFeedback.lightImpact();
+        }
+      });
+      _c.forward();
+    } else {
+      _c.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  /// How high the piece is: rises over the first half, settles after.
+  static double _lift(double t) {
+    if (t < 0.12) return 0;
+    if (t < 0.45) return Curves.easeOutCubic.transform((t - 0.12) / 0.33);
+    if (t < 0.9) return 1 - Curves.easeInOutCubic.transform((t - 0.45) / 0.45);
+    return 0;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final image = FileImage(file);
-    Widget shape() => Image(
+    final image = FileImage(widget.file);
+    Widget shape(Color color) => Image(
       image: image,
       fit: BoxFit.contain,
-      color: Colors.white,
+      color: color,
       colorBlendMode: BlendMode.srcIn,
       gaplessPlayback: true,
     );
@@ -733,29 +850,65 @@ class _CutoutPreview extends StatelessWidget {
       color: context.palette.tile,
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (glow)
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 1300),
-                builder: (context, t, child) => Opacity(opacity: math.sin(t * math.pi).clamp(0.0, 1.0), child: child),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // A soft halo, then a crisp edge from eight nudged copies.
-                    ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8), child: shape()),
-                    for (var i = 0; i < 8; i++)
-                      Transform.translate(
-                        offset: Offset(3 * math.cos(i * math.pi / 4), 3 * math.sin(i * math.pi / 4)),
-                        child: shape(),
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) {
+            final t = _c.value;
+            final lift = _lift(t);
+            // The light runs once around the edge in the first two thirds.
+            final trace = (t / 0.7).clamp(0.0, 1.0);
+            final traceOpacity = t < 0.08 ? t / 0.08 : (t > 0.6 ? ((0.78 - t) / 0.18).clamp(0.0, 1.0) : 1.0);
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // The shadow, growing as the piece lifts.
+                if (lift > 0)
+                  Transform.translate(
+                    offset: Offset(0, 6 + 12 * lift),
+                    child: Opacity(
+                      opacity: 0.28 * lift,
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(sigmaX: 10 + 8 * lift, sigmaY: 10 + 8 * lift),
+                        child: shape(Colors.black),
                       ),
-                  ],
+                    ),
+                  ),
+                Transform.scale(
+                  scale: 1 + 0.05 * lift,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (widget.glow && traceOpacity > 0)
+                        Opacity(
+                          opacity: traceOpacity,
+                          child: ShaderMask(
+                            blendMode: BlendMode.dstIn,
+                            // A bright arc that sweeps all the way round.
+                            shaderCallback: (rect) => SweepGradient(
+                              colors: const [Colors.transparent, Colors.white, Colors.white, Colors.transparent],
+                              stops: const [0.0, 0.22, 0.3, 0.5],
+                              transform: GradientRotation(2 * math.pi * trace - math.pi / 2),
+                            ).createShader(rect),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6), child: shape(Colors.white)),
+                                for (var i = 0; i < 8; i++)
+                                  Transform.translate(
+                                    offset: Offset(3 * math.cos(i * math.pi / 4), 3 * math.sin(i * math.pi / 4)),
+                                    child: shape(Colors.white),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      Image(image: image, fit: BoxFit.contain, gaplessPlayback: true),
+                    ],
+                  ),
                 ),
-              ),
-            Image(image: image, fit: BoxFit.contain, gaplessPlayback: true),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

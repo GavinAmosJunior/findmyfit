@@ -11,6 +11,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import '../theme/app_icons.dart';
 import '../widgets/app_header.dart';
+import 'garment_sheet.dart';
 import 'missing_screen.dart';
 
 /// The return check: tick each piece as it comes back from the laundromat.
@@ -241,7 +242,7 @@ class _ReturnRow extends StatelessWidget {
       child: Semantics(
         checked: received,
         child: InkWell(
-          onTap: editable ? onToggle : null,
+          onTap: editable ? onToggle : () => GarmentSheet.show(context, garment.id),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
             child: Row(

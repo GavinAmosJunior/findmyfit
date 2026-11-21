@@ -105,14 +105,48 @@ class GarmentSheet extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 22),
-          if (garment.status == GarmentStatus.closet)
+          if (garment.status == GarmentStatus.closet) ...[
             FilledButton.icon(
               onPressed: () {
                 close();
                 wearGarment(outer, garment);
               },
-              icon: const Icon(AppIcons.hamper, size: 20),
+              icon: Icon(garment.category.goesToHamper ? AppIcons.hamper : AppIcons.check, size: 20),
               label: Text(s.woreIt),
+            ),
+            // Shoes and the like skip the hamper, unless they need a clean.
+            if (!garment.category.goesToHamper) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () {
+                  state.moveToHamper(garment.id);
+                  close();
+                  showMessage(outer, s.movedToHamper(garment.name));
+                },
+                icon: const Icon(AppIcons.hamper, size: 20),
+                label: Text(s.putInHamper),
+              ),
+            ],
+          ],
+          // A missing piece can turn up again, from wherever it's opened.
+          if (garment.status == GarmentStatus.missing)
+            FilledButton.icon(
+              onPressed: () {
+                final fromBatch = garment.currentBatchId;
+                state.markFound(garment.id);
+                HapticFeedback.mediumImpact();
+                close();
+                showMessage(outer, s.foundMessage(garment.name), actionLabel: s.undo, onAction: () {
+                  final g = state.garmentById(garment.id);
+                  if (g == null) return;
+                  g
+                    ..status = GarmentStatus.missing
+                    ..currentBatchId = fromBatch;
+                  state.updateGarment(g);
+                });
+              },
+              icon: const Icon(AppIcons.check, size: 20),
+              label: Text(s.foundIt),
             ),
           if (garment.status == GarmentStatus.dirtyHamper)
             OutlinedButton.icon(

@@ -83,6 +83,9 @@ flutter:
       fonts:
         - asset: assets/fonts/Phosphor-Bold.ttf
 
+  assets:
+    - assets/brand/
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
@@ -124,5 +127,5 @@ flutter_launcher_icons:
   adaptive_icon_foreground_inset: 0
   web:
     generate: true
-    background_color: "#0C0C0D"
-    theme_color: "#0C0C0D"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"

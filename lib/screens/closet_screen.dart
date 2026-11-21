@@ -18,7 +18,8 @@ import 'garment_form_screen.dart';
 import 'garment_sheet.dart';
 import 'settings_screen.dart';
 
-/// Marks a clean garment as worn, with haptic feedback and an Undo.
+/// Marks a clean garment as worn, with haptic feedback and an Undo. Clothes
+/// go to the hamper; shoes, hats, bags and accessories only count the wear.
 void wearGarment(BuildContext context, Garment garment) {
   final state = AppScope.read(context);
   final s = S.of(context);
@@ -27,7 +28,7 @@ void wearGarment(BuildContext context, Garment garment) {
   HapticFeedback.lightImpact();
   showMessage(
     context,
-    s.movedToHamper(garment.name),
+    garment.category.goesToHamper ? s.movedToHamper(garment.name) : s.woreCounted(garment.name),
     actionLabel: s.undo,
     onAction: () => state.undoMarkWorn(garment.id, before),
   );
@@ -242,7 +243,8 @@ class _GarmentTile extends StatelessWidget {
                   right: 4,
                   bottom: 4,
                   child: _WoreItButton(
-                    tooltip: s.woreItHint(garment.name),
+                    toHamper: garment.category.goesToHamper,
+                    tooltip: garment.category.goesToHamper ? s.woreItHint(garment.name) : s.woreCounted(garment.name),
                     onPressed: () => wearGarment(context, garment),
                   ),
                 ),
@@ -287,7 +289,10 @@ class _WoreItButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
 
-  const _WoreItButton({required this.tooltip, required this.onPressed});
+  /// A basket for clothes; a check for things that just count the wear.
+  final bool toHamper;
+
+  const _WoreItButton({required this.tooltip, required this.onPressed, this.toHamper = true});
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +308,7 @@ class _WoreItButton extends StatelessWidget {
         shadowColor: Colors.black.withValues(alpha: 0.25),
         tapTargetSize: MaterialTapTargetSize.padded,
       ),
-      icon: const Icon(AppIcons.hamper, size: 20),
+      icon: Icon(toHamper ? AppIcons.hamper : AppIcons.check, size: 20),
     );
   }
 }

@@ -16,6 +16,10 @@ class WardrobeState extends ChangeNotifier {
   static const _keyBatchCounter = 'saved_batch_counter_v1';
   static const _keyLanguage = 'language_v1';
   static const _keyAppearance = 'appearance_v1';
+  static const _keyRails = 'shuffle_rails_v1';
+
+  /// The extra rows Fit Shuffle shows besides tops and bottoms.
+  static const extraRails = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories, GarmentCategory.shoes];
   static const _keyFits = 'saved_fits_v1';
 
   static const backupFormat = 'findmyfit-backup';
@@ -28,6 +32,7 @@ class WardrobeState extends ChangeNotifier {
   bool _isLoaded = false;
   String _language = 'system';
   String _appearance = 'system';
+  final Set<GarmentCategory> _rails = {};
 
   WardrobeState({bool load = true}) {
     if (load) loadFromStorage();
@@ -101,6 +106,9 @@ class WardrobeState extends ChangeNotifier {
       _batchCounter = prefs.getInt(_keyBatchCounter) ?? 1000;
       _language = prefs.getString(_keyLanguage) ?? 'system';
       _appearance = prefs.getString(_keyAppearance) ?? 'system';
+      _rails
+        ..clear()
+        ..addAll((prefs.getStringList(_keyRails) ?? []).map(GarmentCategory.fromString).where(extraRails.contains));
     } catch (e) {
       debugPrint('Error loading wardrobe storage: $e');
     } finally {
@@ -136,6 +144,7 @@ class WardrobeState extends ChangeNotifier {
       await prefs.setInt(_keyBatchCounter, _batchCounter);
       await prefs.setString(_keyLanguage, _language);
       await prefs.setString(_keyAppearance, _appearance);
+      await prefs.setStringList(_keyRails, _rails.map((c) => c.name).toList());
     } catch (e) {
       debugPrint('Error saving wardrobe storage: $e');
     }
@@ -148,6 +157,15 @@ class WardrobeState extends ChangeNotifier {
 
   void setLanguage(String code) {
     _language = code;
+    _changed();
+  }
+
+  /// Whether Fit Shuffle shows a row for this extra category.
+  bool railOn(GarmentCategory c) => _rails.contains(c);
+
+  void setRail(GarmentCategory c, bool on) {
+    if (!extraRails.contains(c)) return;
+    on ? _rails.add(c) : _rails.remove(c);
     _changed();
   }
 
@@ -220,10 +238,14 @@ class WardrobeState extends ChangeNotifier {
     if (g == null) return null;
     final before = (status: g.status, wearCount: g.wearCount, lastWornAt: g.lastWornAt);
     g
-      ..status = GarmentStatus.dirtyHamper
       ..wearCount += 1
-      ..lastWornAt = DateTime.now()
-      ..currentBatchId = null;
+      ..lastWornAt = DateTime.now();
+    // Shoes, hats, bags and accessories don't go in the wash.
+    if (g.category.goesToHamper) {
+      g
+        ..status = GarmentStatus.dirtyHamper
+        ..currentBatchId = null;
+    }
     _changed();
     return before;
   }
@@ -348,15 +370,15 @@ class WardrobeState extends ChangeNotifier {
 
   // ------------------------------------------------------------ fit shuffle
 
-  /// Clean clothes for the upper rail: anything worn on top.
-  List<Garment> get shuffleTops => withStatus(GarmentStatus.closet)
-      .where((g) => g.category != GarmentCategory.bottoms)
-      .toList();
+  /// Clean clothes for the upper rail: tops, jackets and delicates.
+  List<Garment> get shuffleTops => withStatus(GarmentStatus.closet).where((g) => g.category.isUpper).toList();
 
   /// Clean clothes for the lower rail.
-  List<Garment> get shuffleBottoms => withStatus(GarmentStatus.closet)
-      .where((g) => g.category == GarmentCategory.bottoms)
-      .toList();
+  List<Garment> get shuffleBottoms => shuffleOf(GarmentCategory.bottoms);
+
+  /// Pieces of one category that are at home and ready to wear.
+  List<Garment> shuffleOf(GarmentCategory c) =>
+      withStatus(GarmentStatus.closet).where((g) => g.category == c).toList();
 
   bool isFitSaved(Iterable<String> ids) => _fits.any((f) => f.sameAs(ids));
 

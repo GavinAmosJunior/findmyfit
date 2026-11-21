@@ -25,6 +25,11 @@ abstract final class AppIcons {
   static const IconData bottoms = IconData(0xec88, fontFamily: _fill);
   static const IconData outerwear = IconData(0xecd0, fontFamily: _fill);
   static const IconData delicates = IconData(0xea7e, fontFamily: _fill);
+  static const IconData shoes = IconData(0xe80c, fontFamily: _fill);
+  static const IconData hats = IconData(0xea28, fontFamily: _fill);
+  static const IconData bags = IconData(0xe29c, fontFamily: _fill);
+  static const IconData accessories = IconData(0xe816, fontFamily: _fill);
+  static const IconData rails = IconData(0xe434, fontFamily: _regular);
 
   // Actions.
   static const IconData add = IconData(0xe3d4, fontFamily: _bold);

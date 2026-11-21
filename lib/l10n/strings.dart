@@ -72,6 +72,14 @@ class S {
         return _t('Outerwear', 'Luaran');
       case GarmentCategory.delicates:
         return _t('Delicates', 'Halus');
+      case GarmentCategory.shoes:
+        return _t('Shoes', 'Sepatu');
+      case GarmentCategory.hats:
+        return _t('Hats', 'Topi');
+      case GarmentCategory.bags:
+        return _t('Bags', 'Tas');
+      case GarmentCategory.accessories:
+        return _t('Accessories', 'Aksesori');
     }
   }
 
@@ -82,6 +90,8 @@ class S {
   String get woreIt => _t('Wore it', 'Sudah dipakai');
   String woreItHint(String name) => _t('Wore $name — move to hamper', 'Pakai $name — pindah ke keranjang');
   String movedToHamper(String name) => _t('$name is in the hamper', '$name masuk keranjang');
+  String woreCounted(String name) => _t('Wore $name', 'Memakai $name');
+  String get putInHamper => _t('Put in hamper', 'Masukkan ke keranjang');
   String get addClothes => _t('Add clothes', 'Tambah pakaian');
   String get emptyClosetTitle => _t('Start your closet', 'Mulai isi lemarimu');
   String get emptyClosetBody =>
@@ -248,6 +258,20 @@ class S {
       'Penghapus latar belum siap di ponsel ini. Coba lagi sebentar lagi.');
   String get noCutout => _t('Couldn’t find the clothes in this photo. Try a plain surface.',
       'Pakaian tidak terdeteksi di foto ini. Coba alas polos.');
+  // ------------------------------------------------------------ fit rails
+  String get railsTitle => _t('Rails', 'Rak');
+  String get railsHint => _t('Tops and bottoms are always on. Turn on more to build a full outfit.',
+      'Atasan dan bawahan selalu tampil. Nyalakan yang lain untuk satu tampilan lengkap.');
+  String get extras => _t('Extras', 'Pelengkap');
+  String get none => _t('None', 'Tidak ada');
+  String noneOf(String what) => _t('No ${what.toLowerCase()}', 'Tanpa ${what.toLowerCase()}');
+  String get customizeRails => _t('Choose rails', 'Pilih rak');
+  String get savedFit => _t('Saved fit', 'Fit tersimpan');
+  String get share => _t('Share', 'Bagikan');
+  String get showOnRails => _t('Show on rails', 'Tampilkan di rak');
+  String get removeFit => _t('Remove fit', 'Hapus fit');
+  String get shareFailed => _t('Couldn’t share the picture. Try again.', 'Gagal membagikan gambar. Coba lagi.');
+
   String get addFromGallery => _t('Add from gallery', 'Tambah dari galeri');
   String get editGarment => _t('Edit clothes', 'Ubah pakaian');
 

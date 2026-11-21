@@ -11,6 +11,8 @@ import '../widgets/app_header.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
+import '../widgets/pressable.dart';
+import 'garment_sheet.dart';
 
 /// Clothes that didn't come back. Grouped by laundromat, each group can
 /// send that laundromat a ready-made message listing what's missing.
@@ -77,23 +79,24 @@ class _PlaceCard extends StatelessWidget {
             header: true,
             child: Row(
               children: [
-                Expanded(child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium)),
+                Expanded(
+                  child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.titleMedium),
+                ),
                 const SizedBox(width: 8),
-                Text(s.stampMissing(garments.length), style: context.text.labelMedium?.copyWith(color: context.palette.signal)),
+                Text(
+                  s.stampMissing(garments.length),
+                  style: context.text.labelMedium?.copyWith(color: context.palette.signal),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 14),
-          for (final (i, g) in garments.indexed) ...[
-            if (i > 0) const Divider(height: 28),
-            _MissingPiece(garment: g),
-          ],
+          for (final (i, g) in garments.indexed) ...[if (i > 0) const Divider(height: 28), _MissingPiece(garment: g)],
           const SizedBox(height: 16),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(backgroundColor: context.colors.surface),
-            onPressed: () => SharePlus.instance.share(
-              ShareParams(text: s.askMessage(place, garments.map((g) => g.name).toList())),
-            ),
+            onPressed: () =>
+                SharePlus.instance.share(ShareParams(text: s.askMessage(place, garments.map((g) => g.name).toList()))),
             icon: const Icon(AppIcons.chat, size: 20),
             label: Text(s.askLaundromat),
           ),
@@ -117,29 +120,38 @@ class _MissingPiece extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: SizedBox.square(
-                dimension: 64,
-                child: GarmentImage(garment: garment, iconSize: 26, backdrop: context.colors.surface),
+        // Tap the piece for its details: edit it, or delete it.
+        Pressable(
+          label: garment.name,
+          onTap: () => GarmentSheet.show(context, garment.id),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox.square(
+                  dimension: 64,
+                  child: GarmentImage(garment: garment, iconSize: 26, backdrop: context.colors.surface),
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(garment.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
-                  if (batch != null) ...[
-                    const SizedBox(height: 2),
-                    Text('${s.loadName(batch)} · ${s.sentOn(s.date(batch.createdAt))}', style: context.text.bodySmall),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(garment.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: context.text.titleSmall),
+                    if (batch != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${s.loadName(batch)} · ${s.sentOn(s.date(batch.createdAt))}',
+                        style: context.text.bodySmall,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+              Icon(AppIcons.chevron, size: 14, color: context.palette.tertiaryText),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -151,12 +163,17 @@ class _MissingPiece extends StatelessWidget {
                   final fromBatch = garment.currentBatchId;
                   state.markFound(garment.id);
                   HapticFeedback.mediumImpact();
-                  showMessage(context, s.foundMessage(garment.name), actionLabel: s.undo, onAction: () {
-                    garment
-                      ..status = GarmentStatus.missing
-                      ..currentBatchId = fromBatch;
-                    state.updateGarment(garment);
-                  });
+                  showMessage(
+                    context,
+                    s.foundMessage(garment.name),
+                    actionLabel: s.undo,
+                    onAction: () {
+                      garment
+                        ..status = GarmentStatus.missing
+                        ..currentBatchId = fromBatch;
+                      state.updateGarment(garment);
+                    },
+                  );
                 },
                 icon: const Icon(AppIcons.check, size: 18),
                 label: Text(s.foundIt),

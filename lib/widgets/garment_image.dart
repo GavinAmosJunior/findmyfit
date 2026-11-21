@@ -18,6 +18,14 @@ IconData categoryIcon(GarmentCategory category) {
       return AppIcons.outerwear;
     case GarmentCategory.delicates:
       return AppIcons.delicates;
+    case GarmentCategory.shoes:
+      return AppIcons.shoes;
+    case GarmentCategory.hats:
+      return AppIcons.hats;
+    case GarmentCategory.bags:
+      return AppIcons.bags;
+    case GarmentCategory.accessories:
+      return AppIcons.accessories;
   }
 }
 
