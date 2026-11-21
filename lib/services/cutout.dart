@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' show Offset, Rect;
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_subject_segmentation/google_mlkit_subject_segmentation.dart';
@@ -24,10 +25,48 @@ class CutoutSubject {
 /// the phone's ML model.
 typedef SubjectFinder = Future<List<CutoutSubject>> Function(String path);
 
+/// How the garment moved from where it is in the photo to where it sits
+/// in the cutout, so the app can animate it gliding there.
+///
+/// Sizes are in pixels of the upright photo. The cutout is the photo with
+/// the garment kept, turned by [turn] degrees clockwise around its middle
+/// (growing to [turnedWidth] × [turnedHeight]), cropped to [box], and
+/// centered on a square of side [side].
+class CutoutGeometry {
+  final int width, height;
+  final double turn;
+  final int turnedWidth, turnedHeight;
+  final Rect box;
+  final int side;
+
+  const CutoutGeometry({
+    required this.width,
+    required this.height,
+    required this.turn,
+    required this.turnedWidth,
+    required this.turnedHeight,
+    required this.box,
+    required this.side,
+  });
+
+  /// Where photo pixel [p] lands on the cutout's square, in its own pixels.
+  Offset place(Offset p) {
+    final a = turn * math.pi / 180;
+    final d = p - Offset(width / 2, height / 2);
+    final r = Offset(d.dx * math.cos(a) - d.dy * math.sin(a), d.dx * math.sin(a) + d.dy * math.cos(a));
+    return r + Offset(turnedWidth / 2, turnedHeight / 2) - box.topLeft + Offset((side - box.width) / 2, (side - box.height) / 2);
+  }
+}
+
 /// What [Cutout.lift] gives back: the cutout, or why there isn't one.
 class CutoutResult {
   /// PNG bytes of the garment on a transparent square.
   final Uint8List? png;
+
+  /// The garment cut out where it stands in the photo (the photo's shape,
+  /// smaller), and how it moves into [png]. For the lift animation.
+  final Uint8List? inPlace;
+  final CutoutGeometry? geometry;
 
   /// True when the phone couldn't run background removal at all, as
   /// opposed to finding no garment.
@@ -37,9 +76,13 @@ class CutoutResult {
   /// the model, so trying again later will help.
   final bool downloading;
 
-  const CutoutResult.done(Uint8List this.png) : unavailable = false, downloading = false;
-  const CutoutResult.notFound() : png = null, unavailable = false, downloading = false;
-  const CutoutResult.unavailable({this.downloading = false}) : png = null, unavailable = true;
+  const CutoutResult.done(Uint8List this.png, {this.inPlace, this.geometry}) : unavailable = false, downloading = false;
+  const CutoutResult.notFound() : png = null, inPlace = null, geometry = null, unavailable = false, downloading = false;
+  const CutoutResult.unavailable({this.downloading = false})
+    : png = null,
+      inPlace = null,
+      geometry = null,
+      unavailable = true;
 }
 
 /// Lifts a garment out of its photo: the background goes transparent, a
@@ -77,8 +120,10 @@ class Cutout {
         return CutoutResult.unavailable(downloading: e.toString().toLowerCase().contains('download'));
       }
       if (subjects.isEmpty) return const CutoutResult.notFound();
-      final png = await compute(_composeIsolate, (upright, subjects));
-      return png == null ? const CutoutResult.notFound() : CutoutResult.done(png);
+      final made = await compute(_composeIsolate, (upright, subjects));
+      return made == null
+          ? const CutoutResult.notFound()
+          : CutoutResult.done(made.png, inPlace: made.inPlace, geometry: made.geometry);
     } catch (e) {
       debugPrint('Cutout skipped: $e');
       return const CutoutResult.notFound();
@@ -129,17 +174,24 @@ Uint8List _rotate((Uint8List, int) args) {
   return decoder is img.PngDecoder ? img.encodePng(turned) : img.encodeJpg(turned, quality: 90);
 }
 
-Uint8List? _composeIsolate((Uint8List, List<CutoutSubject>) args) {
+ComposedCutout? _composeIsolate((Uint8List, List<CutoutSubject>) args) {
   final photo = img.decodeImage(args.$1);
   if (photo == null) return null;
-  return composeCutout(photo, args.$2);
+  return composeCutoutDetailed(photo, args.$2);
 }
+
+/// The cutout, the garment where it stood, and how it moved.
+typedef ComposedCutout = ({Uint8List png, Uint8List inPlace, CutoutGeometry geometry});
 
 /// Builds the cutout from a photo and the subjects found in it.
 ///
 /// Public for tests; the app goes through [Cutout.lift].
 @visibleForTesting
-Uint8List? composeCutout(img.Image photo, List<CutoutSubject> subjects) {
+Uint8List? composeCutout(img.Image photo, List<CutoutSubject> subjects) => composeCutoutDetailed(photo, subjects)?.png;
+
+/// Like [composeCutout], also keeping what the lift animation needs.
+@visibleForTesting
+ComposedCutout? composeCutoutDetailed(img.Image photo, List<CutoutSubject> subjects) {
   final w = photo.width, h = photo.height;
   final subject = _pickSubject(subjects, w, h);
   if (subject == null) return null;
@@ -165,6 +217,13 @@ Uint8List? composeCutout(img.Image photo, List<CutoutSubject> subjects) {
   // Too small to be the garment: probably a stray object.
   if (area < w * h * 0.02) return null;
 
+  // The garment where it stands, small, for the lift animation.
+  final scale = 640 / math.max(w, h);
+  final inPlace = img.encodePng(
+    scale < 1 ? img.copyResize(cut, width: (w * scale).round(), height: (h * scale).round()) : cut,
+    level: 1,
+  );
+
   // 2. Straighten a tilt of up to about 40 degrees. A garment lying sideways
   //    or upside down is left as is: there's a rotate button for that,
   //    because which way is "up" can't be told reliably from the shape.
@@ -189,7 +248,19 @@ Uint8List? composeCutout(img.Image photo, List<CutoutSubject> subjects) {
   if (side > Cutout.maxSide) {
     square = img.copyResize(square, width: Cutout.maxSide, height: Cutout.maxSide, interpolation: img.Interpolation.average);
   }
-  return img.encodePng(square, level: 6);
+  return (
+    png: img.encodePng(square, level: 6),
+    inPlace: inPlace,
+    geometry: CutoutGeometry(
+      width: w,
+      height: h,
+      turn: -(tilt ?? 0),
+      turnedWidth: cut.width,
+      turnedHeight: cut.height,
+      box: Rect.fromLTWH(box.$1.toDouble(), box.$2.toDouble(), box.$3.toDouble(), box.$4.toDouble()),
+      side: side,
+    ),
+  );
 }
 
 /// The biggest subject, favoring the one nearest the middle of the frame.

@@ -56,6 +56,30 @@ void main() {
     expect(_fill(out), greaterThan(0.95));
   });
 
+  for (final degrees in [0.0, -25.0, 18.0, 33.0]) {
+    test('the lift geometry carries a $degrees° garment onto its cutout', () {
+      final (photo, subject) = _scene(degrees: degrees, size: 300);
+      final made = composeCutoutDetailed(photo, [subject])!;
+      final out = img.decodePng(made.png)!;
+      final g = made.geometry;
+      final k = out.width / g.side;
+      // Every garment pixel of the photo should land on garment in the cutout.
+      var hits = 0, total = 0;
+      for (var y = 0; y < photo.height; y += 3) {
+        for (var x = 0; x < photo.width; x += 3) {
+          if (subject.mask[y * photo.width + x] < 0.9) continue;
+          total++;
+          final q = g.place(Offset(x + 0.5, y + 0.5)) * k;
+          final qx = q.dx.round().clamp(0, out.width - 1), qy = q.dy.round().clamp(0, out.height - 1);
+          if (out.getPixel(qx, qy).a > 128) hits++;
+        }
+      }
+      expect(hits / total, greaterThan(0.93));
+      expect(img.decodePng(made.inPlace)!.width / img.decodePng(made.inPlace)!.height, closeTo(1, 0.01),
+          reason: 'the in-place picture keeps the photo\'s shape');
+    });
+  }
+
   for (final degrees in [-25.0, 18.0, 33.0]) {
     test('a garment tilted $degrees° is straightened', () {
       final (photo, subject) = _scene(degrees: degrees);

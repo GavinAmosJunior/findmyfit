@@ -19,10 +19,11 @@ import '../widgets/garment_image.dart';
 import '../widgets/pressable.dart';
 import 'saved_fit_sheet.dart';
 
-/// Mix and match clean clothes, head to toe. Tops and bottoms hang on two
-/// rails you can swipe on their own. Turn on more in Rails: a slim row of
-/// hooks for a hat, a bag and an accessory, and a shelf for shoes. Shuffle
-/// slides everything unlocked, and it settles from head to toe.
+/// Mix and match clean clothes, head to toe, on one screen that never
+/// scrolls. Tops and bottoms hang on rails you swipe on their own; shoes
+/// stand on a shelf. A hat, a bag and an accessory sit in a small tray
+/// above. Shuffle changes everything that isn't locked, settling from
+/// head to toe. Turn rows on in Rails; saved fits open from the header.
 ///
 /// It's for ideas only: nothing here changes where clothes are.
 class FitShuffleScreen extends StatefulWidget {
@@ -32,20 +33,1106 @@ class FitShuffleScreen extends StatefulWidget {
   State<FitShuffleScreen> createState() => _FitShuffleScreenState();
 }
 
-/// The rows, head to toe.
-enum _Row {
-  hat(GarmentCategory.hats),
-  bag(GarmentCategory.bags),
-  accessory(GarmentCategory.accessories),
-  top(GarmentCategory.tops),
-  bottom(GarmentCategory.bottoms),
-  shoes(GarmentCategory.shoes);
+/// The rows that slide: tops, bottoms, shoes.
+enum _Row { top, bottom, shoes }
 
-  const _Row(this.category);
+/// The small things in the tray, head first.
+const _extras = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories];
+
+class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProviderStateMixin {
+  final _rails = <_Row, _RailState>{};
+  final _random = Random();
+  bool _spinning = false;
+
+  // The tray: what's picked for each extra (null = none), and which are
+  // kept when shuffling.
+  final _picked = <GarmentCategory, String?>{};
+  final _kept = <GarmentCategory>{};
+
+  // When the shelf or tray last appeared, so their pieces play their
+  // arrival only then.
+  final _arrivedAt = <Object, DateTime>{};
+  Set<Object>? _present;
+
+  _RailState _rail(_Row row) => _rails.putIfAbsent(row, () => _RailState(this));
+
+  @override
+  void dispose() {
+    for (final r in _rails.values) {
+      r.dispose();
+    }
+    super.dispose();
+  }
+
+  bool _fresh(Object key) {
+    final at = _arrivedAt[key];
+    return at != null && DateTime.now().difference(at) < const Duration(milliseconds: 1500);
+  }
+
+  void _noteArrivals(Set<Object> now) {
+    // The first build is the screen opening, not something arriving.
+    if (_present != null) {
+      for (final key in now.difference(_present!)) {
+        _arrivedAt[key] = DateTime.now();
+      }
+    }
+    _present = now;
+  }
+
+  /// The tray's extras that are on and have pieces, with those pieces.
+  Map<GarmentCategory, List<Garment>> _trayOf(WardrobeState state) => {
+    for (final c in _extras)
+      if (state.railOn(c) && state.shuffleOf(c).isNotEmpty) c: state.shuffleOf(c),
+  };
+
+  /// What's picked for an extra: a piece, or none. A new extra starts on
+  /// its first piece.
+  Garment? _pick(GarmentCategory c, List<Garment> pieces) {
+    if (!_picked.containsKey(c)) return pieces.first;
+    final id = _picked[c];
+    if (id == null) return null;
+    for (final g in pieces) {
+      if (g.id == id) return g;
+    }
+    return pieces.first;
+  }
+
+  List<Garment> _fit(WardrobeState state) {
+    final tray = _trayOf(state);
+    return [
+      for (final MapEntry(key: c, value: pieces) in tray.entries) ?_pick(c, pieces),
+      if (state.shuffleTops.isNotEmpty) _rail(_Row.top).current(state.shuffleTops),
+      if (state.shuffleBottoms.isNotEmpty) _rail(_Row.bottom).current(state.shuffleBottoms),
+      if (state.railOn(GarmentCategory.shoes) && state.shuffleOf(GarmentCategory.shoes).isNotEmpty)
+        _rail(_Row.shoes).current(state.shuffleOf(GarmentCategory.shoes)),
+    ];
+  }
+
+  Future<void> _shuffle() async {
+    if (_spinning) return;
+    final state = AppScope.read(context);
+    final still = MediaQuery.disableAnimationsOf(context);
+    HapticFeedback.mediumImpact();
+    setState(() => _spinning = true);
+
+    final moves = <Future<void>>[];
+    // Head first: the tray flicks through pieces like a reel and lands.
+    final tray = _trayOf(state);
+    for (final (i, MapEntry(key: c, value: pieces)) in tray.entries.indexed) {
+      if (_kept.contains(c)) continue;
+      moves.add(
+        _spinExtra(
+          c,
+          pieces,
+          still: still,
+          delay: Duration(milliseconds: 60 * i),
+        ),
+      );
+    }
+    // Then the rails, each a beat after the one above.
+    final rows = {
+      _Row.top: state.shuffleTops,
+      _Row.bottom: state.shuffleBottoms,
+      if (state.railOn(GarmentCategory.shoes)) _Row.shoes: state.shuffleOf(GarmentCategory.shoes),
+    };
+    var order = 0;
+    for (final MapEntry(key: row, value: items) in rows.entries) {
+      final rail = _rail(row);
+      final n = items.length;
+      if (rail.locked || n < 2 || !rail.controller.hasClients) continue;
+      // A couple of full turns, then land on a different piece.
+      final loops = n < 5 ? 2 : 1;
+      final target = rail.page + loops * n + 1 + _random.nextInt(n - 1);
+      if (still) {
+        rail.controller.jumpToPage(target);
+      } else {
+        moves.add(
+          rail.controller.animateToPage(
+            target,
+            duration: Duration(milliseconds: 1000 + 220 * order),
+            curve: Curves.easeOutCubic,
+          ),
+        );
+      }
+      order++;
+    }
+    await Future.wait(moves);
+    if (!mounted) return;
+    HapticFeedback.lightImpact();
+    setState(() => _spinning = false);
+  }
+
+  /// One extra flicks through its pieces, slowing down, and lands on one.
+  Future<void> _spinExtra(
+    GarmentCategory c,
+    List<Garment> pieces, {
+    required bool still,
+    required Duration delay,
+  }) async {
+    Garment other(String? not) {
+      if (pieces.length == 1) return pieces.first;
+      Garment g;
+      do {
+        g = pieces[_random.nextInt(pieces.length)];
+      } while (g.id == not);
+      return g;
+    }
+
+    if (still) {
+      setState(() => _picked[c] = other(_picked[c]).id);
+      return;
+    }
+    await Future.delayed(delay);
+    const steps = [70, 80, 95, 115, 140, 170, 210];
+    for (final ms in steps) {
+      if (!mounted) return;
+      setState(() => _picked[c] = other(_picked[c]).id);
+      await Future.delayed(Duration(milliseconds: ms));
+    }
+    if (mounted) HapticFeedback.selectionClick();
+  }
+
+  // The heart filling in is the feedback; no snackbar over the buttons.
+  void _toggleSave(List<Garment> fit) {
+    AppScope.read(context).toggleFit([for (final g in fit) g.id]);
+    HapticFeedback.lightImpact();
+  }
+
+  /// Puts a saved fit back on: rows it needs turn on, the tray takes its
+  /// extras, and the rails slide to its pieces.
+  void _showFit(SavedFit fit) {
+    final state = AppScope.read(context);
+    final pieces = fit.itemIds.map(state.garmentById).whereType<Garment>().toList();
+    for (final g in pieces) {
+      if (WardrobeState.extraRails.contains(g.category) && !state.railOn(g.category)) {
+        state.setRail(g.category, true);
+      }
+    }
+    setState(() {
+      for (final c in _extras) {
+        final match = pieces.where((g) => g.category == c);
+        _picked[c] = match.isEmpty ? null : match.first.id;
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final rows = {
+        _Row.top: state.shuffleTops,
+        _Row.bottom: state.shuffleBottoms,
+        if (state.railOn(GarmentCategory.shoes)) _Row.shoes: state.shuffleOf(GarmentCategory.shoes),
+      };
+      final targets = <_RailState, int>{};
+      for (final MapEntry(key: row, value: items) in rows.entries) {
+        final index = items.indexWhere((g) => fit.itemIds.contains(g.id));
+        if (index == -1) {
+          if (row == _Row.shoes) continue;
+          showMessage(context, S.of(context).fitNotReady);
+          return;
+        }
+        final rail = _rail(row);
+        final n = items.length;
+        final base = rail.page - rail.page % n;
+        // The copy of that piece nearest to where the row is now.
+        final options = [base - n + index, base + index, base + n + index];
+        options.sort((a, b) => (a - rail.page).abs().compareTo((b - rail.page).abs()));
+        targets[rail] = options.first;
+      }
+      HapticFeedback.selectionClick();
+      for (final MapEntry(key: rail, value: target) in targets.entries) {
+        if (rail.controller.hasClients) {
+          rail.controller.animateToPage(
+            target,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      }
+    });
+  }
+
+  /// The Rails menu. Choices apply as it closes, so you watch rows arrive
+  /// or fold away instead of missing it behind the sheet.
+  Future<void> _openRails() async {
+    final state = AppScope.read(context);
+    final chosen = {
+      for (final c in WardrobeState.extraRails)
+        if (state.railOn(c)) c,
+    };
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _RailsSheet(chosen: chosen),
+    );
+    if (!mounted) return;
+    for (final c in WardrobeState.extraRails) {
+      if (state.railOn(c) != chosen.contains(c)) state.setRail(c, chosen.contains(c));
+    }
+  }
+
+  void _openSaved() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheet) => _SavedFitsSheet(
+        onOpen: (fit) {
+          Navigator.of(sheet).pop();
+          SavedFitSheet.show(context, fit, onShow: () => _showFit(fit));
+        },
+      ),
+    );
+  }
+
+  Future<void> _choose(GarmentCategory c, List<Garment> pieces) async {
+    HapticFeedback.selectionClick();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _ExtraPicker(
+        category: c,
+        pieces: pieces,
+        selected: _pick(c, pieces)?.id,
+        kept: _kept.contains(c),
+        onPick: (id) => setState(() => _picked[c] = id),
+        onKeep: (keep) => setState(() => keep ? _kept.add(c) : _kept.remove(c)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final state = AppScope.of(context);
+    final tops = state.shuffleTops, bottoms = state.shuffleBottoms;
+    final ready = tops.isNotEmpty && bottoms.isNotEmpty;
+    final shoes = state.railOn(GarmentCategory.shoes) ? state.shuffleOf(GarmentCategory.shoes) : const <Garment>[];
+    final tray = _trayOf(state);
+    final still = MediaQuery.disableAnimationsOf(context);
+    for (final r in _rails.values) {
+      r.still = still;
+    }
+    _noteArrivals({if (shoes.isNotEmpty) 'shoes', if (tray.isNotEmpty) 'tray'});
+    final fit = ready ? _fit(state) : const <Garment>[];
+    final saved = ready && state.isFitSaved(fit.map((g) => g.id));
+
+    return Scaffold(
+      // Shuffle and the heart stay within reach, above the tab bar.
+      bottomNavigationBar: ready ? _actionBar(context, s, fit, saved) : null,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          StaticTitle(
+            title: s.fitShuffle,
+            actions: [
+              IconButton(
+                tooltip: s.savedFits,
+                onPressed: _openSaved,
+                icon: Badge(
+                  isLabelVisible: state.fits.isNotEmpty,
+                  backgroundColor: context.ink,
+                  textColor: context.colors.surface,
+                  label: Text('${state.fits.length}'),
+                  child: const Icon(AppIcons.favoriteOutline),
+                ),
+              ),
+              IconButton(tooltip: s.customizeRails, onPressed: _openRails, icon: const Icon(AppIcons.rails)),
+            ],
+          ),
+          Expanded(
+            child: !ready
+                ? EmptyState(icon: AppIcons.shuffle, title: s.shuffleEmptyTitle, body: s.shuffleEmptyBody)
+                : _rows(context, s, tops, bottoms, shoes, tray),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionBar(BuildContext context, S s, List<Garment> fit, bool saved) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+        child: Row(
+          children: [
+            IconButton.filledTonal(
+              tooltip: saved ? s.unsaveFit : s.saveFit,
+              onPressed: () => _toggleSave(fit),
+              style: IconButton.styleFrom(
+                minimumSize: const Size(54, 54),
+                backgroundColor: context.palette.tile,
+                foregroundColor: context.ink,
+              ),
+              // The heart filling in is the feedback.
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                transitionBuilder: (child, anim) => ScaleTransition(
+                  scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+                  child: child,
+                ),
+                child: Icon(saved ? AppIcons.favorite : AppIcons.favoriteOutline, key: ValueKey(saved)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              // Stays black while the rails spin; a second tap is ignored
+              // rather than greying the button out mid-moment.
+              child: FilledButton.icon(
+                onPressed: _shuffle,
+                icon: const Icon(AppIcons.shuffle, size: 20),
+                label: Text(s.shuffle),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The rows share the screen's height: the tray takes what it needs, the
+  /// rails and the shelf split the rest. Nothing scrolls, nothing hides.
+  /// When the shelf or tray comes or goes, the others glide to make room.
+  Widget _rows(
+    BuildContext context,
+    S s,
+    List<Garment> tops,
+    List<Garment> bottoms,
+    List<Garment> shoes,
+    Map<GarmentCategory, List<Garment>> tray,
+  ) {
+    final still = MediaQuery.disableAnimationsOf(context);
+    final glide = still ? Duration.zero : const Duration(milliseconds: 600);
+    void lock(_Row row) {
+      HapticFeedback.selectionClick();
+      setState(() => _rail(row).locked = !_rail(row).locked);
+    }
+
+    void changed(int page, _Row row) {
+      if (_spinning) HapticFeedback.selectionClick();
+      setState(() => _rail(row).page = page);
+    }
+
+    if (shoes.isNotEmpty) _lastShoes = shoes;
+    if (tray.isNotEmpty) _lastTray = tray;
+
+    return TweenAnimationBuilder<Offset>(
+      // dx: how open the shelf is; dy: how open the tray is.
+      tween: Tween(end: Offset(shoes.isNotEmpty ? 1 : 0, tray.isNotEmpty ? 1 : 0)),
+      duration: glide,
+      curve: Curves.easeOutCubic,
+      builder: (context, open, _) {
+        final shelfOpen = open.dx, trayOpen = open.dy;
+        final shelfShoes = _lastShoes;
+        final trayItems = _lastTray;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (trayOpen > 0.001 && trayItems != null)
+              ClipRect(
+                key: const ValueKey('tray-slot'),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: trayOpen,
+                  child: Opacity(
+                    opacity: Curves.easeIn.transform(trayOpen),
+                    child: _Tray(
+                      tray: trayItems,
+                      pick: _pick,
+                      kept: _kept,
+                      arriving: _fresh('tray'),
+                      onChoose: _choose,
+                      onKeep: (c) {
+                        HapticFeedback.mediumImpact();
+                        setState(() => _kept.contains(c) ? _kept.remove(c) : _kept.add(c));
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            Expanded(
+              key: const ValueKey('top-slot'),
+              flex: 100,
+              child: _Rail(
+                key: const ValueKey(_Row.top),
+                label: s.categoryLabel(GarmentCategory.tops),
+                items: tops,
+                rail: _rail(_Row.top),
+                onLock: () => lock(_Row.top),
+                onPageChanged: (p) => changed(p, _Row.top),
+              ),
+            ),
+            Expanded(
+              key: const ValueKey('bottom-slot'),
+              flex: 100,
+              child: _Rail(
+                key: const ValueKey(_Row.bottom),
+                label: s.categoryLabel(GarmentCategory.bottoms),
+                items: bottoms,
+                rail: _rail(_Row.bottom),
+                onLock: () => lock(_Row.bottom),
+                onPageChanged: (p) => changed(p, _Row.bottom),
+              ),
+            ),
+            if ((72 * shelfOpen).round() > 0 && shelfShoes != null)
+              Expanded(
+                key: const ValueKey('shoes-slot'),
+                flex: (72 * shelfOpen).round(),
+                child: Opacity(
+                  opacity: Curves.easeIn.transform(shelfOpen),
+                  child: _Shelf(
+                    key: const ValueKey(_Row.shoes),
+                    label: s.categoryLabel(GarmentCategory.shoes),
+                    items: shelfShoes,
+                    rail: _rail(_Row.shoes),
+                    arriving: _fresh('shoes'),
+                    onLock: () => lock(_Row.shoes),
+                    onPageChanged: (p) => changed(p, _Row.shoes),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Kept while the shelf or tray folds away, after they've been turned off.
+  List<Garment>? _lastShoes;
+  Map<GarmentCategory, List<Garment>>? _lastTray;
+}
+
+/// A row's title and its lock.
+class _RowHeader extends StatelessWidget {
+  final String label;
+  final bool locked;
+  final VoidCallback onLock;
+
+  const _RowHeader({required this.label, required this.locked, required this.onLock});
+
+  static const height = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 8, 0),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: context.text.titleSmall)),
+            IconButton(
+              tooltip: locked ? s.unlockRail(label) : s.lockRail(label),
+              onPressed: onLock,
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                child: Icon(
+                  locked ? AppIcons.locked : AppIcons.unlocked,
+                  key: ValueKey(locked),
+                  size: 20,
+                  color: locked ? context.ink : context.palette.secondaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// How far a piece sits from the middle of its row, in pages.
+double _offset(_RailState rail, int i) {
+  final c = rail.controller;
+  final page = c.hasClients && c.position.haveDimensions ? c.page! : rail.page.toDouble();
+  return i - page;
+}
+
+/// One rail: a rod across the screen with clothes hanging from it. It
+/// sizes its pieces to the height it's given.
+class _Rail extends StatelessWidget {
+  final String label;
+  final List<Garment> items;
+  final _RailState rail;
+  final VoidCallback onLock;
+  final ValueChanged<int> onPageChanged;
+
+  const _Rail({
+    super.key,
+    required this.label,
+    required this.items,
+    required this.rail,
+    required this.onLock,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    // A hairline rod; it turns solid ink when the rail is locked.
+    final rodColor = rail.locked ? context.ink : palette.separator;
+
+    return LayoutBuilder(
+      builder: (context, box) {
+        final h = box.maxHeight - _RowHeader.height;
+        // Smaller hangers and labels when the row is short.
+        final roomy = h > 210;
+        final hanger = roomy ? 42.0 : 28.0;
+        // The name's line, at the phone's text size.
+        final label = MediaQuery.textScalerOf(context).scale(18) + 4;
+        final card = min(h - hanger - label, box.maxWidth * 0.56 - 28).clamp(24.0, 240.0);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _RowHeader(label: this.label, locked: rail.locked, onLock: onLock),
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 6,
+                    left: 0,
+                    right: 0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: rail.locked ? 2.5 : 2,
+                      color: rodColor,
+                    ),
+                  ),
+                  PageView.builder(
+                    controller: rail.controller,
+                    onPageChanged: onPageChanged,
+                    physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
+                    clipBehavior: Clip.none,
+                    // One piece on a rail just hangs there; no copies beside it.
+                    itemBuilder: (context, i) => items.length == 1 && i != rail.page
+                        ? const SizedBox.shrink()
+                        : AnimatedBuilder(
+                            animation: Listenable.merge([rail.controller, rail.swing]),
+                            builder: (context, child) {
+                              final d = _offset(rail, i);
+                              // Hangers off to the side are smaller, fainter and tilted,
+                              // as if pushed along the rod. All of them swing together
+                              // when the rail stops; the side ones a little less.
+                              final swing = rail.swing.value * (d.abs() < 0.5 ? 1.0 : 0.7);
+                              return Opacity(
+                                opacity: (1 - d.abs() * 0.5).clamp(0.35, 1.0),
+                                child: Transform.rotate(
+                                  angle: (d * 0.09).clamp(-0.16, 0.16) + swing,
+                                  alignment: Alignment.topCenter,
+                                  child: Transform.scale(
+                                    scale: (1 - d.abs() * 0.16).clamp(0.8, 1.0),
+                                    alignment: Alignment.topCenter,
+                                    child: child,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: _Hanging(garment: items[i % items.length], size: card, hanger: hanger),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// A garment on a hanger, on its gray tile, with its name under it.
+class _Hanging extends StatelessWidget {
+  final Garment garment;
+  final double size;
+  final double hanger;
+
+  const _Hanging({required this.garment, required this.size, required this.hanger});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(AppIcons.closet, size: hanger, color: context.palette.tertiaryText),
+        Transform.translate(
+          offset: const Offset(0, -8),
+          child: SizedBox.square(
+            dimension: size,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(size * 0.18),
+              child: GarmentImage(garment: garment),
+            ),
+          ),
+        ),
+        _Name(garment.name, width: size),
+      ],
+    );
+  }
+}
+
+class _Name extends StatelessWidget {
+  final String text;
+  final double width;
+
+  const _Name(this.text, {required this.width});
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: max(width, 90)),
+    child: Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+      style: context.text.labelMedium?.copyWith(color: context.ink),
+    ),
+  );
+}
+
+/// The shoe shelf: shoes don't hang, they stand on a thin shelf. They slide
+/// along it like the rails, and when they stop they land with a small hop
+/// instead of a swing.
+class _Shelf extends StatelessWidget {
+  final String label;
+  final List<Garment> items;
+  final _RailState rail;
+  final bool arriving;
+  final VoidCallback onLock;
+  final ValueChanged<int> onPageChanged;
+
+  const _Shelf({
+    super.key,
+    required this.label,
+    required this.items,
+    required this.rail,
+    required this.onLock,
+    required this.onPageChanged,
+    this.arriving = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        final height = (box.maxHeight - _RowHeader.height - 30).clamp(24.0, 160.0);
+        final width = min(height * 1.45, box.maxWidth * 0.5);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _RowHeader(label: label, locked: rail.locked, onLock: onLock),
+            Expanded(
+              child: Stack(
+                children: [
+                  // The shelf, under the shoes.
+                  Positioned(
+                    top: height + 3,
+                    left: 0,
+                    right: 0,
+                    child: _DrawIn(
+                      active: arriving,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: rail.locked ? 3 : 2.5,
+                        color: rail.locked ? context.ink : context.palette.separator,
+                      ),
+                    ),
+                  ),
+                  PageView.builder(
+                    controller: rail.controller,
+                    onPageChanged: onPageChanged,
+                    physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
+                    clipBehavior: Clip.none,
+                    itemBuilder: (context, i) => items.length == 1 && i != rail.page
+                        ? const SizedBox.shrink()
+                        : AnimatedBuilder(
+                            animation: Listenable.merge([rail.controller, rail.swing]),
+                            builder: (context, child) {
+                              final d = _offset(rail, i);
+                              // The swing becomes a hop: up as it "swings", down onto
+                              // the shelf, with a hint of tilt on the heel.
+                              final hop = rail.swing.value.abs() * 60 * (d.abs() < 0.5 ? 1.0 : 0.6);
+                              return Opacity(
+                                opacity: (1 - d.abs() * 0.5).clamp(0.35, 1.0),
+                                child: Transform.translate(
+                                  offset: Offset(0, -hop),
+                                  child: Transform.rotate(
+                                    angle: rail.swing.value * 0.35,
+                                    alignment: Alignment.bottomCenter,
+                                    child: Transform.scale(
+                                      scale: (1 - d.abs() * 0.16).clamp(0.8, 1.0),
+                                      alignment: Alignment.bottomCenter,
+                                      child: child,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: _Arrive(
+                              active: arriving,
+                              land: true,
+                              index: (i - rail.page + 1).clamp(0, 3),
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    width: width,
+                                    height: height,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(min(20, height * 0.25)),
+                                      child: GarmentImage(garment: items[i % items.length]),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _Name(items[i % items.length].name, width: width),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The tray: a hat, a bag and an accessory, each on its own tile. Tap a
+/// tile to choose; press and hold to keep it when shuffling. When Shuffle
+/// runs they flick through pieces like a reel and land.
+class _Tray extends StatelessWidget {
+  final Map<GarmentCategory, List<Garment>> tray;
+  final Garment? Function(GarmentCategory, List<Garment>) pick;
+  final Set<GarmentCategory> kept;
+  final bool arriving;
+  final void Function(GarmentCategory, List<Garment>) onChoose;
+  final ValueChanged<GarmentCategory> onKeep;
+
+  const _Tray({
+    required this.tray,
+    required this.pick,
+    required this.kept,
+    required this.arriving,
+    required this.onChoose,
+    required this.onKeep,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+      child: Row(
+        children: [
+          for (final (i, MapEntry(key: c, value: pieces)) in tray.entries.indexed) ...[
+            if (i > 0) const SizedBox(width: 10),
+            Expanded(
+              child: _Pop(
+                active: arriving,
+                index: i,
+                child: _TrayTile(
+                  title: s.categoryLabel(c),
+                  piece: pick(c, pieces),
+                  kept: kept.contains(c),
+                  semantic: s.choose(s.categoryLabel(c)),
+                  onTap: () => onChoose(c, pieces),
+                  onHold: () => onKeep(c),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TrayTile extends StatelessWidget {
+  final String title;
+  final Garment? piece;
+  final bool kept;
+  final String semantic;
+  final VoidCallback onTap;
+  final VoidCallback onHold;
+
+  const _TrayTile({
+    required this.title,
+    required this.piece,
+    required this.kept,
+    required this.semantic,
+    required this.onTap,
+    required this.onHold,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Semantics(
+      button: true,
+      label: '$semantic, ${piece?.name ?? s.none}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onLongPress: onHold,
+        child: Pressable(
+          label: semantic,
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 86,
+            padding: const EdgeInsets.fromLTRB(6, 8, 6, 7),
+            decoration: BoxDecoration(
+              color: context.palette.tile,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: kept ? context.ink : Colors.transparent, width: 1.5),
+            ),
+            // The piece, and its name (or "No hats") under it.
+            child: Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Center(
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 160),
+                            switchInCurve: Curves.easeOutBack,
+                            transitionBuilder: (child, anim) => FadeTransition(
+                              opacity: anim,
+                              child: ScaleTransition(scale: Tween(begin: 0.7, end: 1.0).animate(anim), child: child),
+                            ),
+                            child: piece == null
+                                ? Icon(
+                                    AppIcons.close,
+                                    key: const ValueKey('none'),
+                                    size: 18,
+                                    color: context.palette.tertiaryText,
+                                  )
+                                : GarmentImage(
+                                    key: ValueKey(piece!.id),
+                                    garment: piece!,
+                                    iconSize: 22,
+                                    backdrop: Colors.transparent,
+                                  ),
+                          ),
+                        ),
+                      ),
+                      if (kept)
+                        Positioned(top: -2, right: 0, child: Icon(AppIcons.locked, size: 12, color: context.ink)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  piece?.name ?? s.noneOf(title),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium?.copyWith(
+                    color: piece == null ? context.palette.secondaryText : context.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tray tiles arriving: they pop in, one after another.
+class _Pop extends StatelessWidget {
+  final bool active;
+  final int index;
+  final Widget child;
+
+  const _Pop({required this.active, required this.index, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!active || MediaQuery.disableAnimationsOf(context)) return child;
+    final delay = 0.15 + index * 0.07;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: ((delay + 0.55) * 1000).round()),
+      builder: (context, v, child) {
+        final t = ((v * (delay + 0.55) - delay) / 0.55).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: (t * 3).clamp(0.0, 1.0),
+          child: Transform.scale(scale: 0.85 + 0.15 * Curves.easeOutBack.transform(t), child: child),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+/// Choosing a hat, bag or accessory: none or one of yours, and whether to
+/// keep it when shuffling.
+class _ExtraPicker extends StatefulWidget {
   final GarmentCategory category;
+  final List<Garment> pieces;
+  final String? selected;
+  final bool kept;
+  final ValueChanged<String?> onPick;
+  final ValueChanged<bool> onKeep;
 
-  /// Small pieces on hooks, where "none" is a choice too.
-  bool get onHook => this == hat || this == bag || this == accessory;
+  const _ExtraPicker({
+    required this.category,
+    required this.pieces,
+    required this.selected,
+    required this.kept,
+    required this.onPick,
+    required this.onKeep,
+  });
+
+  @override
+  State<_ExtraPicker> createState() => _ExtraPickerState();
+}
+
+class _ExtraPickerState extends State<_ExtraPicker> {
+  late String? _selected = widget.selected;
+  late bool _kept = widget.kept;
+
+  void _pick(String? id) {
+    HapticFeedback.selectionClick();
+    setState(() => _selected = id);
+    widget.onPick(id);
+    // A moment to see the check, then close.
+    Future.delayed(const Duration(milliseconds: 180), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    Widget tile(String? id, Widget picture, String name) {
+      final on = _selected == id;
+      return Pressable(
+        label: name,
+        onTap: () => _pick(id),
+        child: Column(
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                decoration: BoxDecoration(
+                  color: context.palette.tile,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: on ? context.ink : Colors.transparent, width: 2),
+                ),
+                child: ClipRRect(borderRadius: BorderRadius.circular(16), child: picture),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.labelMedium?.copyWith(color: context.ink),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.paddingOf(context).bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(s.categoryLabel(widget.category), style: context.text.headlineSmall),
+          const SizedBox(height: 14),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.78,
+            children: [
+              tile(null, Center(child: Icon(AppIcons.close, color: context.palette.tertiaryText)), s.none),
+              for (final g in widget.pieces) tile(g.id, GarmentImage(garment: g, iconSize: 26), g.name),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: SwitchListTile.adaptive(
+              title: Text(s.keepWhenShuffling),
+              secondary: Icon(AppIcons.locked, color: context.ink),
+              value: _kept,
+              onChanged: (v) {
+                HapticFeedback.selectionClick();
+                setState(() => _kept = v);
+                widget.onKeep(v);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Saved fits, as a sheet of collages. Tap one to open it.
+class _SavedFitsSheet extends StatelessWidget {
+  final ValueChanged<SavedFit> onOpen;
+
+  const _SavedFitsSheet({required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final state = AppScope.of(context);
+    final fits = state.fits;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.paddingOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(s.savedFits, style: context.text.headlineSmall),
+          const SizedBox(height: 14),
+          if (fits.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                s.savedFitsEmpty,
+                textAlign: TextAlign.center,
+                style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText),
+              ),
+            )
+          else
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.8,
+                ),
+                itemCount: fits.length,
+                itemBuilder: (context, i) {
+                  final pieces = fits[i].itemIds.map(state.garmentById).whereType<Garment>().toList();
+                  return Pressable(
+                    label: pieces.map((g) => g.name).join(', '),
+                    onTap: () => onOpen(fits[i]),
+                    child: FitCollage(pieces: pieces, radius: 22),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RailState {
@@ -140,455 +1227,6 @@ class _RailState {
   }
 }
 
-class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProviderStateMixin {
-  final _rails = <_Row, _RailState>{};
-  final _random = Random();
-  bool _spinning = false;
-
-  // When each extra row last appeared. Its pieces play their arrival only
-  // in the moment after, not every time a page is built while swiping.
-  final _arrivedAt = <Object, DateTime>{};
-  Set<Object>? _present;
-
-  bool _fresh(Object key) {
-    final at = _arrivedAt[key];
-    return at != null && DateTime.now().difference(at) < const Duration(milliseconds: 1500);
-  }
-
-  void _noteArrivals(Map<_Row, List<Garment?>> rows) {
-    final now = {
-      for (final row in rows.keys)
-        if (row.onHook || row == _Row.shoes) row,
-      if (rows.keys.any((r) => r.onHook)) 'hooks',
-    };
-    // The first build is the screen opening, not a row arriving.
-    if (_present != null) {
-      for (final key in now.difference(_present!)) {
-        _arrivedAt[key] = DateTime.now();
-      }
-    }
-    _present = now;
-  }
-
-  _RailState _rail(_Row row) =>
-      // Hooks begin on a piece, one past "none".
-      _rails.putIfAbsent(
-        row,
-        () => _RailState(this, viewportFraction: row.onHook ? 1.0 : 0.56, skip: row.onHook ? 1 : 0),
-      );
-
-  @override
-  void dispose() {
-    for (final r in _rails.values) {
-      r.dispose();
-    }
-    super.dispose();
-  }
-
-  /// What each shown row holds. Rows on hooks start with "none" (null).
-  Map<_Row, List<Garment?>> _rows(WardrobeState state) {
-    final rows = <_Row, List<Garment?>>{};
-    for (final row in _Row.values) {
-      final List<Garment> pieces = switch (row) {
-        _Row.top => state.shuffleTops,
-        _Row.bottom => state.shuffleBottoms,
-        _ => state.railOn(row.category) ? state.shuffleOf(row.category) : const [],
-      };
-      if (row == _Row.top || row == _Row.bottom || pieces.isNotEmpty) {
-        rows[row] = row.onHook ? [null, ...pieces] : pieces;
-      }
-    }
-    return rows;
-  }
-
-  Future<void> _shuffle(Map<_Row, List<Garment?>> rows) async {
-    if (_spinning) return;
-    final still = MediaQuery.disableAnimationsOf(context);
-    HapticFeedback.mediumImpact();
-    setState(() => _spinning = true);
-
-    final moves = <Future<void>>[];
-    var order = 0;
-    for (final MapEntry(key: row, value: items) in rows.entries) {
-      final rail = _rail(row);
-      final n = items.length;
-      final pieces = row.onHook ? n - 1 : n;
-      if (rail.locked || pieces < 1 || (!row.onHook && n < 2) || !rail.controller.hasClients) continue;
-      // A couple of full turns, then land on a different piece. Hooks
-      // never land on "none": that's yours to choose by swiping.
-      final loops = n < 5 ? 2 : 1;
-      final now = rail.page % n;
-      int land;
-      if (row.onHook) {
-        final options = [
-          for (var k = 1; k < n; k++)
-            if (k != now || pieces == 1) k,
-        ];
-        land = options[_random.nextInt(options.length)];
-      } else {
-        land = (now + 1 + _random.nextInt(n - 1)) % n;
-      }
-      final delta = (land - now) % n;
-      final target = rail.page + loops * n + (delta == 0 ? n : delta);
-      if (still) {
-        rail.controller.jumpToPage(target);
-      } else {
-        moves.add(
-          rail.controller.animateToPage(
-            target,
-            // Head to toe: each row settles a beat after the one above.
-            duration: Duration(milliseconds: 1000 + 200 * order),
-            curve: Curves.easeOutCubic,
-          ),
-        );
-      }
-      order++;
-    }
-    await Future.wait(moves);
-    if (!mounted) return;
-    HapticFeedback.lightImpact();
-    setState(() => _spinning = false);
-  }
-
-  // The heart filling in is the feedback; no snackbar over the buttons.
-  void _toggleSave(List<Garment> fit) {
-    AppScope.read(context).toggleFit([for (final g in fit) g.id]);
-    HapticFeedback.lightImpact();
-  }
-
-  /// Slides every row to a saved fit, turning on any row it needs.
-  void _showFit(SavedFit fit) {
-    final state = AppScope.read(context);
-    final pieces = fit.itemIds.map(state.garmentById).whereType<Garment>().toList();
-    for (final g in pieces) {
-      if (WardrobeState.extraRails.contains(g.category) && !state.railOn(g.category)) {
-        state.setRail(g.category, true);
-      }
-    }
-    // Let new rows build before moving them.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final rows = _rows(state);
-      final targets = <_RailState, int>{};
-      for (final MapEntry(key: row, value: items) in rows.entries) {
-        var index = items.indexWhere((g) => g != null && fit.itemIds.contains(g.id));
-        if (index == -1) {
-          if (row.onHook) {
-            index = 0; // This fit had nothing here.
-          } else if (row == _Row.shoes) {
-            continue;
-          } else {
-            showMessage(context, S.of(context).fitNotReady);
-            return;
-          }
-        }
-        final rail = _rail(row);
-        final n = items.length;
-        final base = rail.page - rail.page % n;
-        // Pick the copy of that piece nearest to where the row is now.
-        final options = [base - n + index, base + index, base + n + index];
-        options.sort((a, b) => (a - rail.page).abs().compareTo((b - rail.page).abs()));
-        targets[rail] = options.first;
-      }
-      HapticFeedback.selectionClick();
-      for (final MapEntry(key: rail, value: target) in targets.entries) {
-        if (!rail.controller.hasClients) continue;
-        rail.controller.animateToPage(target, duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic);
-      }
-    });
-  }
-
-  /// The Rails menu. Choices apply as it closes, so you watch the rows
-  /// arrive (or fold away) instead of missing it behind the sheet.
-  Future<void> _openRails() async {
-    final state = AppScope.read(context);
-    final chosen = {for (final c in WardrobeState.extraRails) if (state.railOn(c)) c};
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _RailsSheet(chosen: chosen),
-    );
-    if (!mounted) return;
-    for (final c in WardrobeState.extraRails) {
-      if (state.railOn(c) != chosen.contains(c)) state.setRail(c, chosen.contains(c));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final state = AppScope.of(context);
-    final rows = _rows(state);
-    final ready = rows[_Row.top]!.isNotEmpty && rows[_Row.bottom]!.isNotEmpty;
-    final still = MediaQuery.disableAnimationsOf(context);
-    for (final row in rows.keys) {
-      _rail(row).still = still;
-    }
-
-    final layout = _Layout.of(context, rows);
-    _noteArrivals(rows);
-
-    return Scaffold(
-      // Shuffle and the heart stay within reach at the bottom, however many
-      // rows are on.
-      bottomNavigationBar: ready ? _actionBar(context, s, rows) : null,
-      body: CustomScrollView(
-        slivers: [
-          LargeTitle(
-            title: s.fitShuffle,
-            actions: [IconButton(tooltip: s.customizeRails, onPressed: _openRails, icon: const Icon(AppIcons.rails))],
-          ),
-          if (!ready)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: EmptyState(icon: AppIcons.shuffle, title: s.shuffleEmptyTitle, body: s.shuffleEmptyBody),
-            )
-          else
-            SliverToBoxAdapter(child: _body(context, s, rows, layout)),
-        ],
-      ),
-    );
-  }
-
-  List<Garment> _fit(Map<_Row, List<Garment?>> rows) => [
-    for (final MapEntry(key: row, value: items) in rows.entries)
-      if (items.isNotEmpty) ?_rail(row).current(items),
-  ];
-
-  Widget _actionBar(BuildContext context, S s, Map<_Row, List<Garment?>> rows) {
-    final fit = _fit(rows);
-    final saved = AppScope.of(context).isFitSaved(fit.map((g) => g.id));
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-        child: Row(
-          children: [
-            IconButton.filledTonal(
-              tooltip: saved ? s.unsaveFit : s.saveFit,
-              onPressed: () => _toggleSave(fit),
-              style: IconButton.styleFrom(
-                minimumSize: const Size(54, 54),
-                backgroundColor: context.palette.tile,
-                foregroundColor: context.ink,
-              ),
-              // The heart filling in is the feedback.
-              icon: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                child: Icon(saved ? AppIcons.favorite : AppIcons.favoriteOutline, key: ValueKey(saved)),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              // Stays black while the rails spin; a second tap is ignored
-              // rather than greying the button out mid-moment.
-              child: FilledButton.icon(
-                onPressed: () => _shuffle(rows),
-                icon: const Icon(AppIcons.shuffle, size: 20),
-                label: Text(s.shuffle),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _body(BuildContext context, S s, Map<_Row, List<Garment?>> rows, _Layout layout) {
-    final state = AppScope.of(context);
-    final fits = state.fits;
-    final hooks = [
-      for (final row in rows.keys)
-        if (row.onHook) row,
-    ];
-    final hasShoes = rows.containsKey(_Row.shoes);
-    final still = MediaQuery.disableAnimationsOf(context);
-    final glide = still ? Duration.zero : const Duration(milliseconds: 550);
-
-    void lock(_Row row) {
-      HapticFeedback.selectionClick();
-      setState(() => _rail(row).locked = !_rail(row).locked);
-    }
-
-    void changed(int page, _Row row) {
-      if (_spinning) HapticFeedback.selectionClick();
-      setState(() => _rail(row).page = page);
-    }
-
-    // When a row comes or goes, the cards and hangers glide to their new
-    // sizes together, instead of jumping.
-    return TweenAnimationBuilder<(double, double)>(
-      tween: _PairTween(end: (layout.card, layout.compact ? 1.0 : 0.0)),
-      duration: glide,
-      curve: Curves.easeOutCubic,
-      builder: (context, value, _) {
-        final (card, c) = value;
-        final hanger = 46 - 16 * c, labelSpace = 44 - 14 * c;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Reveal(
-                key: const ValueKey('reveal-hooks'),
-                show: hooks.isNotEmpty,
-                child: hooks.isEmpty
-                    ? null
-                    : _HookRow(
-                        // Keys keep each row tied to its own controller when
-                        // rows come and go above it.
-                        key: const ValueKey('hooks'),
-                        label: s.extras,
-                        hooks: [
-                          for (final row in hooks)
-                            (
-                              title: s.categoryLabel(row.category),
-                              items: rows[row]!,
-                              rail: _rail(row),
-                              onLock: () => lock(row),
-                              onPageChanged: (p) => changed(p, row),
-                              arriving: _fresh(row),
-                            ),
-                        ],
-                        size: max(card * 0.45, 52),
-                      ),
-              ),
-              for (final row in [_Row.top, _Row.bottom])
-                _Rail(
-                  key: ValueKey(row),
-                  label: row == _Row.top
-                      ? s.categoryLabel(GarmentCategory.tops)
-                      : s.categoryLabel(GarmentCategory.bottoms),
-                  items: rows[row]!.cast<Garment>(),
-                  rail: _rail(row),
-                  cardSize: card,
-                  hanger: hanger,
-                  labelSpace: labelSpace,
-                  compact: layout.compact,
-                  onLock: () => lock(row),
-                  onPageChanged: (p) => changed(p, row),
-                ),
-              _Reveal(
-                key: const ValueKey('reveal-shoes'),
-                show: hasShoes,
-                child: !hasShoes
-                    ? null
-                    : _Shelf(
-                        key: const ValueKey(_Row.shoes),
-                        label: s.categoryLabel(GarmentCategory.shoes),
-                        items: rows[_Row.shoes]!.cast<Garment>(),
-                        rail: _rail(_Row.shoes),
-                        height: card * 0.6,
-                        compact: layout.compact,
-                        arriving: _fresh(_Row.shoes),
-                        onLock: () => lock(_Row.shoes),
-                        onPageChanged: (p) => changed(p, _Row.shoes),
-                      ),
-              ),
-              if (fits.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                SectionTitle(s.savedFits),
-                SizedBox(
-                  height: 150,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: fits.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (context, i) => _SavedFitTile(
-                      fit: fits[i],
-                      onTap: () => SavedFitSheet.show(context, fits[i], onShow: () => _showFit(fits[i])),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Tweens a (card size, compactness) pair together.
-class _PairTween extends Tween<(double, double)> {
-  _PairTween({required (double, double) end}) : super(begin: end, end: end);
-
-  @override
-  (double, double) lerp(double t) => (begin!.$1 + (end!.$1 - begin!.$1) * t, begin!.$2 + (end!.$2 - begin!.$2) * t);
-}
-
-/// Opens a row into place, or folds it away: its height grows from
-/// nothing while it fades in, and the rows below glide down to make room.
-/// Folding away plays the same in reverse, then the row is gone.
-class _Reveal extends StatefulWidget {
-  final bool show;
-  final Widget? child;
-
-  const _Reveal({super.key, required this.show, required this.child});
-
-  @override
-  State<_Reveal> createState() => _RevealState();
-}
-
-class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
-  late final _c =
-      AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 600),
-        reverseDuration: const Duration(milliseconds: 380),
-        value: widget.show ? 1 : 0,
-      )..addStatusListener((s) {
-        if (s == AnimationStatus.dismissed && mounted) setState(() {});
-      });
-  // The last row shown, kept while it folds away.
-  Widget? _last;
-
-  @override
-  void initState() {
-    super.initState();
-    _last = widget.child;
-  }
-
-  @override
-  void didUpdateWidget(_Reveal old) {
-    super.didUpdateWidget(old);
-    if (widget.child != null) _last = widget.child;
-    if (widget.show != old.show) {
-      if (MediaQuery.disableAnimationsOf(context)) {
-        _c.value = widget.show ? 1 : 0;
-      } else {
-        widget.show ? _c.forward() : _c.reverse();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.show && _c.isDismissed || _last == null) return const SizedBox.shrink();
-    return SizeTransition(
-      sizeFactor: CurvedAnimation(parent: _c, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic),
-      alignment: Alignment.topCenter,
-      child: FadeTransition(
-        opacity: CurvedAnimation(
-          parent: _c,
-          curve: const Interval(0.15, 1, curve: Curves.easeOut),
-        ),
-        child: _last,
-      ),
-    );
-  }
-}
-
-/// How a piece arrives in a new row: hung on and swinging to rest, or set
-/// down on the shelf with a small hop. Each one a beat after the last.
 class _Arrive extends StatelessWidget {
   final bool active;
   final bool land;
@@ -633,7 +1271,6 @@ class _Arrive extends StatelessWidget {
   }
 }
 
-/// A rod or shelf line that draws itself across the screen as a row arrives.
 class _DrawIn extends StatelessWidget {
   final bool active;
   final Widget child;
@@ -653,489 +1290,6 @@ class _DrawIn extends StatelessWidget {
   }
 }
 
-/// Sizes for the rows, so that a whole outfit, head to toe, fits on one
-/// screen between the title and the Shuffle bar. With extras on, rows get
-/// compact: smaller hangers, tighter headers.
-class _Layout {
-  final double card;
-  final double hook;
-  final bool compact;
-
-  const _Layout(this.card, this.hook, this.compact);
-
-  static _Layout of(BuildContext context, Map<_Row, List<Garment?>> rows) {
-    final mq = MediaQuery.of(context);
-    final hasHooks = rows.keys.any((r) => r.onHook);
-    final hasShoes = rows.containsKey(_Row.shoes);
-    final compact = hasHooks || hasShoes;
-    final header = compact ? _RowHeader.compactHeight : _RowHeader.height;
-    final rail = header + _Rail.hangerFor(compact) - 8 + _Rail.labelFor(compact);
-    final used =
-        112 +
-        mq
-            .padding
-            .top // the large title
-            +
-        72 +
-        mq
-            .padding
-            .bottom // the Shuffle bar and the tab bar
-            +
-        2 * rail +
-        (hasShoes ? header + 40 : 0) +
-        (hasHooks ? 96 : 0) +
-        8;
-    final units = 2 + (hasShoes ? 0.6 : 0) + (hasHooks ? 0.45 : 0);
-    final card = min(mq.size.width * 0.56 - 28, (mq.size.height - used) / units).clamp(72.0, 240.0);
-    return _Layout(card, max(card * 0.45, 52), compact);
-  }
-}
-
-/// A row's title and its lock.
-class _RowHeader extends StatelessWidget {
-  final String label;
-  final bool locked;
-  final VoidCallback onLock;
-
-  final bool compact;
-
-  const _RowHeader({required this.label, required this.locked, required this.onLock, this.compact = false});
-
-  static const height = 52.0;
-  static const compactHeight = 44.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, compact ? 0 : 4, 8, 0),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: compact ? context.text.titleSmall : context.text.titleMedium)),
-          IconButton(
-            tooltip: locked ? s.unlockRail(label) : s.lockRail(label),
-            onPressed: onLock,
-            icon: Icon(
-              locked ? AppIcons.locked : AppIcons.unlocked,
-              color: locked ? context.ink : context.palette.secondaryText,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// How far a piece sits from the middle of its row, in pages.
-double _offset(_RailState rail, int i) {
-  final c = rail.controller;
-  final page = c.hasClients && c.position.haveDimensions ? c.page! : rail.page.toDouble();
-  return i - page;
-}
-
-/// One rail: a rod across the screen with clothes hanging from it.
-class _Rail extends StatelessWidget {
-  final String label;
-  final List<Garment> items;
-  final _RailState rail;
-  final double cardSize;
-  final double hanger;
-  final double labelSpace;
-  final bool compact;
-  final VoidCallback onLock;
-  final ValueChanged<int> onPageChanged;
-
-  const _Rail({
-    super.key,
-    required this.label,
-    required this.items,
-    required this.rail,
-    required this.cardSize,
-    required this.onLock,
-    required this.onPageChanged,
-    this.hanger = 46,
-    this.labelSpace = 44,
-    this.compact = false,
-  });
-
-  static double hangerFor(bool compact) => compact ? 30 : 46;
-  static double labelFor(bool compact) => compact ? 30 : 44;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    // A hairline rod; it turns solid ink when the rail is locked.
-    final rodColor = rail.locked ? context.ink : palette.separator;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _RowHeader(label: label, locked: rail.locked, onLock: onLock, compact: compact),
-        SizedBox(
-          height: hanger + cardSize + labelSpace,
-          child: Stack(
-            children: [
-              Positioned(
-                top: 6,
-                left: 0,
-                right: 0,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: rail.locked ? 2.5 : 2,
-                  color: rodColor,
-                ),
-              ),
-              PageView.builder(
-                controller: rail.controller,
-                onPageChanged: onPageChanged,
-                physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
-                clipBehavior: Clip.none,
-                // One piece on a rail just hangs there; no copies beside it.
-                itemBuilder: (context, i) => items.length == 1 && i != rail.page
-                    ? const SizedBox.shrink()
-                    : AnimatedBuilder(
-                        animation: Listenable.merge([rail.controller, rail.swing]),
-                        builder: (context, child) {
-                          final d = _offset(rail, i);
-                          // Hangers off to the side are smaller, fainter and tilted,
-                          // as if pushed along the rod. All of them swing together
-                          // when the rail stops; the side ones a little less.
-                          final swing = rail.swing.value * (d.abs() < 0.5 ? 1.0 : 0.7);
-                          return Opacity(
-                            opacity: (1 - d.abs() * 0.5).clamp(0.35, 1.0),
-                            child: Transform.rotate(
-                              angle: (d * 0.09).clamp(-0.16, 0.16) + swing,
-                              alignment: Alignment.topCenter,
-                              child: Transform.scale(
-                                scale: (1 - d.abs() * 0.16).clamp(0.8, 1.0),
-                                alignment: Alignment.topCenter,
-                                child: child,
-                              ),
-                            ),
-                          );
-                        },
-                        child: _Hanging(garment: items[i % items.length], size: cardSize, hanger: hanger),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A garment on a hanger, on its gray tile, with its name under it.
-class _Hanging extends StatelessWidget {
-  final Garment garment;
-  final double size;
-  final double hanger;
-
-  const _Hanging({required this.garment, required this.size, required this.hanger});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(AppIcons.closet, size: hanger, color: context.palette.tertiaryText),
-        Transform.translate(
-          offset: const Offset(0, -8),
-          child: SizedBox.square(
-            dimension: size,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: GarmentImage(garment: garment),
-            ),
-          ),
-        ),
-        _Name(garment.name, width: size),
-      ],
-    );
-  }
-}
-
-class _Name extends StatelessWidget {
-  final String text;
-  final double width;
-
-  const _Name(this.text, {required this.width});
-
-  @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: BoxConstraints(maxWidth: width),
-    child: Text(
-      text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-      style: context.text.titleSmall,
-    ),
-  );
-}
-
-/// The shoe shelf: shoes don't hang, they stand on a thin shelf. They slide
-/// along it like the rails, and when they stop they land with a small hop
-/// instead of a swing.
-class _Shelf extends StatelessWidget {
-  final String label;
-  final List<Garment> items;
-  final _RailState rail;
-  final double height;
-  final bool compact;
-  final bool arriving;
-  final VoidCallback onLock;
-  final ValueChanged<int> onPageChanged;
-
-  const _Shelf({
-    super.key,
-    required this.label,
-    required this.items,
-    required this.rail,
-    required this.height,
-    required this.onLock,
-    required this.onPageChanged,
-    this.compact = false,
-    this.arriving = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final width = height * 1.5;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _RowHeader(label: label, locked: rail.locked, onLock: onLock, compact: compact),
-        SizedBox(
-          height: height + 40,
-          child: Stack(
-            children: [
-              // The shelf, under the shoes.
-              Positioned(
-                top: height + 4,
-                left: 0,
-                right: 0,
-                child: _DrawIn(
-                  active: arriving,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: rail.locked ? 3 : 2.5,
-                    color: rail.locked ? context.ink : context.palette.separator,
-                  ),
-                ),
-              ),
-              PageView.builder(
-                controller: rail.controller,
-                onPageChanged: onPageChanged,
-                physics: rail.locked || items.length == 1 ? const NeverScrollableScrollPhysics() : null,
-                clipBehavior: Clip.none,
-                itemBuilder: (context, i) => items.length == 1 && i != rail.page
-                    ? const SizedBox.shrink()
-                    : AnimatedBuilder(
-                        animation: Listenable.merge([rail.controller, rail.swing]),
-                        builder: (context, child) {
-                          final d = _offset(rail, i);
-                          // The swing becomes a hop: up as it "swings", down
-                          // onto the shelf, with a hint of tilt on the heel.
-                          final hop = rail.swing.value.abs() * 60 * (d.abs() < 0.5 ? 1.0 : 0.6);
-                          return Opacity(
-                            opacity: (1 - d.abs() * 0.5).clamp(0.35, 1.0),
-                            child: Transform.translate(
-                              offset: Offset(0, -hop),
-                              child: Transform.rotate(
-                                angle: rail.swing.value * 0.35,
-                                alignment: Alignment.bottomCenter,
-                                child: Transform.scale(
-                                  scale: (1 - d.abs() * 0.16).clamp(0.8, 1.0),
-                                  alignment: Alignment.bottomCenter,
-                                  child: child,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        child: _Arrive(
-                          active: arriving,
-                          land: true,
-                          index: (i - rail.page + 1).clamp(0, 3),
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: width,
-                                height: height,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: GarmentImage(garment: items[i % items.length]),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _Name(items[i % items.length].name, width: width),
-                            ],
-                          ),
-                        ),
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-typedef _Hook = ({
-  String title,
-  List<Garment?> items,
-  _RailState rail,
-  VoidCallback onLock,
-  ValueChanged<int> onPageChanged,
-  bool arriving,
-});
-
-/// A slim row of hooks for the small things: a hat, a bag, an accessory.
-/// Each hook swipes on its own, can be left empty, and swings like the
-/// hangers. Tap a piece to lock it.
-class _HookRow extends StatelessWidget {
-  final String label;
-  final List<_Hook> hooks;
-  final double size;
-
-  const _HookRow({super.key, required this.label, required this.hooks, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-          child: Text(label, style: context.text.titleSmall),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              for (final (i, hook) in hooks.indexed)
-                Expanded(
-                  child: _Arrive(
-                    active: hook.arriving,
-                    index: i,
-                    child: _HookSlot(key: ValueKey(hook.title), hook: hook, size: size),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Divider(indent: 20, endIndent: 20),
-      ],
-    );
-  }
-}
-
-class _HookSlot extends StatelessWidget {
-  final _Hook hook;
-  final double size;
-
-  const _HookSlot({super.key, required this.hook, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final rail = hook.rail;
-    final items = hook.items;
-    final piece = rail.current(items);
-    final ink = rail.locked ? context.ink : context.palette.tertiaryText;
-
-    return Column(
-      children: [
-        // The hook: a small peg with a stem.
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: ink),
-        ),
-        Container(width: 2, height: 8, color: ink),
-        SizedBox(
-          height: size,
-          child: PageView.builder(
-            controller: rail.controller,
-            onPageChanged: hook.onPageChanged,
-            physics: rail.locked ? const NeverScrollableScrollPhysics() : null,
-            itemBuilder: (context, i) {
-              final g = items[i % items.length];
-              return AnimatedBuilder(
-                animation: rail.swing,
-                builder: (context, child) =>
-                    Transform.rotate(angle: rail.swing.value, alignment: Alignment.topCenter, child: child),
-                child: Center(
-                  child: Semantics(
-                    button: true,
-                    toggled: rail.locked,
-                    label: g?.name ?? s.noneOf(hook.title),
-                    child: GestureDetector(
-                      onTap: hook.onLock,
-                      child: SizedBox.square(
-                        dimension: size,
-                        child: g == null
-                            ? DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: context.palette.separator, width: 1.5),
-                                ),
-                                child: Icon(AppIcons.close, size: 18, color: context.palette.tertiaryText),
-                              )
-                            : ClipRRect(
-                                borderRadius: BorderRadius.circular(18),
-                                child: GarmentImage(garment: g, iconSize: 20),
-                              ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (rail.locked) ...[Icon(AppIcons.locked, size: 11, color: context.ink), const SizedBox(width: 3)],
-            Flexible(
-              child: Text(
-                piece?.name ?? s.noneOf(hook.title),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.labelSmall,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _SavedFitTile extends StatelessWidget {
-  final SavedFit fit;
-  final VoidCallback onTap;
-
-  const _SavedFitTile({required this.fit, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final state = AppScope.of(context);
-    final pieces = fit.itemIds.map(state.garmentById).whereType<Garment>().toList();
-    return Pressable(
-      label: pieces.map((g) => g.name).join(', '),
-      onTap: onTap,
-      child: SizedBox(width: 120, child: FitCollage(pieces: pieces, radius: 20)),
-    );
-  }
-}
-
-/// Which rows Fit Shuffle shows. Tops and bottoms always; the rest when
-/// you want a full outfit.
 class _RailsSheet extends StatefulWidget {
   /// What's switched on; changed here, applied when the sheet closes.
   final Set<GarmentCategory> chosen;

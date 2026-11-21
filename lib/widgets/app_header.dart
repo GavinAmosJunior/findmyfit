@@ -48,6 +48,53 @@ class LargeTitle extends StatelessWidget {
   }
 }
 
+/// A large title for a screen that doesn't scroll: the same look as
+/// [LargeTitle] at rest, with its blue wash, without the collapsing.
+class StaticTitle extends StatelessWidget {
+  final String title;
+  final List<Widget>? actions;
+
+  const StaticTitle({super.key, required this.title, this.actions});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: dark
+              ? [const Color(0xFF13254A), const Color(0xFF0A1428), context.colors.surface]
+              : [const Color(0xFFD6E4FD), const Color(0xFFEAF1FE), context.colors.surface],
+          stops: const [0, 0.55, 1],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 52,
+              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [...?actions, const SizedBox(width: 8)]),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.titleMedium?.copyWith(fontSize: 31.5, fontWeight: FontWeight.w700, letterSpacing: -0.9),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// The title of a pushed screen: a name, and a quiet line under it.
 class BarTitle extends StatelessWidget {
   final String title;

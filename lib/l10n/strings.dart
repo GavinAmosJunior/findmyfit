@@ -276,6 +276,10 @@ class S {
   String noneOf(String what) => _t('No ${what.toLowerCase()}', 'Tanpa ${what.toLowerCase()}');
   String get customizeRails => _t('Choose rails', 'Pilih rak');
   String get savedFit => _t('Saved fit', 'Fit tersimpan');
+  String get savedFitsEmpty => _t('Tap the heart under the rails to keep a fit you like.',
+      'Ketuk ikon hati di bawah rak untuk menyimpan fit yang kamu suka.');
+  String get keepWhenShuffling => _t('Keep when shuffling', 'Tetap saat diacak');
+  String choose(String what) => _t('Choose ${what.toLowerCase()}', 'Pilih ${what.toLowerCase()}');
   String get share => _t('Share', 'Bagikan');
   String get showOnRails => _t('Show on rails', 'Tampilkan di rak');
   String get removeFit => _t('Remove fit', 'Hapus fit');

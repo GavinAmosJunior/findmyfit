@@ -79,6 +79,12 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
   int _turns = 0;
   bool _lifting = false;
 
+  // The garment where it stood and how it moved, for the lift; and whether
+  // the lift is still to play for this photo.
+  Uint8List? _inPlace;
+  CutoutGeometry? _geometry;
+  bool _playLift = false;
+
   // Set when no garment was found in this photo; trying again won't help.
   bool _noGarment = false;
   Future<void>? _liftDone;
@@ -223,6 +229,9 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _cutout = stored;
       _useCutout = true;
       _noGarment = stored == null && !result.unavailable;
+      _inPlace = result.inPlace;
+      _geometry = result.geometry;
+      _playLift = stored != null && result.geometry != null;
     });
     if (!asked && _name.text.isEmpty && !_nameFocus.hasFocus) {
       // Let the lift play (about 1.5 s), then ask for the name.
@@ -272,6 +281,9 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     _lifting = false;
     _noGarment = false;
     _liftDone = null;
+    _inPlace = null;
+    _geometry = null;
+    _playLift = false;
   }
 
   /// The image to save: waits for a cutout still being made, and bakes in
@@ -549,9 +561,35 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
         _cutout != null || (Cutout.supported && !ImageStore.isCutout(_original) && !_lifting && !_noGarment);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    final picture = ImageStore.isCutout(ref) && !kIsWeb && !ref.startsWith('data:')
-        ? _CutoutPreview(key: ValueKey(ref), file: File(ref), glow: !reduceMotion && ref == _cutout)
-        : KeyedSubtree(key: ValueKey(ref), child: GarmentImage(garment: preview, iconSize: 64));
+    final isFileCutout = ImageStore.isCutout(ref) && !kIsWeb && !ref.startsWith('data:');
+    final original = _original;
+    final lift = isFileCutout &&
+        ref == _cutout &&
+        _playLift &&
+        !reduceMotion &&
+        _inPlace != null &&
+        _geometry != null &&
+        original != null &&
+        !ImageStore.isCutout(original) &&
+        !original.startsWith('data:');
+    // The lift and the still cutout share one slot, so finishing the lift
+    // swaps them without a visible change.
+    final Widget picture = isFileCutout
+        ? _Slot(
+            key: ValueKey(ref),
+            child: lift
+                ? _LiftReveal(
+                    photo: File(original),
+                    inPlace: _inPlace!,
+                    geometry: _geometry!,
+                    finalFile: File(ref),
+                    onDone: () {
+                      if (mounted) setState(() => _playLift = false);
+                    },
+                  )
+                : _CutoutPreview(file: File(ref)),
+          )
+        : _Slot(key: ValueKey(ref), child: GarmentImage(garment: preview, iconSize: 64));
 
     return Stack(
       fit: StackFit.expand,
@@ -561,7 +599,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
           child: AnimatedSwitcher(
-            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 450),
+            // The lift starts from the photo itself, so it needs no crossfade.
+            duration: reduceMotion || lift ? Duration.zero : const Duration(milliseconds: 450),
             // Fill the square, as the photo did before it could switch.
             layoutBuilder: (current, previous) =>
                 Stack(fit: StackFit.expand, children: [...previous, ?current]),
@@ -583,8 +622,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
             child: picture,
           ),
         ),
-        // While it works, a soft light passes over the photo.
-        if (_lifting && !reduceMotion) const Positioned.fill(child: IgnorePointer(child: _Shimmer())),
+        // While it works, a soft glow turns slowly around the photo's edge.
+        if (_lifting && !reduceMotion) const Positioned.fill(child: IgnorePointer(child: _ThinkingGlow())),
         if (_lifting)
           Positioned(
             left: 0,
@@ -596,8 +635,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const SizedBox.square(
-                      dimension: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      dimension: 13,
+                      child: CircularProgressIndicator(strokeWidth: 1.8, color: Colors.white),
                     ),
                     const SizedBox(width: 8),
                     Text(s.liftingOut, style: context.text.labelMedium?.copyWith(color: Colors.white)),
@@ -694,16 +733,26 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
   }
 }
 
-/// A dark, translucent capsule that reads over any photo.
+/// A frosted capsule that reads over any photo.
 class _Pill extends StatelessWidget {
   final Widget child;
 
   const _Pill({required this.child});
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(99)),
-    child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7), child: child),
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(99),
+    child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.32),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 0.6),
+        ),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8), child: child),
+      ),
+    ),
   );
 }
 
@@ -740,85 +789,153 @@ class _PhotoButton extends StatelessWidget {
   }
 }
 
-/// A band of soft light that sweeps across the photo, over and over,
-/// while the background is being removed.
-class _Shimmer extends StatefulWidget {
-  const _Shimmer();
+/// Keeps a picture in one place in the preview's switcher, whatever it
+/// shows inside, so changing its inside isn't a transition.
+class _Slot extends StatelessWidget {
+  final Widget child;
+
+  const _Slot({super.key, required this.child});
 
   @override
-  State<_Shimmer> createState() => _ShimmerState();
+  Widget build(BuildContext context) => child;
 }
 
-class _ShimmerState extends State<_Shimmer> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
+/// The glow while the background is being removed: soft color that turns
+/// slowly around the inside of the photo's edge, the way Apple shows that
+/// something is thinking.
+class _ThinkingGlow extends StatefulWidget {
+  const _ThinkingGlow();
+
+  @override
+  State<_ThinkingGlow> createState() => _ThinkingGlowState();
+}
+
+class _ThinkingGlowState extends State<_ThinkingGlow> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200))..repeat();
+  late final _in = AnimationController(vsync: this, duration: const Duration(milliseconds: 500))..forward();
 
   @override
   void dispose() {
     _c.dispose();
+    _in.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) => DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white.withValues(alpha: 0), Colors.white.withValues(alpha: 0.32), Colors.white.withValues(alpha: 0)],
-            stops: const [0.35, 0.5, 0.65],
-            transform: _Slide(Curves.easeInOut.transform(_c.value) * 2.4 - 1.2),
-          ),
-        ),
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: _in, curve: Curves.easeOut),
+      child: CustomPaint(painter: _GlowPainter(_c)),
+    );
+  }
+}
+
+class _GlowPainter extends CustomPainter {
+  final Animation<double> turn;
+
+  _GlowPainter(this.turn) : super(repaint: turn);
+
+  static const _colors = [
+    Color(0xFF4D8EFF),
+    Color(0xFFB467FF),
+    Color(0xFFFF6CA8),
+    Color(0xFFFF9F45),
+    Color(0xFF4D8EFF),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final shader = SweepGradient(
+      colors: _colors,
+      transform: GradientRotation(turn.value * 2 * math.pi),
+    ).createShader(rect);
+    final edge = RRect.fromRectAndRadius(rect.deflate(1.5), const Radius.circular(27));
+    // A wide soft bloom, then a fine bright line at the very edge.
+    canvas.drawRRect(
+      edge,
+      Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 22
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14)
+        ..color = Colors.white.withValues(alpha: 0.75),
+    );
+    canvas.drawRRect(
+      edge,
+      Paint()
+        ..shader = shader
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_GlowPainter old) => false;
+}
+
+/// The finished cutout on its tile, framed the same as the lift ends.
+class _CutoutPreview extends StatelessWidget {
+  final File file;
+
+  const _CutoutPreview({required this.file});
+
+  static const inset = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: context.palette.tile,
+      child: Padding(
+        padding: const EdgeInsets.all(inset),
+        child: Image(image: FileImage(file), fit: BoxFit.contain, gaplessPlayback: true),
       ),
     );
   }
 }
 
-class _Slide extends GradientTransform {
-  final double t;
+/// Lifting the garment out of its photo, the way Apple's "lift subject"
+/// feels. The garment never jumps: it stays exactly where it is while the
+/// background melts away under it and a soft glow blooms around its edge.
+/// A glint of light passes over it as it lifts off the page, then it
+/// glides, straightening, into its place on the tile, and settles.
+class _LiftReveal extends StatefulWidget {
+  final File photo;
+  final Uint8List inPlace;
+  final CutoutGeometry geometry;
+  final File finalFile;
+  final VoidCallback onDone;
 
-  const _Slide(this.t);
+  const _LiftReveal({
+    required this.photo,
+    required this.inPlace,
+    required this.geometry,
+    required this.finalFile,
+    required this.onDone,
+  });
 
   @override
-  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) =>
-      Matrix4.translationValues(bounds.width * t, bounds.height * t, 0);
+  State<_LiftReveal> createState() => _LiftRevealState();
 }
 
-/// A cutout on its backdrop. When [glow] is set, it plays the lift, once:
-/// a line of light runs all the way around the garment's edge, the piece
-/// rises off the tile with a soft shadow, and settles back with a tap.
-class _CutoutPreview extends StatefulWidget {
-  final File file;
-  final bool glow;
-
-  const _CutoutPreview({super.key, required this.file, required this.glow});
-
-  @override
-  State<_CutoutPreview> createState() => _CutoutPreviewState();
-}
-
-class _CutoutPreviewState extends State<_CutoutPreview> with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+class _LiftRevealState extends State<_LiftReveal> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1700));
+  late final MemoryImage _subject = MemoryImage(widget.inPlace);
   bool _tapped = false;
 
   @override
   void initState() {
     super.initState();
-    if (widget.glow) {
-      _c.addListener(() {
-        // The tap lands as the piece reaches the top of its lift.
-        if (!_tapped && _c.value >= 0.42) {
-          _tapped = true;
-          HapticFeedback.lightImpact();
-        }
-      });
-      _c.forward();
-    } else {
-      _c.value = 1;
-    }
+    _c.addListener(() {
+      if (!_tapped && _c.value >= 0.34) {
+        _tapped = true;
+        HapticFeedback.lightImpact();
+      }
+    });
+    _c.addStatusListener((s) {
+      if (s == AnimationStatus.completed) widget.onDone();
+    });
+    _c.forward();
   }
 
   @override
@@ -827,90 +944,125 @@ class _CutoutPreviewState extends State<_CutoutPreview> with SingleTickerProvide
     super.dispose();
   }
 
-  /// How high the piece is: rises over the first half, settles after.
-  static double _lift(double t) {
-    if (t < 0.12) return 0;
-    if (t < 0.45) return Curves.easeOutCubic.transform((t - 0.12) / 0.33);
-    if (t < 0.9) return 1 - Curves.easeInOutCubic.transform((t - 0.45) / 0.45);
-    return 0;
-  }
+  static double _span(double t, double from, double to) => ((t - from) / (to - from)).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
-    final image = FileImage(widget.file);
-    Widget shape(Color color) => Image(
-      image: image,
-      fit: BoxFit.contain,
-      color: color,
-      colorBlendMode: BlendMode.srcIn,
-      gaplessPlayback: true,
-    );
+    final g = widget.geometry;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final d = box.biggest.shortestSide;
+        final center = Offset(d / 2, d / 2);
+        // The photo fills the square (cover); the cutout sits inside the
+        // tile's inset (contain). Work out where the garment goes.
+        final cover = math.max(d / g.width, d / g.height);
+        final fit = (d - 2 * _CutoutPreview.inset) / g.side;
+        final target = Offset(_CutoutPreview.inset, _CutoutPreview.inset) +
+            (Offset(g.turnedWidth / 2, g.turnedHeight / 2) -
+                    g.box.topLeft +
+                    Offset((g.side - g.box.width) / 2, (g.side - g.box.height) / 2)) *
+                fit;
+        final endScale = fit / cover;
+        final angle = g.turn * math.pi / 180;
 
-    return ColoredBox(
-      color: context.palette.tile,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: AnimatedBuilder(
+        Widget subject(Color? tint) => Image(
+          image: _subject,
+          fit: BoxFit.cover,
+          width: d,
+          height: d,
+          gaplessPlayback: true,
+          color: tint,
+          colorBlendMode: tint == null ? null : BlendMode.srcIn,
+        );
+
+        return AnimatedBuilder(
           animation: _c,
           builder: (context, _) {
             final t = _c.value;
-            final lift = _lift(t);
-            // The light runs once around the edge in the first two thirds.
-            final trace = (t / 0.7).clamp(0.0, 1.0);
-            final traceOpacity = t < 0.08 ? t / 0.08 : (t > 0.6 ? ((0.78 - t) / 0.18).clamp(0.0, 1.0) : 1.0);
+            final melt = Curves.easeInOut.transform(_span(t, 0.0, 0.42));
+            final glow = math.sin(math.pi * _span(t, 0.08, 0.78));
+            final lift = math.sin(math.pi * _span(t, 0.12, 0.95)) * 1;
+            final glide = Curves.easeInOutCubic.transform(_span(t, 0.42, 0.95));
+            final sheen = _span(t, 0.26, 0.62);
+
+            // Where the garment is: in the photo, then on its tile.
+            final move = (target - center) * glide;
+            final scale = (1 + (endScale - 1) * glide) * (1 + 0.045 * lift);
+
+            Widget placed(Widget child) => Transform.translate(
+              offset: move,
+              child: Transform.rotate(
+                angle: angle * glide,
+                child: Transform.scale(scale: scale, child: child),
+              ),
+            );
+
             return Stack(
               fit: StackFit.expand,
               children: [
-                // The shadow, growing as the piece lifts.
-                if (lift > 0)
-                  Transform.translate(
-                    offset: Offset(0, 6 + 12 * lift),
-                    child: Opacity(
-                      opacity: 0.28 * lift,
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 10 + 8 * lift, sigmaY: 10 + 8 * lift),
-                        child: shape(Colors.black),
+                ColoredBox(color: context.palette.tile),
+                // The background melts away: softens and fades.
+                if (melt < 1)
+                  Opacity(
+                    opacity: 1 - melt,
+                    child: ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 18 * melt + 0.01, sigmaY: 18 * melt + 0.01),
+                      child: Image(image: FileImage(widget.photo), fit: BoxFit.cover, gaplessPlayback: true),
+                    ),
+                  ),
+                // The shadow, as it rises off the page.
+                if (lift > 0.01)
+                  placed(
+                    Transform.translate(
+                      offset: Offset(0, 10 * lift),
+                      child: Opacity(
+                        opacity: 0.22 * lift,
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                          child: subject(Colors.black),
+                        ),
                       ),
                     ),
                   ),
-                Transform.scale(
-                  scale: 1 + 0.05 * lift,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      if (widget.glow && traceOpacity > 0)
-                        Opacity(
-                          opacity: traceOpacity,
-                          child: ShaderMask(
-                            blendMode: BlendMode.dstIn,
-                            // A bright arc that sweeps all the way round.
-                            shaderCallback: (rect) => SweepGradient(
-                              colors: const [Colors.transparent, Colors.white, Colors.white, Colors.transparent],
-                              stops: const [0.0, 0.22, 0.3, 0.5],
-                              transform: GradientRotation(2 * math.pi * trace - math.pi / 2),
-                            ).createShader(rect),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6), child: shape(Colors.white)),
-                                for (var i = 0; i < 8; i++)
-                                  Transform.translate(
-                                    offset: Offset(3 * math.cos(i * math.pi / 4), 3 * math.sin(i * math.pi / 4)),
-                                    child: shape(Colors.white),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      Image(image: image, fit: BoxFit.contain, gaplessPlayback: true),
-                    ],
+                // A soft white bloom around the edge.
+                if (glow > 0.01)
+                  placed(
+                    Opacity(
+                      opacity: 0.9 * glow,
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(sigmaX: 9, sigmaY: 9),
+                        child: subject(Colors.white),
+                      ),
+                    ),
                   ),
+                // The garment, with a glint of light passing over it.
+                placed(
+                  sheen <= 0 || sheen >= 1
+                      ? subject(null)
+                      : ShaderMask(
+                          blendMode: BlendMode.srcATop,
+                          shaderCallback: (rect) => LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withValues(alpha: 0),
+                              Colors.white.withValues(alpha: 0.55),
+                              Colors.white.withValues(alpha: 0),
+                            ],
+                            stops: [
+                              (sheen * 1.4 - 0.3).clamp(0.0, 1.0),
+                              (sheen * 1.4 - 0.2).clamp(0.0, 1.0),
+                              (sheen * 1.4 - 0.1).clamp(0.0, 1.0),
+                            ],
+                          ).createShader(rect),
+                          child: subject(null),
+                        ),
                 ),
               ],
             );
           },
-        ),
-      ),
+        );
+      },
     );
   }
 }

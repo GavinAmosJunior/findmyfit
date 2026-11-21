@@ -270,7 +270,7 @@ void main() {
     expect(state.garmentById(tee.id)!.status, GarmentStatus.dirtyHamper);
   });
 
-  testWidgets('Rails turns on a shoe shelf and a hook row; tops and bottoms stay', (tester) async {
+  testWidgets('Rails turns on a shoe shelf and the tray; tops and bottoms stay', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -296,9 +296,11 @@ void main() {
     expect(state.railOn(GarmentCategory.shoes), isTrue);
 
     expect(find.text('Sneakers'), findsWidgets, reason: 'the shelf shows');
-    expect(find.text('Extras'), findsOneWidget, reason: 'the hook row shows');
+    expect(find.text('Cap'), findsOneWidget, reason: 'the tray shows the hat');
     expect(tester.takeException(), isNull, reason: 'everything fits a regular phone');
     await tester.tap(find.byIcon(AppIcons.shuffle));
+    // The tray flicks through pieces like a reel before it lands.
+    await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
     expect(state.garments.every((g) => g.status == GarmentStatus.closet), isTrue);
   });
