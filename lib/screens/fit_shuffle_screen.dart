@@ -716,7 +716,10 @@ class _Shelf extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, box) {
-        final height = (box.maxHeight - _RowHeader.height - 30).clamp(24.0, 160.0);
+        // The shoes sit between two lines, like a cubby: one above, the
+        // shelf below.
+        const gap = 9.0;
+        final height = (box.maxHeight - _RowHeader.height - 30 - gap).clamp(24.0, 160.0);
         final width = min(height * 1.45, box.maxWidth * 0.5);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -725,9 +728,23 @@ class _Shelf extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
+                  // The line above the shoes.
+                  Positioned(
+                    top: 3,
+                    left: 0,
+                    right: 0,
+                    child: _DrawIn(
+                      active: arriving,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        height: rail.locked ? 2.5 : 2,
+                        color: rail.locked ? context.ink : context.palette.separator,
+                      ),
+                    ),
+                  ),
                   // The shelf, under the shoes.
                   Positioned(
-                    top: height + 3,
+                    top: gap + height + 3,
                     left: 0,
                     right: 0,
                     child: _DrawIn(
@@ -775,6 +792,7 @@ class _Shelf extends StatelessWidget {
                               index: (i - rail.page + 1).clamp(0, 3),
                               child: Column(
                                 children: [
+                                  const SizedBox(height: gap),
                                   SizedBox(
                                     width: width,
                                     height: height,

@@ -89,9 +89,8 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
       final pieces = all.where((g) => g.category == cell.category).toList()
         ..sort((a, b) => (_away(a) ? 1 : 0).compareTo(_away(b) ? 1 : 0));
       final (size, step) = switch (cell.kind) {
-        // On a rail, clothes overlap a little, the way they hang.
-        _Kind.rail => (48.0, 30.0),
-        _Kind.long => (60.0, 28.0),
+        _Kind.rail => (42.0, 46.0),
+        _Kind.long => (46.0, 50.0),
         _Kind.shelf => (46.0, 52.0),
         _Kind.cubby => (46.0, 48.0),
         _Kind.floor => (52.0, 60.0),
@@ -117,7 +116,7 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
             final y = r.top + (r.height - size) / 2 - 6;
             slots.add((box: Rect.fromLTWH(cx - size / 2, y, size, size), hook: null, garment: g, away: _away(g)));
           case _Kind.floor:
-            slots.add((box: Rect.fromLTWH(cx - size / 2, r.top + 6, size, size), hook: null, garment: g, away: _away(g)));
+            slots.add((box: Rect.fromLTWH(cx - size / 2, r.top + 60 - size - 3, size, size), hook: null, garment: g, away: _away(g)));
         }
       }
       out[cell.category] = (slots, pieces.length - shown.length);
@@ -147,16 +146,18 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
           Rect px(Rect r) => Rect.fromLTWH(r.left * k, r.top * k, r.width * k, r.height * k);
 
           return Stack(
+            clipBehavior: Clip.none,
             children: [
               // The frame, panels, rods and hangers.
               Positioned.fill(
                 child: CustomPaint(
+                  // The same grays as Fit Shuffle's rails and hangers.
                   painter: _WardrobePainter(
                     k: k,
                     slots: slots,
                     pressed: _pressed,
-                    ink: context.ink,
-                    tile: palette.tile,
+                    ink: palette.separator,
+                    tile: context.colors.surface,
                     faint: palette.tertiaryText,
                     press: context.ink.withValues(alpha: 0.06),
                   ),
@@ -169,9 +170,10 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                     Positioned.fromRect(
                       rect: px(slot.box),
                       child: IgnorePointer(
+                        // On a gray tile, like the cards in Fit Shuffle.
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(6 * k),
-                          child: GarmentImage(garment: slot.garment, iconSize: 14 * k, backdrop: Colors.transparent),
+                          borderRadius: BorderRadius.circular(slot.box.width * 0.2 * k),
+                          child: GarmentImage(garment: slot.garment, iconSize: 14 * k),
                         ),
                       ),
                     ),
@@ -246,7 +248,9 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                     },
                   ),
                 ),
-              // Sliding doors that glide apart the first time.
+              // Two doors that swing open on their hinges the first time,
+              // turning toward you until they're edge-on and gone. Solid
+              // the whole way; they shade a little as they turn from the light.
               Positioned.fill(
                 child: IgnorePointer(
                   child: AnimatedBuilder(
@@ -255,18 +259,22 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                       final t = Curves.easeInOutCubic.transform(_doors.value);
                       if (t >= 1) return const SizedBox.shrink();
                       final half = c.maxWidth / 2;
+                      final angle = t * pi / 2;
                       Widget door(bool left) => Positioned(
-                        left: left ? 3 * k - t * half * 0.95 : null,
-                        right: left ? null : 3 * k - t * half * 0.95,
-                        top: 3 * k,
-                        bottom: 3 * k,
-                        width: half - 3 * k,
-                        child: Opacity(
-                          opacity: (1 - t * 1.15).clamp(0.0, 1.0),
-                          child: _Door(handleOnRight: left, k: k),
+                        left: left ? 2 * k : null,
+                        right: left ? null : 2 * k,
+                        top: 2 * k,
+                        bottom: 2 * k,
+                        width: half - 2 * k,
+                        child: Transform(
+                          alignment: left ? Alignment.centerLeft : Alignment.centerRight,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0012)
+                            ..rotateY(left ? angle : -angle),
+                          child: _Door(handleOnRight: left, k: k, shade: sin(angle) * 0.22),
                         ),
                       );
-                      return Stack(children: [door(true), door(false)]);
+                      return Stack(clipBehavior: Clip.none, children: [door(true), door(false)]);
                     },
                   ),
                 ),
@@ -283,23 +291,25 @@ class _Door extends StatelessWidget {
   final bool handleOnRight;
   final double k;
 
-  const _Door({required this.handleOnRight, required this.k});
+  /// How much the door darkens as it turns away from the light.
+  final double shade;
+
+  const _Door({required this.handleOnRight, required this.k, this.shade = 0});
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: context.palette.tile,
-        border: Border.all(color: context.ink, width: 2),
-        borderRadius: BorderRadius.circular(6 * k),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+        color: Color.alphaBlend(Colors.black.withValues(alpha: shade), context.palette.tile),
+        border: Border.all(color: context.palette.separator, width: 2),
+        borderRadius: BorderRadius.circular(8 * k),
       ),
       child: Align(
         alignment: handleOnRight ? const Alignment(0.82, -0.1) : const Alignment(-0.82, -0.1),
         child: Container(
           width: 4 * k,
           height: 56 * k,
-          decoration: BoxDecoration(color: context.ink, borderRadius: BorderRadius.circular(2 * k)),
+          decoration: BoxDecoration(color: context.palette.tertiaryText, borderRadius: BorderRadius.circular(2 * k)),
         ),
       ),
     );
@@ -352,7 +362,7 @@ class _WardrobePainter extends CustomPainter {
     // Rods, and the shoe shelf.
     final rod = Paint()
       ..color = ink
-      ..strokeWidth = 2.4
+      ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
     for (final cell in _cells) {
       final r = cell.rect;
@@ -360,7 +370,7 @@ class _WardrobePainter extends CustomPainter {
         canvas.drawLine(Offset(r.left + 7, r.top + 14), Offset(r.right - 7, r.top + 14), rod);
       }
       if (cell.kind == _Kind.floor) {
-        canvas.drawLine(Offset(r.left + 10, r.top + 54), Offset(r.right - 10, r.top + 54), rod..strokeWidth = 1.6);
+        canvas.drawLine(Offset(r.left + 10, r.top + 60), Offset(r.right - 10, r.top + 60), rod..strokeWidth = 2.5);
       }
     }
 
@@ -381,7 +391,7 @@ class _WardrobePainter extends CustomPainter {
             ..lineTo(hook.dx - w, hook.dy + 9)
             ..lineTo(hook.dx + w, hook.dy + 9)
             ..close();
-          hanger.color = slot.away ? faint : ink;
+          hanger.color = faint;
           canvas.drawPath(slot.away ? _dashed(path, 2, 2) : path, hanger);
         }
         if (slot.away) {

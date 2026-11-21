@@ -111,7 +111,7 @@ class GarmentSheet extends StatelessWidget {
                 close();
                 wearGarment(outer, garment);
               },
-              icon: Icon(garment.category.goesToHamper ? AppIcons.hamper : AppIcons.check, size: 20),
+              icon: const Icon(AppIcons.wore, size: 20),
               label: Text(s.woreIt),
             ),
             // Shoes and the like skip the hamper, unless they need a clean.

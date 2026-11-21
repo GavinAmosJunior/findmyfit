@@ -363,7 +363,8 @@ class _WoreItButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
 
-  /// A basket for clothes; a check for things that just count the wear.
+  /// Whether wearing it sends it to the hamper (clothes) or only counts
+  /// the wear (shoes and the like). Same shirt icon either way.
   final bool toHamper;
 
   const _WoreItButton({required this.tooltip, required this.onPressed, this.toHamper = true});
@@ -382,7 +383,7 @@ class _WoreItButton extends StatelessWidget {
         shadowColor: Colors.black.withValues(alpha: 0.25),
         tapTargetSize: MaterialTapTargetSize.padded,
       ),
-      icon: Icon(toHamper ? AppIcons.hamper : AppIcons.check, size: 20),
+      icon: const Icon(AppIcons.wore, size: 20),
     );
   }
 }

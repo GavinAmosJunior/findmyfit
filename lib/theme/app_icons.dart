@@ -54,6 +54,9 @@ abstract final class AppIcons {
   static const IconData fitsFill = IconData(0xe422, fontFamily: _fill);
   static const IconData putBack = IconData(0xe08a, fontFamily: _regular);
 
+  /// "I wore this": a shirt, for every kind of piece.
+  static const IconData wore = IconData(0xe670, fontFamily: _regular);
+
   // Fit Shuffle.
   static const IconData shuffle = IconData(0xe422, fontFamily: _bold);
   static const IconData locked = IconData(0xe308, fontFamily: _fill);
