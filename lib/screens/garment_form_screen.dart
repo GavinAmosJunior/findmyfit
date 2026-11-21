@@ -33,14 +33,20 @@ class GarmentFormScreen extends StatefulWidget {
   /// Where to show "Added" once this screen closes (the caller's tab).
   final ScaffoldMessengerState? messenger;
 
-  const GarmentFormScreen({super.key, this.editing, this.messenger});
+  /// Opens the photo library first instead of the camera.
+  final bool fromGallery;
+
+  const GarmentFormScreen({super.key, this.editing, this.messenger, this.fromGallery = false});
 
   /// [messenger] shows the "added" messages; by default, the one around
   /// [context].
-  static Future<void> openAdd(BuildContext context, {ScaffoldMessengerState? messenger}) {
+  static Future<void> openAdd(BuildContext context, {ScaffoldMessengerState? messenger, bool fromGallery = false}) {
     final shown = messenger ?? ScaffoldMessenger.of(context);
     return Navigator.of(context).push(
-      MaterialPageRoute(fullscreenDialog: true, builder: (_) => GarmentFormScreen(messenger: shown)),
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => GarmentFormScreen(messenger: shown, fromGallery: fromGallery),
+      ),
     );
   }
 
@@ -100,9 +106,11 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       _brand.text = g.brand ?? '';
       _notes.text = g.notes ?? '';
       _original = g.imageUrl;
+    } else if (widget.fromGallery) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _choosePhotos(auto: true));
     } else if (_hasCamera) {
       // Camera-first: open it straight away on phones.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _takePhoto());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _takePhoto(auto: true));
     }
   }
 
@@ -115,7 +123,9 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     super.dispose();
   }
 
-  Future<void> _takePhoto() async {
+  /// [auto]: opened by the app (on arrival, or for the next piece), not
+  /// by a button, so backing out means leaving.
+  Future<void> _takePhoto({bool auto = false}) async {
     try {
       final shot = await _picker.pickImage(
         source: ImageSource.camera,
@@ -123,13 +133,28 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
         maxHeight: ImageStore.maxSize,
         imageQuality: ImageStore.quality,
       );
-      if (shot != null) await _usePhoto(shot);
+      if (shot != null) {
+        await _usePhoto(shot);
+      } else if (auto) {
+        _closeIfUntouched();
+      }
     } catch (_) {
       if (mounted) showMessage(context, S.of(context).photoError);
     }
   }
 
-  Future<void> _choosePhotos() async {
+  /// Backing out of the camera or library before there's anything here
+  /// means "never mind": close Add and go back to where you were. Pieces
+  /// already added in this session stay, with a message saying so.
+  void _closeIfUntouched() {
+    if (!mounted || _isEdit || _hasUnsavedInput || _queue.isNotEmpty || _busy) return;
+    final s = S.of(context);
+    final messenger = widget.messenger ?? ScaffoldMessenger.of(context);
+    Navigator.of(context).pop();
+    if (_added > 0) showMessageOn(messenger, s.addedCount(_added));
+  }
+
+  Future<void> _choosePhotos({bool auto = false}) async {
     try {
       if (_isEdit) {
         final one = await _picker.pickImage(
@@ -146,7 +171,10 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
         maxHeight: ImageStore.maxSize,
         imageQuality: ImageStore.quality,
       );
-      if (many.isEmpty) return;
+      if (many.isEmpty) {
+        if (auto) _closeIfUntouched();
+        return;
+      }
       _queue
         ..clear()
         ..addAll(many.skip(1));
@@ -341,7 +369,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     } else {
       _queueTotal = 0;
       if (_hasCamera) {
-        await _takePhoto();
+        await _takePhoto(auto: true);
       } else {
         _nameFocus.requestFocus();
       }

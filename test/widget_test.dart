@@ -233,6 +233,30 @@ void main() {
     expect(find.text('Wear this fit'), findsNothing);
   });
 
+  testWidgets('the Closet cards show the load out now and an outfit, and only when they apply', (tester) async {
+    final state = await _loadedState();
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+    state.addGarment(name: 'Linen shirt', category: GarmentCategory.tops);
+    await tester.pumpAndSettle();
+    expect(find.text('Today’s fit'), findsNothing, reason: 'no bottoms yet, so no outfit');
+    expect(find.text('At the laundry'), findsNothing);
+
+    state.addGarment(name: 'Chinos', category: GarmentCategory.bottoms);
+    final tee = state.addGarment(name: 'Tee', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
+    state.sendToLaundry(garmentIds: [tee.id], laundromatName: 'Sparkle');
+    await tester.pumpAndSettle();
+    expect(find.text('Today’s fit'), findsOneWidget);
+    expect(find.text('Linen shirt · Chinos'), findsOneWidget, reason: 'beside the laundry card, names go under the pair');
+    expect(find.text('At the laundry'), findsOneWidget);
+    expect(find.text('0 of 1 back'), findsOneWidget);
+
+    // Showing another fit only suggests: nobody moves.
+    await tester.tap(find.text('Today’s fit'));
+    await tester.pumpAndSettle();
+    expect(state.garments.where((g) => g.status == GarmentStatus.closet), hasLength(2));
+  });
+
   testWidgets('a piece put in the hamper by mistake goes back with one tap', (tester) async {
     final state = await _loadedState();
     final g = state.addGarment(name: 'Blue tee', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);

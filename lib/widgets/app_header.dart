@@ -12,6 +12,7 @@ class LargeTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return SliverAppBar(
       pinned: true,
       expandedHeight: 112,
@@ -19,6 +20,20 @@ class LargeTitle extends StatelessWidget {
       surfaceTintColor: Colors.transparent,
       actions: [...?actions, const SizedBox(width: 8)],
       flexibleSpace: FlexibleSpaceBar(
+        // A faint blue wash behind the title that fades into the page
+        // before the content starts, and fades out as the title shrinks.
+        background: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: dark
+                  ? [const Color(0xFF13254A), const Color(0xFF0A1428), context.colors.surface]
+                  : [const Color(0xFFD6E4FD), const Color(0xFFEAF1FE), context.colors.surface],
+              stops: const [0, 0.55, 1],
+            ),
+          ),
+        ),
         centerTitle: false,
         titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 14),
         expandedTitleScale: 1.75,

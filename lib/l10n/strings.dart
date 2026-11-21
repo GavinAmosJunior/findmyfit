@@ -248,7 +248,36 @@ class S {
       'Penghapus latar belum siap di ponsel ini. Coba lagi sebentar lagi.');
   String get noCutout => _t('Couldn’t find the clothes in this photo. Try a plain surface.',
       'Pakaian tidak terdeteksi di foto ini. Coba alas polos.');
+  String get addFromGallery => _t('Add from gallery', 'Tambah dari galeri');
   String get editGarment => _t('Edit clothes', 'Ubah pakaian');
+
+  // ---------------------------------------------------------------- widgets
+  String get todaysFit => _t('Today’s fit', 'Gaya hari ini');
+  String get anotherFit => _t('Show another fit', 'Tampilkan gaya lain');
+  String get atTheLaundry => _t('At the laundry', 'Di laundry');
+  String moreLoads(int n) => _t('+$n more', '+$n lagi');
+
+  // --------------------------------------------------------- all cutouts
+  String get photos => _t('Photos', 'Foto');
+  String get removeBackgrounds => _t('Remove backgrounds', 'Hapus latar foto');
+  String cutoutAllCount(int n) => _id
+      ? '$n foto bisa dibuat rapi'
+      : (n == 1 ? '1 photo can get the clean look' : '$n photos can get the clean look');
+  String get cutoutAllNone => _t('Every photo has the clean look', 'Semua foto sudah rapi');
+  String cutoutAllProgress(int i, int n) => _id ? 'Memproses $i dari $n…' : 'Working on $i of $n…';
+  String cutoutAllTitle(int n) =>
+      _id ? 'Hapus latar dari $n foto?' : (n == 1 ? 'Remove the background from 1 photo?' : 'Remove backgrounds from $n photos?');
+  String get cutoutAllBody => _t(
+      'Each piece is lifted onto a clean backdrop, like a product photo. The original photos are replaced.',
+      'Setiap pakaian dipindah ke latar bersih, seperti foto produk. Foto asli akan diganti.');
+  String cutoutAllDone(int done, int skipped) {
+    if (_id) return skipped == 0 ? '$done foto diperbarui' : '$done foto diperbarui · $skipped tidak terdeteksi';
+    final updated = done == 1 ? '1 photo updated' : '$done photos updated';
+    return skipped == 0 ? updated : '$updated · $skipped had no clear piece';
+  }
+
+  String get photosFooter => _t('The first time needs internet, to download Google’s background remover.',
+      'Pertama kali butuh internet, untuk mengunduh penghapus latar dari Google.');
   String get photoError => _t('Couldn’t open the camera or photos. Check app permissions.',
       'Tidak bisa membuka kamera atau galeri. Cek izin aplikasi.');
 

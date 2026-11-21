@@ -7,6 +7,7 @@ import '../state/app_scope.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
+import '../widgets/closet_widgets.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
@@ -15,7 +16,6 @@ import '../widgets/pressable.dart';
 import '../widgets/tags.dart';
 import 'garment_form_screen.dart';
 import 'garment_sheet.dart';
-import 'home_shell.dart';
 import 'settings_screen.dart';
 
 /// Marks a clean garment as worn, with haptic feedback and an Undo.
@@ -87,6 +87,12 @@ class _ClosetScreenState extends State<ClosetScreen> {
           LargeTitle(
             title: s.closet,
             actions: [
+              // The camera is what + opens; the library is here.
+              IconButton(
+                tooltip: s.addFromGallery,
+                onPressed: () => GarmentFormScreen.openAdd(context, fromGallery: true),
+                icon: const Icon(AppIcons.library),
+              ),
               IconButton(
                 tooltip: s.search,
                 onPressed: all.isEmpty ? null : _toggleSearch,
@@ -153,7 +159,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
       ('fav', s.favorites),
       for (final c in GarmentCategory.values) (c.name, s.categoryLabel(c)),
     ];
-    final shell = HomeShellState.maybeOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,30 +173,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
               decoration: InputDecoration(hintText: s.searchClothes, prefixIcon: const Icon(AppIcons.search)),
             ),
           ),
-        // Where everything is, at a glance. Hamper and laundry jump to
-        // their tabs.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-          child: Row(
-            children: [
-              for (final (i, (status, tab)) in [
-                (GarmentStatus.closet, null),
-                (GarmentStatus.dirtyHamper, HomeShellState.hamperTab),
-                (GarmentStatus.inLaundry, HomeShellState.laundryTab),
-              ].indexed) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Expanded(
-                  child: _CountTile(
-                    count: count(status),
-                    label: s.statusLabel(status),
-                    icon: statusIcon(status),
-                    onTap: tab == null || shell == null ? null : () => shell.goTo(tab),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+        // What's at the laundry, and an outfit for today.
+        const ClosetWidgets(),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -206,35 +189,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
         ),
       ],
     );
-  }
-}
-
-/// One status count on a gray tile: icon, number, word.
-class _CountTile extends StatelessWidget {
-  final int count;
-  final String label;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _CountTile({required this.count, required this.label, required this.icon, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final tile = Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-      decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(20)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: context.ink),
-          const SizedBox(height: 10),
-          Text('$count', style: context.text.headlineSmall),
-          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.text.bodySmall),
-        ],
-      ),
-    );
-    if (onTap == null) return Semantics(container: true, label: '$count $label', child: ExcludeSemantics(child: tile));
-    return Pressable(label: '$count $label', onTap: onTap!, child: tile);
   }
 }
 

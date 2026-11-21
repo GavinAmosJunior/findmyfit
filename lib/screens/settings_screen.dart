@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
+import '../models/garment.dart';
 import '../services/backup_service.dart';
+import '../services/cutout.dart';
+import '../services/image_store.dart';
 import '../state/app_scope.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/grouped_section.dart';
@@ -17,6 +20,69 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _working = false;
+
+  // Removing all backgrounds: how far along, while it runs.
+  int? _cutDone;
+  int _cutTotal = 0;
+
+  /// Clothes with a plain photo that could get the clean cutout look.
+  List<Garment> _plainPhotos() => AppScope.read(context)
+      .garments
+      .where((g) => g.imageUrl != null && g.imageUrl!.isNotEmpty && !ImageStore.isCutout(g.imageUrl))
+      .toList();
+
+  /// Lifts every plain photo onto the clean backdrop, one at a time, and
+  /// swaps it in. Stops early if the phone can't run it yet.
+  Future<void> _removeAllBackgrounds() async {
+    final s = S.of(context);
+    final state = AppScope.read(context);
+    final todo = _plainPhotos();
+    if (todo.isEmpty) return;
+    final ok = await confirmAction(
+      context,
+      title: s.cutoutAllTitle(todo.length),
+      body: s.cutoutAllBody,
+      confirmLabel: s.removeBackgrounds,
+      cancelLabel: s.cancel,
+    );
+    if (!ok || !mounted) return;
+
+    setState(() {
+      _cutDone = 0;
+      _cutTotal = todo.length;
+    });
+    var updated = 0, skipped = 0;
+    String? stopped;
+    for (final g in todo) {
+      if (!mounted) return;
+      final bytes = await ImageStore.read(g.imageUrl!);
+      final result = bytes == null ? null : await Cutout.lift(bytes);
+      if (result != null && result.unavailable) {
+        stopped = result.downloading ? s.cutoutNotReady : s.cutoutFailed;
+        break;
+      }
+      final png = result?.png;
+      final current = state.garmentById(g.id);
+      // Skip pieces with no clear garment, or changed or deleted meanwhile.
+      if (png == null || current == null || current.imageUrl != g.imageUrl) {
+        skipped++;
+      } else {
+        final stored = await ImageStore.saveBytes(png);
+        state.updateGarment(current.edited(
+          name: current.name,
+          category: current.category,
+          brand: current.brand,
+          notes: current.notes,
+          imageUrl: stored,
+        ));
+        updated++;
+      }
+      if (mounted) setState(() => _cutDone = updated + skipped);
+    }
+    if (!mounted) return;
+    setState(() => _cutDone = null);
+    showMessage(context, stopped ?? s.cutoutAllDone(updated, skipped));
+  }
 
   Future<void> _export() async {
     final s = S.of(context);
@@ -111,6 +177,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
             ],
           ),
+          if (Cutout.supported)
+            Builder(
+              builder: (context) {
+                final plain = _plainPhotos().length;
+                final running = _cutDone != null;
+                return GroupedSection(
+                  header: s.photos,
+                  footer: s.photosFooter,
+                  children: [
+                    ListTile(
+                      enabled: !_working && !running && plain > 0,
+                      leading: running
+                          ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(AppIcons.cutout),
+                      title: Text(s.removeBackgrounds),
+                      subtitle: Text(
+                        running
+                            ? s.cutoutAllProgress((_cutDone! + 1).clamp(1, _cutTotal), _cutTotal)
+                            : (plain > 0 ? s.cutoutAllCount(plain) : s.cutoutAllNone),
+                      ),
+                      onTap: _removeAllBackgrounds,
+                    ),
+                  ],
+                );
+              },
+            ),
           GroupedSection(
             header: s.backup,
             footer: s.backupFooter,
