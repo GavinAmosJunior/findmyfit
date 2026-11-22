@@ -190,7 +190,7 @@ class AppFilm extends StatelessWidget {
     final typed = _seg(t, 0.55, 0.8, Curves.linear);
 
     final s = S.of(context);
-    final screen = _AddScreen(s: s, lift: lift, name: Samples.name('shirt', s), typed: typed);
+    final screen = _AddScreen(s: s, lift: lift, name: Samples.name('almet', s), typed: typed);
     return (screen, shot);
   }
 
@@ -542,37 +542,6 @@ class _ClosetScreen extends StatelessWidget {
   }
 }
 
-/// Floorboards under the photographed shirt.
-class _Floor extends StatelessWidget {
-  const _Floor();
-
-  @override
-  Widget build(BuildContext context) {
-    const boards = [
-      Color(0xFFB99674),
-      Color(0xFFAE8B69),
-      Color(0xFFC19E7C),
-      Color(0xFFA9865F),
-      Color(0xFFB7936F),
-      Color(0xFFAE8B69),
-    ];
-    return Column(
-      children: [
-        for (final c in boards)
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: c,
-                border: const Border(bottom: BorderSide(color: Color(0x33000000), width: 1.5)),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-/// Add clothes: the photo losing its background, and the name typed in.
 class _AddScreen extends StatelessWidget {
   final S s;
   final double lift;
@@ -608,27 +577,18 @@ class _AddScreen extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Positioned.fill(
-                    child: Opacity(opacity: 1 - lift, child: const _Floor()),
-                  ),
-                  Transform.translate(
-                    offset: Offset(0, 96 - 6 * lift),
+                    // The real photo, then just the jacket: its background lifts away.
                     child: Opacity(
-                      opacity: lift,
-                      child: Container(
-                        width: 160,
-                        height: 18,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 18, spreadRadius: 2),
-                          ],
-                        ),
-                      ),
+                      opacity: 1 - lift,
+                      child: Image.asset('assets/film/almet_photo.jpg', fit: BoxFit.cover),
                     ),
                   ),
                   Transform.translate(
                     offset: Offset(0, -12 * lift),
-                    child: Transform.scale(scale: 0.95 + 0.1 * lift, child: Image.asset(_art('shirt'), width: 230)),
+                    child: Opacity(
+                      opacity: lift,
+                      child: Transform.scale(scale: 0.9 + 0.1 * lift, child: Image.asset(_art('almet'), width: 380)),
+                    ),
                   ),
                 ],
               ),
