@@ -355,18 +355,14 @@ class S {
       'FindMyFit tahu di mana tiap pakaianmu: di lemari, di keranjang, atau di laundry. Dan memberi tahu saat ada yang tidak kembali.');
   String get continueLabel => _t('Continue', 'Lanjut');
   String get skip => _t('Skip', 'Lewati');
-  String get howTitle => _t('How it works', 'Cara kerjanya');
-  String get stepAddTitle => _t('Add your clothes', 'Tambah pakaianmu');
-  String get stepAddBody =>
-      _t('Snap each piece. The background lifts away on its own.', 'Foto tiap pakaian. Latarnya hilang sendiri.');
+  String get stepAddTitle => _t('Snap your clothes', 'Foto pakaianmu');
+  String get stepAddBody => _t('The background lifts away.', 'Latarnya hilang sendiri.');
   String get stepFitTitle => _t('Pick an outfit', 'Pilih gaya');
-  String get stepFitBody => _t('Shuffle what’s clean into a fit you like.', 'Acak pakaian bersih jadi gaya yang kamu suka.');
+  String get stepFitBody => _t('Shuffle what’s clean.', 'Acak yang bersih.');
   String get stepWearTitle => _t('Wear it', 'Pakai');
-  String get stepWearBody => _t('Tap the shirt and it waits in the hamper for laundry day.',
-      'Ketuk ikon kaus, lalu ia menunggu di keranjang sampai hari laundry.');
-  String get stepCheckTitle => _t('Check what comes back', 'Cek yang kembali');
-  String get stepCheckBody => _t('Tick off each piece from the laundromat. Anything missing gets flagged.',
-      'Centang tiap pakaian dari laundry. Yang hilang langsung ditandai.');
+  String get stepWearBody => _t('It waits in the hamper.', 'Ia menunggu di keranjang.');
+  String get stepCheckTitle => _t('See what comes back', 'Cek yang kembali');
+  String get stepCheckBody => _t('Missing pieces get flagged.', 'Yang hilang langsung ditandai.');
   String get tryTitle => _t('Try it with sample clothes', 'Coba dengan pakaian contoh');
   String get tryBody => _t(
       'We’ll fill your closet with a few pieces, some in the hamper and a load at the laundry, so you can try everything. Remove them anytime.',

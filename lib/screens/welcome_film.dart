@@ -10,17 +10,16 @@ import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 
 /// The welcome's film: an iPhone running FindMyFit, filmed the way Apple
-/// films its apps. The phone sits whole in the frame, then the camera
-/// glides in on the one thing that matters (the + button, a Wore it
-/// button, a checklist) while a fingertip does it, and glides back out.
+/// films its apps: close on the one thing that matters, one fingertip,
+/// one slow camera move, then rest.
 ///
-/// Four chapters, in the order you'd use the app: add your clothes, pick
-/// an outfit, wear it, check what comes back from the laundry. The
-/// screens are drawn from the app's own pieces and sample clothes.
+/// Four chapters, one per welcome page, in the order you'd use the app:
+/// add your clothes, pick an outfit, wear it, check what comes back from
+/// the laundry. The screens are drawn from the app's own pieces.
 
-/// How long each chapter plays, in seconds.
-const filmChapterSeconds = 6.0;
-const filmChapters = 4;
+/// How long each chapter plays, in seconds. It plays once and rests on
+/// its last frame.
+const filmSeconds = 3.6;
 
 // The phone's screen, in iPhone points, and the film's frame.
 const _sw = 390.0, _sh = 844.0, _bezel = 13.0;
@@ -42,16 +41,23 @@ class FilmClock extends StatefulWidget {
 
   /// Shown when motion is reduced.
   final double still;
+
+  /// When it stops by itself, in seconds; null runs on.
+  final double? until;
   final Widget Function(BuildContext context, double seconds) builder;
 
-  const FilmClock({super.key, required this.active, required this.still, required this.builder});
+  const FilmClock({super.key, required this.active, required this.still, this.until, required this.builder});
 
   @override
   State<FilmClock> createState() => _FilmClockState();
 }
 
 class _FilmClockState extends State<FilmClock> with SingleTickerProviderStateMixin {
-  late final Ticker _ticker = createTicker((e) => setState(() => _seconds = e.inMicroseconds / 1e6));
+  late final Ticker _ticker = createTicker((e) {
+    setState(() => _seconds = e.inMicroseconds / 1e6);
+    final until = widget.until;
+    if (until != null && _seconds >= until) _ticker.stop();
+  });
   double _seconds = 0;
   bool _reduced = false;
 
@@ -92,8 +98,6 @@ class _FilmClockState extends State<FilmClock> with SingleTickerProviderStateMix
 /// the middle of the frame.
 typedef _Shot = ({double zoom, Offset focus});
 
-const _wide = (zoom: 1.0, focus: Offset(_sw / 2, _sh / 2));
-
 /// The camera between [shots] (time, shot), eased.
 _Shot _camera(double t, List<(double, _Shot)> shots) {
   if (t <= shots.first.$1) return shots.first.$2;
@@ -131,7 +135,7 @@ class AppFilm extends StatelessWidget {
     // Most of the way toward the focus, so a corner button doesn't push the
     // phone half out of the frame.
     final center = Offset.lerp(const Offset(_pw / 2, _ph / 2), focus, 0.78 * (shot.zoom - 1).clamp(0.0, 1.0))!;
-    final fade = math.min(_seg(t, 0, 0.04, Curves.linear), 1 - _seg(t, 0.96, 1, Curves.linear));
+    final fade = _seg(t, 0, 0.08, Curves.linear);
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -178,41 +182,28 @@ class AppFilm extends StatelessWidget {
   /// blinks, and the shirt lifts off its background while its name is
   /// typed.
   (Widget, _Shot) _add(BuildContext context, double t) {
-    const plus = Offset(_sw - 16 - 32, _sh - 34 - 32);
     const shutter = Offset(_sw / 2, _sh - 120);
     const card = Offset(_sw / 2, 300);
     final shot = _camera(t, [
-      (0.06, _wide),
-      (0.2, (zoom: 2.8, focus: plus)),
-      (0.3, (zoom: 2.8, focus: plus)),
-      (0.38, _wide),
-      (0.44, (zoom: 2.2, focus: shutter)),
-      (0.52, (zoom: 2.2, focus: shutter)),
-      (0.62, (zoom: 2.3, focus: card)),
-      (0.9, (zoom: 2.1, focus: const Offset(_sw / 2, 400))),
-      (0.97, _wide),
+      (0.0, (zoom: 1.4, focus: const Offset(_sw / 2, 520))),
+      (1.0, (zoom: 1.8, focus: card)),
     ]);
-    final cameraUp = _seg(t, 0.28, 0.36);
-    final formUp = _seg(t, 0.54, 0.6);
-    final flash = _bump(_seg(t, 0.47, 0.53, Curves.linear));
-    final lift = _seg(t, 0.62, 0.78, Curves.easeOutCubic);
-    final typed = _seg(t, 0.78, 0.9, Curves.linear);
+    final formUp = _seg(t, 0.3, 0.42);
+    final flash = _bump(_seg(t, 0.2, 0.28, Curves.linear));
+    final lift = _seg(t, 0.42, 0.7, Curves.easeOutCubic);
+    final typed = _seg(t, 0.7, 0.9, Curves.linear);
 
     final s = S.of(context);
     final screen = Stack(
       children: [
         _ClosetScreen(s: s),
-        if (cameraUp > 0)
-          Transform.translate(
-            offset: Offset(0, _sh * (1 - cameraUp)),
-            child: formUp < 1 ? _CameraScreen(flash: flash) : const SizedBox(),
-          ),
+        if (formUp < 1) Positioned.fill(child: _CameraScreen(flash: flash)),
         if (formUp > 0)
           Opacity(
             opacity: formUp,
             child: _AddScreen(s: s, lift: lift, name: Samples.name('shirt', s), typed: typed),
           ),
-        _FingerAt(t: t, taps: const [(0.24, plus), (0.5, shutter)]),
+        _FingerAt(t: t, taps: const [(0.22, shutter)]),
       ],
     );
     return (screen, shot);
@@ -224,16 +215,14 @@ class AppFilm extends StatelessWidget {
   (Widget, _Shot) _shuffle(BuildContext context, double t) {
     const button = Offset(_sw / 2 + 30, _sh - 140);
     final shot = _camera(t, [
-      (0.06, _wide),
-      (0.2, (zoom: 2.0, focus: const Offset(_sw / 2, 470))),
-      (0.85, (zoom: 2.0, focus: const Offset(_sw / 2, 470))),
-      (0.97, _wide),
+      (0.0, (zoom: 1.7, focus: const Offset(_sw / 2, 470))),
+      (1.0, (zoom: 1.9, focus: const Offset(_sw / 2, 470))),
     ]);
-    final taps = [0.28, 0.58];
+    final taps = [0.35];
     var top = 0.0, bottom = 0.0;
     for (final (i, at) in taps.indexed) {
-      top += _seg(t, at + 0.02, at + 0.14, Curves.easeOutBack) * (i == 0 ? 1 : 2);
-      bottom += _seg(t, at + 0.06, at + 0.18, Curves.easeOutBack);
+      top += _seg(t, at + 0.04, at + 0.34) * (i + 1);
+      bottom += _seg(t, at + 0.1, at + 0.4);
     }
     final press = taps.map((a) => _bump(_seg(t, a - 0.02, a + 0.04, Curves.linear))).reduce(math.max);
     final s = S.of(context);
@@ -254,25 +243,21 @@ class AppFilm extends StatelessWidget {
     final wore = _ClosetScreen.woreButton(0);
     final hamperTab = _TabBar.tabCenter(2);
     final shot = _camera(t, [
-      (0.06, _wide),
-      (0.24, (zoom: 3.0, focus: wore)),
-      (0.42, (zoom: 3.0, focus: wore)),
-      (0.58, (zoom: 2.8, focus: hamperTab)),
-      (0.84, (zoom: 2.8, focus: hamperTab)),
-      (0.96, _wide),
+      (0.45, (zoom: 2.0, focus: wore)),
+      (0.8, (zoom: 2.0, focus: hamperTab)),
     ]);
     final s = S.of(context);
     final screen = Stack(
       children: [
         _ClosetScreen(
           s: s,
-          wornPress: _bump(_seg(t, 0.3, 0.38, Curves.linear)),
-          worn: t > 0.34,
-          gone: _seg(t, 0.4, 0.56, Curves.easeInCubic),
-          hamperCount: t > 0.58 ? 3 : 2,
-          hamperPop: _bump(_seg(t, 0.58, 0.7, Curves.linear)),
+          wornPress: _bump(_seg(t, 0.18, 0.26, Curves.linear)),
+          worn: t > 0.22,
+          gone: _seg(t, 0.28, 0.48, Curves.easeInCubic),
+          hamperCount: t > 0.8 ? 3 : 2,
+          hamperPop: _bump(_seg(t, 0.8, 0.92, Curves.linear)),
         ),
-        _FingerAt(t: t, taps: [(0.34, wore)]),
+        _FingerAt(t: t, taps: [(0.22, wore)]),
       ],
     );
     return (screen, shot);
@@ -284,28 +269,21 @@ class AppFilm extends StatelessWidget {
   /// hoodie that didn't come back is marked missing.
   (Widget, _Shot) _check(BuildContext context, double t) {
     final rows = [for (var i = 0; i < 3; i++) _LoadScreen.check(i)];
-    const finish = Offset(_sw / 2, _sh - 110);
     final shot = _camera(t, [
-      (0.06, _wide),
-      (0.18, (zoom: 2.4, focus: const Offset(_sw / 2 + 40, 316))),
-      (0.42, (zoom: 2.4, focus: const Offset(_sw / 2 + 40, 316))),
-      (0.5, (zoom: 2.4, focus: finish)),
-      (0.58, (zoom: 2.4, focus: finish)),
-      (0.68, (zoom: 2.2, focus: const Offset(_sw / 2, 380))),
-      (0.88, (zoom: 2.2, focus: const Offset(_sw / 2, 380))),
-      (0.97, _wide),
+      (0.0, (zoom: 1.8, focus: const Offset(_sw / 2, 340))),
+      (1.0, (zoom: 2.0, focus: const Offset(_sw / 2, 340))),
     ]);
     final s = S.of(context);
     final screen = Stack(
       children: [
         _LoadScreen(
           s: s,
-          ticks: [_seg(t, 0.24, 0.3, Curves.easeOutBack), _seg(t, 0.36, 0.42, Curves.easeOutBack)],
-          finishPress: _bump(_seg(t, 0.52, 0.58, Curves.linear)),
-          missing: _seg(t, 0.62, 0.7),
-          ask: _seg(t, 0.72, 0.8, Curves.easeOutBack),
+          ticks: [_seg(t, 0.18, 0.26, Curves.easeOutBack), _seg(t, 0.38, 0.46, Curves.easeOutBack)],
+          finishPress: 0,
+          missing: _seg(t, 0.62, 0.76),
+          ask: 0,
         ),
-        _FingerAt(t: t, taps: [(0.27, rows[0]), (0.39, rows[1]), (0.55, finish)]),
+        _FingerAt(t: t, taps: [(0.2, rows[0]), (0.4, rows[1])]),
       ],
     );
     return (screen, shot);

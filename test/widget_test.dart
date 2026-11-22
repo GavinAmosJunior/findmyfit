@@ -485,21 +485,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Never lose clothes\nto the laundry again'), findsOneWidget);
-    await tester.tap(find.text('Continue'));
-    // The film loops, so step the clock rather than waiting for stillness.
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.text('How it works'), findsOneWidget);
-    expect(find.text('Snap each piece. The background lifts away on its own.'), findsOneWidget,
-        reason: 'the film starts on adding clothes');
-    // It moves on to the next step by itself, and a step plays when tapped.
-    await tester.pump(const Duration(seconds: 6));
-    expect(find.text('Shuffle what’s clean into a fit you like.'), findsOneWidget);
-    await tester.ensureVisible(find.text('Check what comes back'));
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text('Check what comes back'));
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Tick off each piece from the laundromat. Anything missing gets flagged.'), findsOneWidget);
+    // One idea per page; each film plays once and rests.
+    for (final title in ['Snap your clothes', 'Pick an outfit', 'Wear it', 'See what comes back']) {
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text(title), findsOneWidget);
+    }
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Try it with sample clothes'), findsOneWidget);
