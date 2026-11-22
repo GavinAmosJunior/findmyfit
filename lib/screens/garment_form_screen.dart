@@ -16,6 +16,7 @@ import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/garment_image.dart';
 import '../widgets/pill.dart';
+import 'camera_view.dart';
 import '../theme/app_icons.dart';
 
 /// Adding is camera-first: snap a photo, type a name, tap "Add and next",
@@ -54,6 +55,10 @@ class GarmentFormScreen extends StatefulWidget {
       Navigator.of(context)
           .push(MaterialPageRoute(fullscreenDialog: true, builder: (_) => GarmentFormScreen(editing: garment)));
 
+  /// Our own camera, or the phone's (tests have no camera).
+  @visibleForTesting
+  static bool ownCamera = true;
+
   @override
   State<GarmentFormScreen> createState() => _GarmentFormScreenState();
 }
@@ -78,6 +83,12 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
   bool _useCutout = true;
   int _turns = 0;
   bool _lifting = false;
+
+  // Our own camera covers the screen while open. [_cameraAuto]: the app
+  // opened it (on arrival or for the next piece), so closing it with
+  // nothing here means leaving.
+  bool _cameraOpen = false;
+  bool _cameraAuto = false;
 
   // The garment where it stood and how it moved, for the lift; and whether
   // the lift is still to play for this photo.
@@ -116,7 +127,14 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _choosePhotos(auto: true));
     } else if (_hasCamera) {
       // Camera-first: open it straight away on phones.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _takePhoto(auto: true));
+      // Camera-first: it's there from the first frame, so Add opens
+      // straight onto the camera.
+      if (GarmentFormScreen.ownCamera) {
+        _cameraOpen = true;
+        _cameraAuto = true;
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _systemCamera(auto: true));
+      }
     }
   }
 
@@ -131,7 +149,40 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
 
   /// [auto]: opened by the app (on arrival, or for the next piece), not
   /// by a button, so backing out means leaving.
+  /// Opens our camera over the form.
   Future<void> _takePhoto({bool auto = false}) async {
+    if (!GarmentFormScreen.ownCamera) return _systemCamera(auto: auto);
+    setState(() {
+      _cameraOpen = true;
+      _cameraAuto = auto;
+    });
+  }
+
+  void _cameraPhoto(XFile shot) {
+    setState(() => _cameraOpen = false);
+    _usePhoto(shot, fromCamera: true);
+  }
+
+  void _cameraClosed() {
+    setState(() => _cameraOpen = false);
+    if (_cameraAuto) _closeIfUntouched();
+  }
+
+  /// From the camera to the library; back to the camera if nothing's picked.
+  Future<void> _cameraLibrary() async {
+    setState(() => _cameraOpen = false);
+    final picked = await _choosePhotos();
+    if (!picked && mounted && _image == null) setState(() => _cameraOpen = true);
+  }
+
+  /// Our camera can't run: use the phone's own.
+  void _cameraUnavailable() {
+    final auto = _cameraAuto;
+    setState(() => _cameraOpen = false);
+    _systemCamera(auto: auto);
+  }
+
+  Future<void> _systemCamera({bool auto = false}) async {
     try {
       final shot = await _picker.pickImage(
         source: ImageSource.camera,
@@ -160,7 +211,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     if (_added > 0) showMessageOn(messenger, s.addedCount(_added));
   }
 
-  Future<void> _choosePhotos({bool auto = false}) async {
+  /// Returns whether anything was picked.
+  Future<bool> _choosePhotos({bool auto = false}) async {
     try {
       if (_isEdit) {
         final one = await _picker.pickImage(
@@ -170,7 +222,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           imageQuality: ImageStore.quality,
         );
         if (one != null) await _usePhoto(one);
-        return;
+        return one != null;
       }
       final many = await _picker.pickMultiImage(
         maxWidth: ImageStore.maxSize,
@@ -179,7 +231,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       );
       if (many.isEmpty) {
         if (auto) _closeIfUntouched();
-        return;
+        return false;
       }
       _queue
         ..clear()
@@ -187,15 +239,19 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       // A queue ("Photo 1 of 3", Skip) only when there's more than one.
       _queueTotal = many.length > 1 ? many.length : 0;
       await _usePhoto(many.first);
+      return true;
     } catch (_) {
       if (mounted) showMessage(context, S.of(context).photoError);
+      return false;
     }
   }
 
-  Future<void> _usePhoto(XFile file) async {
+  Future<void> _usePhoto(XFile file, {bool fromCamera = false}) async {
     final token = ++_photoToken;
     setState(() => _busy = true);
-    final bytes = await file.readAsBytes();
+    var bytes = await file.readAsBytes();
+    // Camera photos come full size; keep them the size picker photos are.
+    if (fromCamera) bytes = await ImageStore.fitPhoto(bytes);
     final stored = await ImageStore.saveBytes(bytes);
     if (!mounted || token != _photoToken) return;
     setState(() {
@@ -235,17 +291,16 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     });
     if (!asked && _name.text.isEmpty && !_nameFocus.hasFocus) {
       // Let the lift play (about 1.5 s), then ask for the name.
-      final wait = stored == null || MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 1400);
+      final wait = stored == null || MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 1400);
       Future.delayed(wait, () {
         if (mounted && token == _photoToken && !_nameFocus.hasFocus) _nameFocus.requestFocus();
       });
     }
     if (stored == null && asked) {
       final s = S.of(context);
-      showMessage(
-        context,
-        result.downloading ? s.cutoutNotReady : (result.unavailable ? s.cutoutFailed : s.noCutout),
-      );
+      showMessage(context, result.downloading ? s.cutoutNotReady : (result.unavailable ? s.cutoutFailed : s.noCutout));
     }
   }
 
@@ -419,137 +474,164 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _confirmLeave();
+        if (didPop) return;
+        if (_cameraOpen) {
+          _cameraClosed();
+        } else {
+          _confirmLeave();
+        }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            tooltip: _isEdit ? s.cancel : s.done,
-            icon: const Icon(AppIcons.close),
-            onPressed: _confirmLeave,
-          ),
-          title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
-          actions: [
-            if (_isEdit)
-              TextButton(
-                onPressed: _saving ? null : _saveEdit,
-                child: Text(s.save, style: const TextStyle(fontWeight: FontWeight.w700)),
-              )
-            else if (_added > 0)
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Center(
-                  child: Text(
-                    s.addedCount(_added),
-                    style: context.text.labelMedium,
-                  ),
-                ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                tooltip: _isEdit ? s.cancel : s.done,
+                icon: const Icon(AppIcons.close),
+                onPressed: _confirmLeave,
               ),
-          ],
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                  children: [
-                    _photoArea(context, s),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: _name,
-                      focusNode: _nameFocus,
-                      textCapitalization: TextCapitalization.sentences,
-                      textInputAction: _isEdit ? TextInputAction.done : TextInputAction.next,
-                      style: context.text.bodyLarge,
-                      onChanged: (_) {
-                        if (_showNameError) setState(() => _showNameError = false);
-                      },
-                      onSubmitted: (_) => _isEdit ? _saveEdit() : _add(next: true),
-                      decoration: InputDecoration(
-                        labelText: s.name,
-                        hintText: s.nameHint,
-                        errorText: _showNameError ? s.nameRequired : null,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(s.category, style: context.text.labelMedium),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+              title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
+              actions: [
+                if (_isEdit)
+                  TextButton(
+                    onPressed: _saving ? null : _saveEdit,
+                    child: Text(s.save, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  )
+                else if (_added > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Center(child: Text(s.addedCount(_added), style: context.text.labelMedium)),
+                  ),
+              ],
+            ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                       children: [
-                        for (final c in GarmentCategory.values)
-                          Pill(
-                            icon: categoryIcon(c),
-                            label: s.categoryLabel(c),
-                            selected: _category == c,
-                            onTap: () => setState(() => _category = c),
+                        _photoArea(context, s),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _name,
+                          focusNode: _nameFocus,
+                          textCapitalization: TextCapitalization.sentences,
+                          textInputAction: _isEdit ? TextInputAction.done : TextInputAction.next,
+                          style: context.text.bodyLarge,
+                          onChanged: (_) {
+                            if (_showNameError) setState(() => _showNameError = false);
+                          },
+                          onSubmitted: (_) => _isEdit ? _saveEdit() : _add(next: true),
+                          decoration: InputDecoration(
+                            labelText: s.name,
+                            hintText: s.nameHint,
+                            errorText: _showNameError ? s.nameRequired : null,
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(s.category, style: context.text.labelMedium),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final c in GarmentCategory.values)
+                              Pill(
+                                icon: categoryIcon(c),
+                                label: s.categoryLabel(c),
+                                selected: _category == c,
+                                onTap: () => setState(() => _category = c),
+                              ),
+                          ],
+                        ),
+                        if (!_isEdit) ...[
+                          const SizedBox(height: 8),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(s.alreadyDirty),
+                            value: _dirty,
+                            onChanged: (v) => setState(() => _dirty = v),
+                          ),
+                        ],
+                        Theme(
+                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            initiallyExpanded: _isEdit && (_brand.text.isNotEmpty || _notes.text.isNotEmpty),
+                            title: Text(
+                              '${s.brand}, ${s.notes.toLowerCase()} · ${s.optional.toLowerCase()}',
+                              style: context.text.bodyMedium,
+                            ),
+                            children: [
+                              TextField(
+                                controller: _brand,
+                                textCapitalization: TextCapitalization.words,
+                                decoration: InputDecoration(labelText: s.brand),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _notes,
+                                minLines: 2,
+                                maxLines: 4,
+                                textCapitalization: TextCapitalization.sentences,
+                                decoration: InputDecoration(labelText: s.notes),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    if (!_isEdit) ...[
-                      const SizedBox(height: 8),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(s.alreadyDirty),
-                        value: _dirty,
-                        onChanged: (v) => setState(() => _dirty = v),
-                      ),
-                    ],
-                    Theme(
-                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        tilePadding: EdgeInsets.zero,
-                        initiallyExpanded: _isEdit && (_brand.text.isNotEmpty || _notes.text.isNotEmpty),
-                        title: Text(
-                          '${s.brand}, ${s.notes.toLowerCase()} · ${s.optional.toLowerCase()}',
-                          style: context.text.bodyMedium,
-                        ),
+                  ),
+                  if (!_isEdit)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                      child: Row(
                         children: [
-                          TextField(
-                            controller: _brand,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: InputDecoration(labelText: s.brand),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _busy || _saving ? null : () => _add(next: false),
+                              child: Text(s.add),
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _notes,
-                            minLines: 2,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: InputDecoration(labelText: s.notes),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: FilledButton.icon(
+                              onPressed: _busy || _saving ? null : () => _add(next: true),
+                              icon: Icon(_hasCamera ? AppIcons.camera : AppIcons.forward),
+                              label: Text(s.addAndNext),
+                            ),
                           ),
-                          const SizedBox(height: 8),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-              if (!_isEdit)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(onPressed: _busy || _saving ? null : () => _add(next: false), child: Text(s.add)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton.icon(
-                          onPressed: _busy || _saving ? null : () => _add(next: true),
-                          icon: Icon(_hasCamera ? AppIcons.camera : AppIcons.forward),
-                          label: Text(s.addAndNext),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+          // Our camera, over everything; it slides up when opened again.
+          AnimatedSwitcher(
+            duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 320),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, anim) => SlideTransition(
+              position: Tween(begin: const Offset(0, 1), end: Offset.zero).animate(anim),
+              child: child,
+            ),
+            child: _cameraOpen
+                ? CameraView(
+                    key: const ValueKey('camera'),
+                    onPhoto: _cameraPhoto,
+                    onLibrary: _cameraLibrary,
+                    onClose: _cameraClosed,
+                    onUnavailable: _cameraUnavailable,
+                  )
+                : const SizedBox.shrink(key: ValueKey('no-camera')),
+          ),
+        ],
       ),
     );
   }
@@ -563,7 +645,8 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
 
     final isFileCutout = ImageStore.isCutout(ref) && !kIsWeb && !ref.startsWith('data:');
     final original = _original;
-    final lift = isFileCutout &&
+    final lift =
+        isFileCutout &&
         ref == _cutout &&
         _playLift &&
         !reduceMotion &&
@@ -589,7 +672,10 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                   )
                 : _CutoutPreview(file: File(ref)),
           )
-        : _Slot(key: ValueKey(ref), child: GarmentImage(garment: preview, iconSize: 64));
+        : _Slot(
+            key: ValueKey(ref),
+            child: GarmentImage(garment: preview, iconSize: 64),
+          );
 
     return Stack(
       fit: StackFit.expand,
@@ -602,8 +688,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
             // The lift starts from the photo itself, so it needs no crossfade.
             duration: reduceMotion || lift ? Duration.zero : const Duration(milliseconds: 450),
             // Fill the square, as the photo did before it could switch.
-            layoutBuilder: (current, previous) =>
-                Stack(fit: StackFit.expand, children: [...previous, ?current]),
+            layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
             // The old picture melts away: it fades and goes soft as the
             // new one comes into focus.
             transitionBuilder: (child, anim) => AnimatedBuilder(
@@ -615,7 +700,10 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                   opacity: anim.value,
                   child: blur < 0.1
                       ? child
-                      : ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur), child: child),
+                      : ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                          child: child,
+                        ),
                 );
               },
             ),
@@ -957,7 +1045,8 @@ class _LiftRevealState extends State<_LiftReveal> with SingleTickerProviderState
         // tile's inset (contain). Work out where the garment goes.
         final cover = math.max(d / g.width, d / g.height);
         final fit = (d - 2 * _CutoutPreview.inset) / g.side;
-        final target = Offset(_CutoutPreview.inset, _CutoutPreview.inset) +
+        final target =
+            Offset(_CutoutPreview.inset, _CutoutPreview.inset) +
             (Offset(g.turnedWidth / 2, g.turnedHeight / 2) -
                     g.box.topLeft +
                     Offset((g.side - g.box.width) / 2, (g.side - g.box.height) / 2)) *

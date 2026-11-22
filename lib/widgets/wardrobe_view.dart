@@ -8,17 +8,18 @@ import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import 'garment_image.dart';
 
 /// How pieces sit in a compartment.
 enum _Kind { rail, long, shelf, cubby, floor }
 
-/// One compartment: what it holds, where it is (in a 312 × 400 drawing),
+/// One compartment: what it holds, where it is (in a 312 × 412 drawing),
 /// and how its pieces sit.
 typedef _Cell = ({GarmentCategory category, Rect rect, _Kind kind});
 
 const _w = 312.0;
-const _h = 400.0;
+const _h = 412.0;
 
 const List<_Cell> _cells = [
   (category: GarmentCategory.hats, rect: Rect.fromLTWH(4, 4, 152, 64), kind: _Kind.shelf),
@@ -28,7 +29,7 @@ const List<_Cell> _cells = [
   (category: GarmentCategory.accessories, rect: Rect.fromLTWH(128, 68, 64, 126), kind: _Kind.cubby),
   (category: GarmentCategory.delicates, rect: Rect.fromLTWH(128, 194, 64, 126), kind: _Kind.cubby),
   (category: GarmentCategory.outerwear, rect: Rect.fromLTWH(192, 68, 116, 252), kind: _Kind.long),
-  (category: GarmentCategory.shoes, rect: Rect.fromLTWH(4, 320, 304, 76), kind: _Kind.floor),
+  (category: GarmentCategory.shoes, rect: Rect.fromLTWH(4, 320, 304, 88), kind: _Kind.floor),
 ];
 
 /// Where one piece goes in the drawing, in drawing units.
@@ -95,20 +96,22 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
         _Kind.cubby => (46.0, 48.0),
         _Kind.floor => (52.0, 60.0),
       };
-      // Leave room at the end for a "+2" when more don't fit.
-      final room = pieces.length * step > r.width - 14 ? r.width - 30 : r.width - 14;
+      // When more don't fit, leave a little room for the stack behind the
+      // last piece.
+      final room = pieces.length * step > r.width - 14 ? r.width - 24 : r.width - 14;
       final capacity = max(1, (room / step).floor());
       final shown = pieces.take(capacity).toList();
       final slots = <_Slot>[];
       final span = step * (shown.length - 1);
       final more = pieces.length > shown.length;
       for (final (i, g) in shown.indexed) {
-        final cx = r.center.dx - span / 2 + step * i - (more ? 8 : 0);
+        final cx = r.center.dx - span / 2 + step * i - (more ? 5 : 0);
         switch (cell.kind) {
           case _Kind.rail || _Kind.long:
             final rod = r.top + 14;
-            final top = rod + 9;
-            final height = cell.kind == _Kind.long ? r.height - 50 : size;
+            // Hung from a hanger like the ones in Fit Shuffle.
+            final top = rod + _hangerSize(size) * 0.55;
+            final height = cell.kind == _Kind.long ? r.height - 60 : size;
             slots.add((box: Rect.fromLTWH(cx - size / 2, top, size, min(height, size * 2.2)), hook: Offset(cx, rod), garment: g, away: _away(g)));
           case _Kind.shelf:
             slots.add((box: Rect.fromLTWH(cx - size / 2, r.top + 6, size, size), hook: null, garment: g, away: _away(g)));
@@ -116,13 +119,20 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
             final y = r.top + (r.height - size) / 2 - 6;
             slots.add((box: Rect.fromLTWH(cx - size / 2, y, size, size), hook: null, garment: g, away: _away(g)));
           case _Kind.floor:
-            slots.add((box: Rect.fromLTWH(cx - size / 2, r.top + 60 - size - 3, size, size), hook: null, garment: g, away: _away(g)));
+            // Standing on the shelf, with room for the name below it.
+            slots.add((box: Rect.fromLTWH(cx - size / 2, r.top + _shelf - size - 3, size, size), hook: null, garment: g, away: _away(g)));
         }
       }
       out[cell.category] = (slots, pieces.length - shown.length);
     }
     return out;
   }
+
+  /// The hanger's size for a piece of [size].
+  static double _hangerSize(double size) => size * 0.8;
+
+  /// How far down the shoe compartment its shelf runs.
+  static const _shelf = 62.0;
 
   void _open(BuildContext cellContext, GarmentCategory c) {
     final box = cellContext.findRenderObject() as RenderBox?;
@@ -158,11 +168,27 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                     pressed: _pressed,
                     ink: palette.separator,
                     tile: context.colors.surface,
+                    card: palette.tile,
                     faint: palette.tertiaryText,
                     press: context.ink.withValues(alpha: 0.06),
                   ),
                 ),
               ),
+              // Hangers: the same as the ones on Fit Shuffle's rails.
+              for (final MapEntry(value: (list, _)) in slots.entries)
+                for (final slot in list)
+                  if (slot.hook != null)
+                    Positioned(
+                      left: (slot.hook!.dx - _hangerSize(slot.box.width) / 2) * k,
+                      top: (slot.hook!.dy - _hangerSize(slot.box.width) * 0.16) * k,
+                      child: IgnorePointer(
+                        child: Icon(
+                          AppIcons.closet,
+                          size: _hangerSize(slot.box.width) * k,
+                          color: palette.tertiaryText.withValues(alpha: slot.away ? 0.5 : 1),
+                        ),
+                      ),
+                    ),
               // The pieces themselves.
               for (final MapEntry(value: (list, _)) in slots.entries)
                 for (final slot in list)
@@ -177,23 +203,6 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                         ),
                       ),
                     ),
-              // "+2" beside the last piece, when more don't fit.
-              for (final cell in _cells)
-                if (slots[cell.category]!.$2 > 0)
-                  Positioned(
-                    left: (min(slots[cell.category]!.$1.last.box.right + 2, cell.rect.right - 26)) * k,
-                    top: (slots[cell.category]!.$1.last.box.center.dy - 9) * k,
-                    child: IgnorePointer(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 5 * k, vertical: 2 * k),
-                        decoration: BoxDecoration(color: context.ink, borderRadius: BorderRadius.circular(99)),
-                        child: Text(
-                          '+${slots[cell.category]!.$2}',
-                          style: context.text.labelSmall?.copyWith(fontSize: 9 * k.clamp(1.0, 1.3), color: context.colors.surface),
-                        ),
-                      ),
-                    ),
-                  ),
               // Each compartment's name, count, and anything that didn't fit.
               for (final cell in _cells)
                 Positioned.fromRect(
@@ -313,7 +322,7 @@ class _WardrobePainter extends CustomPainter {
   final double k;
   final Map<GarmentCategory, (List<_Slot>, int)> slots;
   final GarmentCategory? pressed;
-  final Color ink, tile, faint, press;
+  final Color ink, tile, card, faint, press;
 
   _WardrobePainter({
     required this.k,
@@ -321,6 +330,7 @@ class _WardrobePainter extends CustomPainter {
     required this.pressed,
     required this.ink,
     required this.tile,
+    required this.card,
     required this.faint,
     required this.press,
   });
@@ -363,30 +373,35 @@ class _WardrobePainter extends CustomPainter {
         canvas.drawLine(Offset(r.left + 7, r.top + 14), Offset(r.right - 7, r.top + 14), rod);
       }
       if (cell.kind == _Kind.floor) {
-        canvas.drawLine(Offset(r.left + 10, r.top + 60), Offset(r.right - 10, r.top + 60), rod..strokeWidth = 2.5);
+        canvas.drawLine(
+          Offset(r.left + 10, r.top + _WardrobeViewState._shelf),
+          Offset(r.right - 10, r.top + _WardrobeViewState._shelf),
+          rod..strokeWidth = 2.5,
+        );
       }
     }
 
-    // Hangers, and dashed outlines where a piece is out.
-    final hanger = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3
-      ..strokeJoin = StrokeJoin.round;
+    // When more don't fit: a stack of cards peeking out behind the last
+    // piece, the way Photos shows a stack. The count is in the label.
+    for (final (list, more) in slots.values) {
+      if (more == 0 || list.isEmpty) continue;
+      final last = list.last.box;
+      for (final (i, shift) in [(2, 7.0), (1, 3.5)]) {
+        final peek = Rect.fromCenter(
+          center: last.center + Offset(shift, 0),
+          width: last.width * (1 - 0.06 * i),
+          height: last.height * (1 - 0.06 * i),
+        );
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(peek, Radius.circular(last.width * 0.2)),
+          Paint()..color = Color.lerp(card, ink, i == 2 ? 0.9 : 0.45)!,
+        );
+      }
+    }
+
+    // Dashed outlines where a piece is out.
     for (final (list, _) in slots.values) {
       for (final slot in list) {
-        final hook = slot.hook;
-        if (hook != null) {
-          final w = slot.box.width * 0.42;
-          final path = Path()
-            ..moveTo(hook.dx + 2.2, hook.dy - 2.5)
-            ..quadraticBezierTo(hook.dx + 2.8, hook.dy + 0.5, hook.dx, hook.dy + 1.2)
-            ..lineTo(hook.dx, hook.dy + 3)
-            ..lineTo(hook.dx - w, hook.dy + 9)
-            ..lineTo(hook.dx + w, hook.dy + 9)
-            ..close();
-          hanger.color = faint;
-          canvas.drawPath(slot.away ? _dashed(path, 2, 2) : path, hanger);
-        }
         if (slot.away) {
           final box = slot.box.deflate(slot.box.width * 0.18);
           final outline = Path()..addRRect(RRect.fromRectAndRadius(box, const Radius.circular(5)));

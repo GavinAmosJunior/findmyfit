@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_laundry_tracker/main.dart';
 import 'package:smart_laundry_tracker/models/garment.dart';
 import 'package:smart_laundry_tracker/models/laundry_batch.dart';
+import 'package:smart_laundry_tracker/screens/garment_form_screen.dart';
 import 'package:smart_laundry_tracker/screens/home_shell.dart';
 import 'package:smart_laundry_tracker/state/wardrobe_state.dart';
 import 'package:smart_laundry_tracker/theme/app_icons.dart';
@@ -20,6 +21,8 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     GoogleFonts.config.allowRuntimeFetching = false;
+    // Tests have no camera: use the phone's picker path.
+    GarmentFormScreen.ownCamera = false;
   });
 
   testWidgets('empty closet invites you to add clothes', (tester) async {

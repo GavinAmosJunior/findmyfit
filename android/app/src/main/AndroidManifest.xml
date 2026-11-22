@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- FindMyFit's own camera, for photographing clothes. -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <application
         android:label="FindMyFit"
         android:name="${applicationName}"

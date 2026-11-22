@@ -239,6 +239,10 @@ class S {
   String get choosePhotos => _t('Choose photos', 'Pilih foto');
   String get addPhoto => _t('Add photo', 'Tambah foto');
   String get changePhoto => _t('Change photo', 'Ganti foto');
+  String get close => _t('Close', 'Tutup');
+  String get flash => _t('Flash', 'Lampu kilat');
+  String get switchCamera => _t('Switch camera', 'Ganti kamera');
+  String get cameraHint => _t('Lay it flat on a plain surface', 'Letakkan rata di permukaan polos');
   String get nameHint => _t('Blue denim jacket', 'Jaket denim biru');
   String get nameRequired => _t('Give it a name', 'Beri nama dulu');
   String get alreadyDirty => _t('It’s dirty — put in hamper', 'Kotor — masukkan ke keranjang');

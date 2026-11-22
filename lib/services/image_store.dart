@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -47,6 +48,23 @@ class ImageStore {
     final file = File('${dir.path}/g_${DateTime.now().microsecondsSinceEpoch}.$ext');
     await file.writeAsBytes(bytes, flush: true);
     return file.path;
+  }
+
+  /// A camera photo made the size the app keeps: upright, at most
+  /// [maxSize] on its longest side, as a JPEG.
+  static Future<Uint8List> fitPhoto(Uint8List bytes) => compute(_fit, bytes);
+
+  static Uint8List _fit(Uint8List bytes) {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return bytes;
+    var photo = img.bakeOrientation(decoded);
+    final longest = photo.width > photo.height ? photo.width : photo.height;
+    if (longest > maxSize) {
+      photo = photo.width >= photo.height
+          ? img.copyResize(photo, width: maxSize.round(), interpolation: img.Interpolation.average)
+          : img.copyResize(photo, height: maxSize.round(), interpolation: img.Interpolation.average);
+    }
+    return img.encodeJpg(photo, quality: quality + 8);
   }
 
   /// Reads a stored image back, for rotating it.

@@ -13,8 +13,8 @@ abstract final class AppIcons {
   // Sections. Outline when idle, fill when selected.
   static const IconData closet = IconData(0xe7fe, fontFamily: _regular);
   static const IconData closetFill = IconData(0xe7fe, fontFamily: _fill);
-  static const IconData hamper = IconData(0xe964, fontFamily: _regular);
-  static const IconData hamperFill = IconData(0xe964, fontFamily: _fill);
+  static const IconData hamper = IconData(0xe678, fontFamily: _regular);
+  static const IconData hamperFill = IconData(0xe678, fontFamily: _fill);
   static const IconData laundry = IconData(0xede8, fontFamily: _regular);
   static const IconData laundryFill = IconData(0xede8, fontFamily: _fill);
   static const IconData missing = IconData(0xea64, fontFamily: _regular);
@@ -70,6 +70,10 @@ abstract final class AppIcons {
   static const IconData rotate = IconData(0xe036, fontFamily: _regular);
   static const IconData cutout = IconData(0xe6b6, fontFamily: _regular);
   static const IconData cutoutOn = IconData(0xe6b6, fontFamily: _fill);
+  static const IconData flash = IconData(0xe2de, fontFamily: _fill);
+  static const IconData flashOff = IconData(0xe2e0, fontFamily: _regular);
+  static const IconData flashAuto = IconData(0xea84, fontFamily: _regular);
+  static const IconData switchCamera = IconData(0xe7a4, fontFamily: _regular);
 
   // Checks.
   static const IconData check = IconData(0xe182, fontFamily: _bold);
