@@ -18,7 +18,6 @@ import '../widgets/pressable.dart';
 import '../widgets/tags.dart';
 import '../widgets/wardrobe_view.dart';
 import 'category_screen.dart';
-import 'home_shell.dart';
 import 'garment_form_screen.dart';
 import 'garment_sheet.dart';
 import 'settings_screen.dart';
@@ -195,33 +194,14 @@ class _ClosetScreenState extends State<ClosetScreen> {
     );
   }
 
+  /// The wardrobe on its own: the counts in each compartment and the
+  /// Hamper tab already say what's out, so nothing sits under it.
   Widget _wardrobe(BuildContext context, S s, WardrobeState state) {
-    final inHamper = state.countOf(GarmentStatus.dirtyHamper);
-    final shell = HomeShellState.maybeOf(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 4, 16, 24 + MediaQuery.paddingOf(context).bottom),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          WardrobeView(
-            openDoors: _openDoors,
-            onOpen: (category, rect) => CategoryScreen.open(context, category, rect),
-          ),
-          const SizedBox(height: 12),
-          // The floor in front of it: what the dashes mean, and the hamper.
-          Row(
-            children: [
-              Expanded(child: Text(s.awayHint, style: context.text.bodySmall)),
-              const SizedBox(width: 10),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(minimumSize: const Size(44, 40), padding: const EdgeInsets.symmetric(horizontal: 14)),
-                onPressed: shell == null ? null : () => shell.goTo(HomeShellState.hamperTab),
-                icon: const Icon(AppIcons.hamper, size: 18),
-                label: Text('${s.hamper} · $inHamper'),
-              ),
-            ],
-          ),
-        ],
+      child: WardrobeView(
+        openDoors: _openDoors,
+        onOpen: (category, rect) => CategoryScreen.open(context, category, rect),
       ),
     );
   }

@@ -136,7 +136,11 @@ class AppTabBar extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final shadow = [
-      BoxShadow(color: Colors.black.withValues(alpha: dark ? 0.5 : 0.10), blurRadius: 28, offset: const Offset(0, 10)),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: dark ? 0.5 : 0.10),
+        blurRadius: 28,
+        offset: const Offset(0, 10),
+      ),
     ];
 
     return Padding(
@@ -162,20 +166,55 @@ class AppTabBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(99),
                         border: Border.all(color: palette.separator, width: 0.6),
                       ),
-                      child: Row(
-                        children: [
-                          for (final (i, item) in items.indexed)
-                            Expanded(
-                              child: _Tab(
-                                item: item,
-                                selected: i == currentIndex,
-                                onTap: () {
-                                  if (i != currentIndex) HapticFeedback.selectionClick();
-                                  onTap(i);
-                                },
-                              ),
-                            ),
-                        ],
+                      // One highlight that glides to the tab you pick, stretching
+                      // a little on the way like a drop of liquid, then
+                      // settling with a hint of spring.
+                      child: LayoutBuilder(
+                        builder: (context, box) {
+                          final w = box.maxWidth / items.length;
+                          final still = MediaQuery.disableAnimationsOf(context);
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween(end: currentIndex.toDouble()),
+                            duration: still ? Duration.zero : const Duration(milliseconds: 460),
+                            curve: const Cubic(0.3, 1.3, 0.5, 1),
+                            builder: (context, pos, _) {
+                              final between = 1 - (2 * (pos - pos.floorToDouble()) - 1).abs();
+                              final width = w * (1 + 0.24 * between);
+                              final left = (pos * w - (width - w) / 2).clamp(0.0, box.maxWidth - width);
+                              return Stack(
+                                children: [
+                                  Positioned(
+                                    left: left,
+                                    width: width,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: context.ink.withValues(alpha: 0.07),
+                                        borderRadius: BorderRadius.circular(99),
+                                      ),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      for (final (i, item) in items.indexed)
+                                        Expanded(
+                                          child: _Tab(
+                                            item: item,
+                                            selected: i == currentIndex,
+                                            onTap: () {
+                                              if (i != currentIndex) HapticFeedback.selectionClick();
+                                              onTap(i);
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -225,45 +264,43 @@ class _Tab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? context.ink : context.palette.secondaryText;
     final still = MediaQuery.disableAnimationsOf(context);
-    Widget icon = Icon(selected ? item.selectedIcon : item.icon, size: 23, color: color);
-    if (item.badge != null) {
-      icon = Badge(label: Text(item.badge!), child: icon);
-    }
 
-    return Semantics(
-      selected: selected,
-      button: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: still ? Duration.zero : const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: selected ? context.ink.withValues(alpha: 0.07) : Colors.transparent,
-            borderRadius: BorderRadius.circular(99),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              icon,
-              const SizedBox(height: 2),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.labelSmall?.copyWith(
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: color,
+    // The color eases between gray and ink as the highlight arrives.
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(end: selected ? context.ink : context.palette.secondaryText),
+      duration: still ? Duration.zero : const Duration(milliseconds: 260),
+      builder: (context, color, _) {
+        Widget icon = Icon(selected ? item.selectedIcon : item.icon, size: 23, color: color);
+        if (item.badge != null) {
+          icon = Badge(label: Text(item.badge!), child: icon);
+        }
+        return Semantics(
+          selected: selected,
+          button: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                icon,
+                const SizedBox(height: 2),
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelSmall?.copyWith(
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: color,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
