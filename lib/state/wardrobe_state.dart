@@ -22,6 +22,7 @@ class WardrobeState extends ChangeNotifier {
   static const _keyClosetView = 'closet_view_v1';
   static const _keyWelcomeDone = 'welcome_done_v1';
   static const _keyClosetSort = 'closet_sort_v1';
+  static const _keyUserName = 'user_name_v1';
   static const _keySamples = 'sample_ids_v1';
 
   /// The extra rows Fit Shuffle shows besides tops and bottoms.
@@ -47,6 +48,7 @@ class WardrobeState extends ChangeNotifier {
   final Set<GarmentCategory> _rails = {};
   String _closetView = 'grid';
   String _closetSort = 'mine';
+  String _userName = '';
   bool _welcomeDone = false;
   final Set<String> _sampleIds = {};
 
@@ -56,6 +58,16 @@ class WardrobeState extends ChangeNotifier {
   /// How the Closet grid is ordered: 'mine' (your own order, newest
   /// first until you move things), 'newest', 'oldest' or 'name'.
   String get closetSort => _closetSort;
+
+  /// The first name you gave, for "Gavin's Closet"; empty if none.
+  String get userName => _userName;
+
+  void setUserName(String name) {
+    final first = name.trim().split(RegExp(r'\s+')).first;
+    if (first == _userName) return;
+    _userName = first;
+    _changed();
+  }
 
   void setClosetSort(String sort) {
     _closetSort = sort;
@@ -194,6 +206,7 @@ class WardrobeState extends ChangeNotifier {
       _appearance = prefs.getString(_keyAppearance) ?? 'system';
       _closetView = prefs.getString(_keyClosetView) ?? 'grid';
       _closetSort = prefs.getString(_keyClosetSort) ?? 'mine';
+      _userName = prefs.getString(_keyUserName) ?? '';
       // People who used the app before the welcome existed skip it.
       _welcomeDone = prefs.getBool(_keyWelcomeDone) ?? _garments.isNotEmpty;
       _sampleIds
@@ -271,6 +284,7 @@ class WardrobeState extends ChangeNotifier {
       await prefs.setStringList(_keyRails, _rails.map((c) => c.name).toList());
       await prefs.setString(_keyClosetView, _closetView);
       await prefs.setString(_keyClosetSort, _closetSort);
+      await prefs.setString(_keyUserName, _userName);
       await prefs.setBool(_keyWelcomeDone, _welcomeDone);
       await prefs.setStringList(_keySamples, _sampleIds.toList());
     } catch (e) {

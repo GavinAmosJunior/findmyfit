@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../l10n/strings.dart';
 import '../services/samples.dart';
 import '../state/app_scope.dart';
+import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
 import 'home_shell.dart';
@@ -26,8 +27,10 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  static const _pages = 6;
+  static const _pages = 7;
   final _pager = PageController();
+  final _name = TextEditingController();
+  final _nameFocus = FocusNode();
   int _page = 0;
   bool _working = false;
 
@@ -43,6 +46,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void dispose() {
     _pager.dispose();
+    _name.dispose();
+    _nameFocus.dispose();
     super.dispose();
   }
 
@@ -66,6 +71,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final s = S.of(context);
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _working = true);
+    state.setUserName(_name.text);
     HapticFeedback.lightImpact();
     try {
       if (samples) {
@@ -114,16 +120,27 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             Expanded(
               child: PageView(
                 controller: _pager,
-                onPageChanged: (i) => setState(() => _page = i),
+                onPageChanged: (i) {
+                  setState(() => _page = i);
+                  // The name is kept as you leave its page; the keyboard
+                  // comes up only on it.
+                  if (i == 1) {
+                    _nameFocus.requestFocus();
+                  } else {
+                    _nameFocus.unfocus();
+                    AppScope.read(context).setUserName(_name.text);
+                  }
+                },
                 children: [
                   _HelloPage(s: s),
+                  _NamePage(s: s, controller: _name, focus: _nameFocus, onDone: _next),
                   for (final (i, (title, body)) in [
                     (s.stepAddTitle, s.stepAddBody),
                     (s.stepFitTitle, s.stepFitBody),
                     (s.stepWearTitle, s.stepWearBody),
                     (s.stepCheckTitle, s.stepCheckBody),
                   ].indexed)
-                    _FeaturePage(chapter: i, title: title, body: body, active: _page == i + 1),
+                    _FeaturePage(chapter: i, title: title, body: body, active: _page == i + 2),
                   _TryPage(s: s),
                 ],
               ),
@@ -311,6 +328,74 @@ class _FeaturePageState extends State<_FeaturePage> {
             widget.body,
             textAlign: TextAlign.center,
             style: context.text.bodyLarge?.copyWith(color: context.palette.secondaryText),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What to call you: one big field, and your closet's name taking shape
+/// under it as you type.
+class _NamePage extends StatelessWidget {
+  final S s;
+  final TextEditingController controller;
+  final FocusNode focus;
+  final VoidCallback onDone;
+
+  const _NamePage({required this.s, required this.controller, required this.focus, required this.onDone});
+
+  @override
+  Widget build(BuildContext context) {
+    return _Page(
+      child: Column(
+        children: [
+          Text(s.nameTitle, textAlign: TextAlign.center, style: context.text.headlineMedium),
+          const SizedBox(height: 36),
+          TextField(
+            controller: controller,
+            focusNode: focus,
+            textAlign: TextAlign.center,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            autocorrect: false,
+            maxLength: 20,
+            style: context.text.displaySmall,
+            cursorColor: context.ink,
+            decoration: InputDecoration(
+              hintText: s.firstNameHint,
+              hintStyle: context.text.displaySmall?.copyWith(color: context.palette.tertiaryText),
+              filled: false,
+              counterText: '',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+            onSubmitted: (_) => onDone(),
+          ),
+          const SizedBox(height: 28),
+          // The closet's name, as it will read in the app.
+          ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) {
+              final name = controller.text.trim().split(RegExp(r'\s+')).first;
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  key: ValueKey(name),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(22)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(AppIcons.closetFill, size: 18, color: context.ink),
+                      const SizedBox(width: 8),
+                      Text(s.closetOf(name), style: context.text.titleMedium),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

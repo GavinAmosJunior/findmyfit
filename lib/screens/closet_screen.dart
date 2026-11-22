@@ -106,7 +106,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
       body: CustomScrollView(
         slivers: [
           LargeTitle(
-            title: s.closet,
+            title: s.closetOf(state.userName),
             actions: [
               // The camera is what + opens; the library is here.
               IconButton(

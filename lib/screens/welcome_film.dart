@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../l10n/strings.dart';
 import '../models/garment.dart';
 import '../services/samples.dart';
+import '../state/app_scope.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 
@@ -487,7 +488,7 @@ class _ClosetScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        _LargeTitle(s.closet),
+        _LargeTitle(s.closetOf(AppScope.of(context).userName)),
         for (final (i, art) in _pieces.indexed)
           Positioned(
             left: _cell(i).dx,

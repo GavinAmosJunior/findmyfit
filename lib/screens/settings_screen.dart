@@ -8,6 +8,7 @@ import '../services/cutout.dart';
 import '../services/image_store.dart';
 import '../services/samples.dart';
 import '../state/app_scope.dart';
+import '../state/wardrobe_state.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/grouped_section.dart';
 import '../theme/app_icons.dart';
@@ -133,6 +134,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// Changes the name the Closet is called by.
+  Future<void> _editName(WardrobeState state) async {
+    final s = S.of(context);
+    final controller = TextEditingController(text: state.userName);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(s.yourName),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(hintText: s.firstNameHint),
+          onSubmitted: (v) => Navigator.of(context).pop(v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(s.cancel)),
+          TextButton(onPressed: () => Navigator.of(context).pop(controller.text), child: Text(s.save)),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name != null) state.setUserName(name);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -228,6 +254,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           GroupedSection(
             header: s.gettingStarted,
             children: [
+              ListTile(
+                leading: const Icon(AppIcons.closet),
+                title: Text(s.yourName),
+                trailing: Text(state.userName, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
+                onTap: () => _editName(state),
+              ),
               ListTile(
                 leading: const Icon(AppIcons.closet),
                 title: Text(s.showWelcome),

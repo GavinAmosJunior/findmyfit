@@ -486,6 +486,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Never lose clothes\nto the laundry again'), findsOneWidget);
+    // Your name names the closet.
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('What should we\ncall you?'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Gavin Amos');
+    await tester.pump();
+    expect(find.text('Gavin’s Closet'), findsOneWidget);
     // One idea per page; the films loop, so step the clock.
     for (final title in ['Snap your clothes', 'Pick an outfit', 'Wear it', 'See what comes back']) {
       await tester.tap(find.text('Continue'));
@@ -508,6 +515,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(state.welcomeDone, isTrue);
+    expect(state.userName, 'Gavin');
+    expect(find.text('Gavin’s Closet'), findsOneWidget);
     expect(state.garments, hasLength(13));
     expect(state.countOf(GarmentStatus.dirtyHamper), 2);
     expect(state.countOf(GarmentStatus.inLaundry), 2);

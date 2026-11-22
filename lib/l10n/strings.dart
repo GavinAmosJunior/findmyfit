@@ -27,6 +27,18 @@ class S {
 
   // ------------------------------------------------------------- navigation
   String get closet => _t('Closet', 'Lemari');
+
+  /// "Gavin's Closet", or just Closet without a name.
+  String closetOf(String name) => name.isEmpty
+      ? closet
+      : isIndonesian
+      ? 'Lemari $name'
+      : name.toLowerCase().endsWith('s')
+      ? '$name’ Closet'
+      : '$name’s Closet';
+  String get nameTitle => _t('What should we\ncall you?', 'Mau dipanggil\napa?');
+  String get firstNameHint => _t('First name', 'Nama depan');
+  String get yourName => _t('Your name', 'Namamu');
   String get hamper => _t('Hamper', 'Keranjang');
   String get laundry => _t('Laundry', 'Laundry');
   String get missing => _t('Missing', 'Hilang');
