@@ -39,6 +39,8 @@ class S {
   String get nameTitle => _t('What should we\ncall you?', 'Mau dipanggil\napa?');
   String get firstNameHint => _t('First name', 'Nama depan');
   String get yourName => _t('Your name', 'Namamu');
+  String get addYourName => _t('Add your name', 'Tambah namamu');
+  String get editYourName => _t('Tap to change your name', 'Ketuk untuk ganti nama');
   String get hamper => _t('Hamper', 'Keranjang');
   String get laundry => _t('Laundry', 'Laundry');
   String get missing => _t('Missing', 'Hilang');

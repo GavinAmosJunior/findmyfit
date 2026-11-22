@@ -486,13 +486,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Never lose clothes\nto the laundry again'), findsOneWidget);
-    // Your name names the closet.
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('What should we\ncall you?'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'Gavin Amos');
-    await tester.pump();
-    expect(find.text('Gavin’s Closet'), findsOneWidget);
     // One idea per page; the films loop, so step the clock.
     for (final title in ['Snap your clothes', 'Pick an outfit', 'Wear it', 'See what comes back']) {
       await tester.tap(find.text('Continue'));
@@ -500,6 +493,14 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(find.text(title), findsOneWidget);
     }
+    // Your name names the closet.
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('What should we\ncall you?'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Gavin Amos');
+    await tester.pump();
+    expect(find.text('Gavin’s Closet'), findsOneWidget);
     await tester.tap(find.text('Continue'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
@@ -545,6 +546,10 @@ void main() {
     final state = await _loadedState();
     await tester.pumpWidget(FindMyFitApp(state: state));
     await tester.pumpAndSettle();
+    // Skip goes to your name first, then to the end.
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+    expect(find.text('What should we\ncall you?'), findsOneWidget);
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Start with an empty closet'));

@@ -28,6 +28,7 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
   static const _pages = 7;
+  static const _namePage = _pages - 2;
   final _pager = PageController();
   final _name = TextEditingController();
   final _nameFocus = FocusNode();
@@ -62,7 +63,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   /// Straight to the last page, where sample clothes are offered.
   void _skip() {
     HapticFeedback.selectionClick();
-    _pager.animateToPage(_pages - 1, duration: _slide * 1.6, curve: Curves.easeInOutCubic);
+    // To your name, then on to the end.
+    final to = _page < _namePage ? _namePage : _pages - 1;
+    _pager.animateToPage(to, duration: _slide * 1.6, curve: Curves.easeInOutCubic);
   }
 
   Future<void> _finish({required bool samples}) async {
@@ -124,8 +127,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   setState(() => _page = i);
                   // The name is kept as you leave its page; the keyboard
                   // comes up only on it.
-                  if (i == 1) {
-                    _nameFocus.requestFocus();
+                  if (i == _namePage) {
+                    // After the slide settles, so the keyboard rises on its
+                    // own rather than mid-swipe.
+                    Future<void>.delayed(_slide + const Duration(milliseconds: 80), () {
+                      if (mounted && _page == _namePage) _nameFocus.requestFocus();
+                    });
                   } else {
                     _nameFocus.unfocus();
                     AppScope.read(context).setUserName(_name.text);
@@ -133,14 +140,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 },
                 children: [
                   _HelloPage(s: s),
-                  _NamePage(s: s, controller: _name, focus: _nameFocus, onDone: _next),
                   for (final (i, (title, body)) in [
                     (s.stepAddTitle, s.stepAddBody),
                     (s.stepFitTitle, s.stepFitBody),
                     (s.stepWearTitle, s.stepWearBody),
                     (s.stepCheckTitle, s.stepCheckBody),
                   ].indexed)
-                    _FeaturePage(chapter: i, title: title, body: body, active: _page == i + 2),
+                    _FeaturePage(chapter: i, title: title, body: body, active: _page == i + 1),
+                  _NamePage(s: s, controller: _name, focus: _nameFocus, onDone: _next),
                   _TryPage(s: s),
                 ],
               ),
@@ -348,7 +355,7 @@ class _NamePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Page(
-      child: Column(
+      child: _Entrance(
         children: [
           Text(s.nameTitle, textAlign: TextAlign.center, style: context.text.headlineMedium),
           const SizedBox(height: 36),

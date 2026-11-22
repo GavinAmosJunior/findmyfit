@@ -169,6 +169,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.only(top: 8, bottom: 32),
         children: [
+          // You, at the top, the way iPhone Settings starts with your name.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Material(
+              color: context.palette.tile,
+              borderRadius: BorderRadius.circular(18),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _editName(state),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: context.ink,
+                        child: state.userName.isEmpty
+                            ? Icon(AppIcons.closetFill, color: context.colors.surface)
+                            : Text(
+                                state.userName.characters.first.toUpperCase(),
+                                style: context.text.headlineSmall?.copyWith(color: context.colors.surface),
+                              ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(s.closetOf(state.userName), style: context.text.titleMedium),
+                            const SizedBox(height: 2),
+                            Text(state.userName.isEmpty ? s.addYourName : s.editYourName, style: context.text.bodySmall),
+                          ],
+                        ),
+                      ),
+                      Icon(AppIcons.chevron, size: 14, color: context.palette.tertiaryText),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           GroupedSection(
             header: s.appearance,
             children: [
@@ -254,12 +295,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           GroupedSection(
             header: s.gettingStarted,
             children: [
-              ListTile(
-                leading: const Icon(AppIcons.closet),
-                title: Text(s.yourName),
-                trailing: Text(state.userName, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
-                onTap: () => _editName(state),
-              ),
               ListTile(
                 leading: const Icon(AppIcons.closet),
                 title: Text(s.showWelcome),
