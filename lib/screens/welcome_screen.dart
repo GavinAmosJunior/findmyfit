@@ -5,14 +5,16 @@ import '../l10n/strings.dart';
 import '../services/samples.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
-import 'welcome_scenes.dart';
+import 'welcome_film.dart';
 
-/// The first thing a new person sees, in the spirit of setting up a new
-/// iPhone: calm pages, one idea each, big bold titles, and one clear
-/// button at the bottom. Each idea plays as a small looping film (see
-/// welcome_scenes.dart): scanning a piece, shuffling a fit, Wore it into
-/// the hamper, and checking a load back in. The last page offers sample
-/// clothes, so the app can be tried before photographing a single piece.
+/// The first thing a new person sees, the way Apple introduces an app:
+/// first why it exists, then how it works, then a way to try it.
+///
+/// 1. Why: never lose clothes to the laundry again.
+/// 2. How: a film of the app in use (welcome_film.dart), four chapters in
+///    the order you'd live them: add, pick an outfit, wear, check back.
+///    The steps under it follow along; tap one to watch it.
+/// 3. Try: fill the closet with sample clothes, or start empty.
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -21,7 +23,7 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  static const _pages = 6;
+  static const _pages = 3;
   final _pager = PageController();
   int _page = 0;
   bool _working = false;
@@ -104,26 +106,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 onPageChanged: (i) => setState(() => _page = i),
                 children: [
                   _HelloPage(s: s),
-                  _FeaturePage(
-                    scene: ScanScene(active: _page == 1),
-                    title: s.scanTitle,
-                    body: s.scanBody,
-                  ),
-                  _FeaturePage(
-                    scene: ShuffleScene(active: _page == 2),
-                    title: s.shuffleTitle,
-                    body: s.shuffleBody,
-                  ),
-                  _FeaturePage(
-                    scene: HamperScene(active: _page == 3),
-                    title: s.hamperTitle,
-                    body: s.hamperBody,
-                  ),
-                  _FeaturePage(
-                    scene: CheckScene(active: _page == 4),
-                    title: s.checkTitle,
-                    body: s.checkBody,
-                  ),
+                  _HowPage(s: s, active: _page == 1),
                   _TryPage(s: s),
                 ],
               ),
@@ -256,7 +239,7 @@ class _HelloPage extends StatelessWidget {
           Text(
             s.welcomeTitle,
             textAlign: TextAlign.center,
-            style: context.text.displaySmall?.copyWith(fontSize: 40, letterSpacing: -1.4),
+            style: context.text.displaySmall,
           ),
           const SizedBox(height: 18),
           Text(
@@ -270,29 +253,160 @@ class _HelloPage extends StatelessWidget {
   }
 }
 
-/// One idea: its little film, a bold title and a line or two.
-class _FeaturePage extends StatelessWidget {
-  final Widget scene;
-  final String title;
-  final String body;
+/// How it works: the film, and the four steps it shows. The step being
+/// filmed is in ink with a bar filling as it plays, the way Apple's
+/// product pages walk through a feature; tapping a step plays it.
+class _HowPage extends StatefulWidget {
+  final S s;
+  final bool active;
 
-  const _FeaturePage({required this.scene, required this.title, required this.body});
+  const _HowPage({required this.s, required this.active});
+
+  @override
+  State<_HowPage> createState() => _HowPageState();
+}
+
+class _HowPageState extends State<_HowPage> {
+  int _from = 0;
+  int _take = 0;
+
+  void _play(int chapter) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _from = chapter;
+      _take++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _Page(
-      child: _Entrance(
-        children: [
-          scene,
-          const SizedBox(height: 28),
-          Text(title, textAlign: TextAlign.center, style: context.text.headlineMedium),
-          const SizedBox(height: 14),
-          Text(
-            body,
-            textAlign: TextAlign.center,
-            style: context.text.bodyLarge?.copyWith(color: context.palette.secondaryText),
+    final s = widget.s;
+    final steps = [
+      (s.stepAddTitle, s.stepAddBody),
+      (s.stepFitTitle, s.stepFitBody),
+      (s.stepWearTitle, s.stepWearBody),
+      (s.stepCheckTitle, s.stepCheckBody),
+    ];
+    return FilmClock(
+      key: ValueKey(_take),
+      active: widget.active,
+      // With reduced motion: the closet, mid-way into the first chapter.
+      still: filmChapterSeconds * 0.1,
+      builder: (context, secs) {
+        final chapter = (_from + secs ~/ filmChapterSeconds) % filmChapters;
+        final t = (secs % filmChapterSeconds) / filmChapterSeconds;
+        return _Page(
+          child: _Entrance(
+            children: [
+              AppFilm(chapter: chapter, t: t),
+              const SizedBox(height: 20),
+              Text(s.howTitle, textAlign: TextAlign.center, style: context.text.headlineSmall),
+              const SizedBox(height: 10),
+              for (final (i, (title, body)) in steps.indexed)
+                _Step(
+                  number: i + 1,
+                  title: title,
+                  body: body,
+                  current: i == chapter,
+                  progress: i == chapter ? t : 0,
+                  onTap: () => _play(i),
+                ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+}
+
+/// One step of How it works. Only the current one shows its line.
+class _Step extends StatelessWidget {
+  final int number;
+  final String title;
+  final String body;
+  final bool current;
+  final double progress;
+  final VoidCallback onTap;
+
+  const _Step({
+    required this.number,
+    required this.title,
+    required this.body,
+    required this.current,
+    required this.progress,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = current ? context.ink : context.palette.secondaryText;
+    return Semantics(
+      button: true,
+      selected: current,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: current ? context.ink : context.palette.tile,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '$number',
+                  style: context.text.labelMedium?.copyWith(color: current ? context.colors.surface : color),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 250),
+                      style: context.text.titleMedium!.copyWith(color: color),
+                      child: Text(title),
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.topLeft,
+                      child: current
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(body, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 3,
+                                      color: context.ink,
+                                      backgroundColor: context.palette.separator,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox(width: double.infinity),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

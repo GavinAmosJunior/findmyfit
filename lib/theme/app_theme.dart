@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -81,12 +82,39 @@ extension AppThemeContext on BuildContext {
 }
 
 class AppTheme {
-  /// Inter throughout: one family, weight and size carry the hierarchy.
-  /// Titles are bold and tightly tracked, the way large titles are drawn
-  /// on iPhone.
+  /// Inter on Android and web; on iPhone, the iPhone's own San Francisco,
+  /// so the app reads like the rest of the phone (Apple's font is only
+  /// licensed on Apple's own devices, which is why Android keeps Inter).
+  /// One family; weight and size carry the hierarchy. Titles are bold and
+  /// tight, the way large titles are drawn on iPhone.
   static TextTheme _textTheme(Color primary, Color secondary) {
-    TextStyle inter(double size, FontWeight weight, {double spacing = 0, double? height, Color? color}) =>
-        GoogleFonts.inter(fontSize: size, fontWeight: weight, letterSpacing: spacing, height: height, color: color);
+    final apple = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+    TextStyle inter(double size, FontWeight weight, {double spacing = 0, double? height, Color? color}) {
+      if (!apple) {
+        return GoogleFonts.inter(fontSize: size, fontWeight: weight, letterSpacing: spacing, height: height, color: color);
+      }
+      // San Francisco has its own tracking per size (Apple's type table),
+      // tighter than Inter needs, so it's used instead of [spacing].
+      final tracking = switch (size) {
+        >= 34 => 0.4,
+        >= 28 => 0.38,
+        >= 22 => -0.26,
+        >= 20 => -0.45,
+        >= 17 => -0.43,
+        >= 16 => -0.31,
+        >= 15 => -0.23,
+        >= 13 => -0.08,
+        _ => 0.0,
+      };
+      return TextStyle(
+        fontFamily: size >= 20 ? 'CupertinoSystemDisplay' : 'CupertinoSystemText',
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: tracking,
+        height: height,
+        color: color,
+      );
+    }
 
     return TextTheme(
       displaySmall: inter(34, FontWeight.w700, spacing: -1.0, height: 1.1, color: primary),

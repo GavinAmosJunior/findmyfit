@@ -349,29 +349,24 @@ class S {
           'FindMyFit membantu memastikan semua pakaian yang kamu kirim ke laundry kembali.');
 
   // ---------------------------------------------------------------- welcome
-  String get welcomeTitle => _t('Welcome to\nFindMyFit', 'Selamat datang di\nFindMyFit');
+  String get welcomeTitle => _t('Never lose clothes\nto the laundry again', 'Tak ada lagi baju\nhilang di laundry');
   String get welcomeBody => _t(
-      'Every piece you own, and where it is right now: in your closet, in the hamper or at the laundry.',
-      'Semua pakaianmu, dan di mana posisinya sekarang: di lemari, di keranjang, atau di laundry.');
+      'FindMyFit knows where every piece you own is: in your closet, in the hamper, or at the laundromat. And it tells you when something doesn’t come back.',
+      'FindMyFit tahu di mana tiap pakaianmu: di lemari, di keranjang, atau di laundry. Dan memberi tahu saat ada yang tidak kembali.');
   String get continueLabel => _t('Continue', 'Lanjut');
   String get skip => _t('Skip', 'Lewati');
-  String get scanTitle => _t('Snap it. It lifts right out.', 'Foto. Langsung terangkat.');
-  String get scanBody => _t(
-      'Tap + and photograph each piece, or pick a pile from your photos. The background melts away on its own.',
-      'Ketuk + lalu foto tiap pakaian, atau pilih banyak sekaligus dari galeri. Latarnya hilang sendiri.');
-  String get sceneCutoutChip => _t('Background removed', 'Latar dihapus');
-  String get shuffleTitle => _t('Shuffle a fit', 'Acak gayamu');
-  String get shuffleBody => _t(
-      'Fits mixes what’s clean into an outfit. Lock a piece you love, shuffle the rest, and save the ones you like.',
-      'Gaya memadukan pakaian bersih jadi satu setelan. Kunci yang kamu suka, acak sisanya, lalu simpan.');
-  String get hamperTitle => _t('Wore it? One tap.', 'Sudah dipakai? Sekali ketuk.');
-  String get hamperBody => _t(
-      'Tap the shirt on anything you wore. It moves to the hamper and waits there until laundry day.',
-      'Ketuk ikon kaus pada pakaian yang sudah dipakai. Ia pindah ke keranjang dan menunggu hari laundry.');
-  String get checkTitle => _t('Know what comes back', 'Tahu apa yang kembali');
-  String get checkBody => _t(
-      'Drop the hamper off as one load. When it’s back, tick each piece. Anything left is marked missing, with a message ready for the laundromat.',
-      'Antar isi keranjang sebagai satu cucian. Saat kembali, centang tiap pakaian. Yang tersisa ditandai hilang, lengkap dengan pesan untuk laundry.');
+  String get howTitle => _t('How it works', 'Cara kerjanya');
+  String get stepAddTitle => _t('Add your clothes', 'Tambah pakaianmu');
+  String get stepAddBody =>
+      _t('Snap each piece. The background lifts away on its own.', 'Foto tiap pakaian. Latarnya hilang sendiri.');
+  String get stepFitTitle => _t('Pick an outfit', 'Pilih gaya');
+  String get stepFitBody => _t('Shuffle what’s clean into a fit you like.', 'Acak pakaian bersih jadi gaya yang kamu suka.');
+  String get stepWearTitle => _t('Wear it', 'Pakai');
+  String get stepWearBody => _t('Tap the shirt and it waits in the hamper for laundry day.',
+      'Ketuk ikon kaus, lalu ia menunggu di keranjang sampai hari laundry.');
+  String get stepCheckTitle => _t('Check what comes back', 'Cek yang kembali');
+  String get stepCheckBody => _t('Tick off each piece from the laundromat. Anything missing gets flagged.',
+      'Centang tiap pakaian dari laundry. Yang hilang langsung ditandai.');
   String get tryTitle => _t('Try it with sample clothes', 'Coba dengan pakaian contoh');
   String get tryBody => _t(
       'We’ll fill your closet with a few pieces, some in the hamper and a load at the laundry, so you can try everything. Remove them anytime.',
