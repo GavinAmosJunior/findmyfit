@@ -618,6 +618,23 @@ void main() {
   });
 
   group('garments', () {
+    test('pieces can be moved, and the order is kept', () async {
+      SharedPreferences.setMockInitialValues({'welcome_done_v1': true});
+      final state = await _loadedState();
+      final a = state.addGarment(name: 'A', category: GarmentCategory.tops);
+      final b = state.addGarment(name: 'B', category: GarmentCategory.tops);
+      final c = state.addGarment(name: 'C', category: GarmentCategory.tops);
+      expect(state.garments.map((g) => g.name), ['C', 'B', 'A']);
+      state.moveGarment(a.id, c.id);
+      expect(state.garments.map((g) => g.name), ['A', 'C', 'B']);
+      state.setClosetSort('name');
+      await Future<void>.delayed(Duration.zero);
+      final again = await _loadedState();
+      expect(again.garments.map((g) => g.name), ['A', 'C', 'B']);
+      expect(again.closetSort, 'name');
+      expect(b.id, isNotEmpty);
+    });
+
     test('editing can clear optional fields', () async {
       final state = await _loadedState();
       final g = state.addGarment(name: 'Jacket', category: GarmentCategory.outerwear, brand: 'Levi’s', notes: 'Cold wash');

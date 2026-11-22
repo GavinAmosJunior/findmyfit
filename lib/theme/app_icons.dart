@@ -41,6 +41,7 @@ abstract final class AppIcons {
   static const IconData favoriteOutline = IconData(0xe2a8, fontFamily: _regular);
   static const IconData edit = IconData(0xe3b4, fontFamily: _regular);
   static const IconData delete = IconData(0xe4a6, fontFamily: _regular);
+  static const IconData sort = IconData(0xe098, fontFamily: _regular);
   static const IconData share = IconData(0xeaf0, fontFamily: _regular);
   static const IconData download = IconData(0xe20c, fontFamily: _regular);
   static const IconData chat = IconData(0xe16e, fontFamily: _regular);

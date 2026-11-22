@@ -21,6 +21,7 @@ class WardrobeState extends ChangeNotifier {
   static const _keyRails = 'shuffle_rails_v1';
   static const _keyClosetView = 'closet_view_v1';
   static const _keyWelcomeDone = 'welcome_done_v1';
+  static const _keyClosetSort = 'closet_sort_v1';
   static const _keySamples = 'sample_ids_v1';
 
   /// The extra rows Fit Shuffle shows besides tops and bottoms.
@@ -39,11 +40,31 @@ class WardrobeState extends ChangeNotifier {
   String _appearance = 'system';
   final Set<GarmentCategory> _rails = {};
   String _closetView = 'grid';
+  String _closetSort = 'mine';
   bool _welcomeDone = false;
   final Set<String> _sampleIds = {};
 
   /// How Closet shows your clothes: 'grid' or 'wardrobe'.
   String get closetView => _closetView;
+
+  /// How the Closet grid is ordered: 'mine' (your own order, newest
+  /// first until you move things), 'newest', 'oldest' or 'name'.
+  String get closetSort => _closetSort;
+
+  void setClosetSort(String sort) {
+    _closetSort = sort;
+    _changed();
+  }
+
+  /// Puts [id] where [targetId] is, shifting the rest along: dragging in
+  /// the Closet grid.
+  void moveGarment(String id, String targetId) {
+    final from = _garments.indexWhere((g) => g.id == id);
+    final to = _garments.indexWhere((g) => g.id == targetId);
+    if (from < 0 || to < 0 || from == to) return;
+    _garments.insert(to, _garments.removeAt(from));
+    _changed();
+  }
 
   void setClosetView(String view) {
     _closetView = view;
@@ -166,6 +187,7 @@ class WardrobeState extends ChangeNotifier {
       _language = prefs.getString(_keyLanguage) ?? 'system';
       _appearance = prefs.getString(_keyAppearance) ?? 'system';
       _closetView = prefs.getString(_keyClosetView) ?? 'grid';
+      _closetSort = prefs.getString(_keyClosetSort) ?? 'mine';
       // People who used the app before the welcome existed skip it.
       _welcomeDone = prefs.getBool(_keyWelcomeDone) ?? _garments.isNotEmpty;
       _sampleIds
@@ -229,6 +251,7 @@ class WardrobeState extends ChangeNotifier {
       await prefs.setString(_keyAppearance, _appearance);
       await prefs.setStringList(_keyRails, _rails.map((c) => c.name).toList());
       await prefs.setString(_keyClosetView, _closetView);
+      await prefs.setString(_keyClosetSort, _closetSort);
       await prefs.setBool(_keyWelcomeDone, _welcomeDone);
       await prefs.setStringList(_keySamples, _sampleIds.toList());
     } catch (e) {

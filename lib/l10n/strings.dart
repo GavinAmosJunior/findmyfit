@@ -373,6 +373,12 @@ class S {
   String get samplesAdded =>
       _t('Clear samples in Settings', 'Hapus contoh di Pengaturan');
   String get open => _t('Open', 'Buka');
+  String get sortBy => _t('Sort', 'Urutkan');
+  String get sortMine => _t('My order', 'Urutanku');
+  String get sortNewest => _t('Newest', 'Terbaru');
+  String get sortOldest => _t('Oldest', 'Terlama');
+  String get sortName => _t('Name', 'Nama');
+  String get dragHint => _t('Hold a piece, then drag it', 'Tahan, lalu geser');
   String get retake => _t('Retake', 'Foto ulang');
   String get allClear => _t('All clear', 'Sudah bersih');
   String get removeSamples => _t('Remove sample clothes', 'Hapus pakaian contoh');

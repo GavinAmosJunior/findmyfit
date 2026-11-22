@@ -64,9 +64,9 @@ class _ClosetScreenState extends State<ClosetScreen> {
 
   // Order stays fixed (newest first) so tiles don't jump when you tap
   // "Wore it"; each tile's label shows its status.
-  List<Garment> _visible(List<Garment> all) {
+  List<Garment> _visible(List<Garment> all, String sort) {
     final q = _search.text.trim().toLowerCase();
-    return all.where((g) {
+    final list = all.where((g) {
       if (_filter == 'fav' && !g.isFavorite) return false;
       if (_filter != null && _filter != 'fav' && g.category.name != _filter) return false;
       if (q.isNotEmpty) {
@@ -75,6 +75,15 @@ class _ClosetScreenState extends State<ClosetScreen> {
       }
       return true;
     }).toList();
+    switch (sort) {
+      case 'newest':
+        list.sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
+      case 'oldest':
+        list.sort((a, b) => a.dateAdded.compareTo(b.dateAdded));
+      case 'name':
+        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    }
+    return list;
   }
 
   void _toggleSearch() {
@@ -89,7 +98,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
     final s = S.of(context);
     final state = AppScope.of(context);
     final all = state.garments;
-    final visible = _visible(all);
+    final visible = _visible(all, state.closetSort);
 
     return Scaffold(
       body: CustomScrollView(
@@ -176,7 +185,9 @@ class _ClosetScreenState extends State<ClosetScreen> {
                         mainAxisExtent: (constraints.crossAxisExtent - 12 * (columns - 1)) / columns + labelArea,
                       ),
                       itemCount: visible.length,
-                      itemBuilder: (context, i) => GarmentTile(garment: visible[i]),
+                      itemBuilder: (context, i) => state.closetSort == 'mine' && !_searching
+                          ? _Movable(garment: visible[i], child: GarmentTile(garment: visible[i]))
+                          : GarmentTile(garment: visible[i]),
                     );
                   },
                 ),
@@ -247,17 +258,27 @@ class _ClosetScreenState extends State<ClosetScreen> {
           ),
         // What's at the laundry, and an outfit for today.
         const ClosetWidgets(),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-          child: Row(
-            children: [
-              for (final (i, (key, label)) in filters.indexed) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Pill(label: label, selected: _filter == key, onTap: () => setState(() => _filter = key)),
-              ],
-            ],
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+                child: Row(
+                  children: [
+                    for (final (i, (key, label)) in filters.indexed) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Pill(label: label, selected: _filter == key, onTap: () => setState(() => _filter = key)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6, right: 6),
+              child: _SortButton(s: s),
+            ),
+          ],
         ),
       ],
     );
@@ -383,6 +404,86 @@ class _WoreItButton extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.padded,
       ),
       icon: const Icon(AppIcons.wore, size: 20),
+    );
+  }
+}
+
+/// Sort, as an iOS pull-down: a checkmark on the order in use.
+class _SortButton extends StatelessWidget {
+  final S s;
+
+  const _SortButton({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final options = {'mine': s.sortMine, 'newest': s.sortNewest, 'oldest': s.sortOldest, 'name': s.sortName};
+    return PopupMenuButton<String>(
+      tooltip: s.sortBy,
+      icon: const Icon(AppIcons.sort),
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      onSelected: (v) {
+        HapticFeedback.selectionClick();
+        state.setClosetSort(v);
+        if (v == 'mine') showMessage(context, s.dragHint);
+      },
+      itemBuilder: (context) => [
+        for (final MapEntry(key: k, value: label) in options.entries)
+          PopupMenuItem(
+            value: k,
+            child: Row(
+              children: [
+                SizedBox(width: 24, child: state.closetSort == k ? const Icon(AppIcons.check, size: 16) : null),
+                Text(label),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// A tile you can hold and drag to a new place; the others make way as
+/// it passes over them.
+class _Movable extends StatelessWidget {
+  final Garment garment;
+  final Widget child;
+
+  const _Movable({required this.garment, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) => DragTarget<String>(
+        onWillAcceptWithDetails: (d) {
+          if (d.data != garment.id) {
+            HapticFeedback.selectionClick();
+            AppScope.read(context).moveGarment(d.data, garment.id);
+          }
+          return true;
+        },
+        builder: (context, _, _) => LongPressDraggable<String>(
+          data: garment.id,
+          onDragStarted: HapticFeedback.mediumImpact,
+          feedback: SizedBox(
+            width: c.maxWidth,
+            height: c.maxWidth,
+            child: Transform.scale(
+              scale: 1.06,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 10))],
+                ),
+                child: ClipRRect(borderRadius: BorderRadius.circular(22), child: GarmentImage(garment: garment)),
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 0.25, child: child),
+          child: child,
+        ),
+      ),
     );
   }
 }
