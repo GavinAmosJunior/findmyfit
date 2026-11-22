@@ -484,131 +484,137 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                tooltip: _isEdit ? s.cancel : s.done,
-                icon: const Icon(AppIcons.close),
-                onPressed: _confirmLeave,
+          // While the camera covers the form, nothing in the form keeps
+          // focus, so the name keyboard can't sit over the viewfinder
+          // (typing a name, then Add and next).
+          ExcludeFocus(
+            excluding: _cameraOpen,
+            child: Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  tooltip: _isEdit ? s.cancel : s.done,
+                  icon: const Icon(AppIcons.close),
+                  onPressed: _confirmLeave,
+                ),
+                title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
+                actions: [
+                  if (_isEdit)
+                    TextButton(
+                      onPressed: _saving ? null : _saveEdit,
+                      child: Text(s.save, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    )
+                  else if (_added > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Center(child: Text(s.addedCount(_added), style: context.text.labelMedium)),
+                    ),
+                ],
               ),
-              title: Text(_isEdit ? s.editGarment : (inQueue ? s.queueProgress(current, _queueTotal) : s.addClothes)),
-              actions: [
-                if (_isEdit)
-                  TextButton(
-                    onPressed: _saving ? null : _saveEdit,
-                    child: Text(s.save, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  )
-                else if (_added > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: Center(child: Text(s.addedCount(_added), style: context.text.labelMedium)),
-                  ),
-              ],
-            ),
-            body: SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                      children: [
-                        _photoArea(context, s),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: _name,
-                          focusNode: _nameFocus,
-                          textCapitalization: TextCapitalization.sentences,
-                          textInputAction: _isEdit ? TextInputAction.done : TextInputAction.next,
-                          style: context.text.bodyLarge,
-                          onChanged: (_) {
-                            if (_showNameError) setState(() => _showNameError = false);
-                          },
-                          onSubmitted: (_) => _isEdit ? _saveEdit() : _add(next: true),
-                          decoration: InputDecoration(
-                            labelText: s.name,
-                            hintText: s.nameHint,
-                            errorText: _showNameError ? s.nameRequired : null,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(s.category, style: context.text.labelMedium),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final c in GarmentCategory.values)
-                              Pill(
-                                icon: categoryIcon(c),
-                                label: s.categoryLabel(c),
-                                selected: _category == c,
-                                onTap: () => setState(() => _category = c),
-                              ),
-                          ],
-                        ),
-                        if (!_isEdit) ...[
-                          const SizedBox(height: 8),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(s.alreadyDirty),
-                            value: _dirty,
-                            onChanged: (v) => setState(() => _dirty = v),
-                          ),
-                        ],
-                        Theme(
-                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                          child: ExpansionTile(
-                            tilePadding: EdgeInsets.zero,
-                            initiallyExpanded: _isEdit && (_brand.text.isNotEmpty || _notes.text.isNotEmpty),
-                            title: Text(
-                              '${s.brand}, ${s.notes.toLowerCase()} · ${s.optional.toLowerCase()}',
-                              style: context.text.bodyMedium,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                        children: [
+                          _photoArea(context, s),
+                          const SizedBox(height: 20),
+                          TextField(
+                            controller: _name,
+                            focusNode: _nameFocus,
+                            textCapitalization: TextCapitalization.sentences,
+                            textInputAction: _isEdit ? TextInputAction.done : TextInputAction.next,
+                            style: context.text.bodyLarge,
+                            onChanged: (_) {
+                              if (_showNameError) setState(() => _showNameError = false);
+                            },
+                            onSubmitted: (_) => _isEdit ? _saveEdit() : _add(next: true),
+                            decoration: InputDecoration(
+                              labelText: s.name,
+                              hintText: s.nameHint,
+                              errorText: _showNameError ? s.nameRequired : null,
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(s.category, style: context.text.labelMedium),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              TextField(
-                                controller: _brand,
-                                textCapitalization: TextCapitalization.words,
-                                decoration: InputDecoration(labelText: s.brand),
-                              ),
-                              const SizedBox(height: 12),
-                              TextField(
-                                controller: _notes,
-                                minLines: 2,
-                                maxLines: 4,
-                                textCapitalization: TextCapitalization.sentences,
-                                decoration: InputDecoration(labelText: s.notes),
-                              ),
-                              const SizedBox(height: 8),
+                              for (final c in GarmentCategory.values)
+                                Pill(
+                                  icon: categoryIcon(c),
+                                  label: s.categoryLabel(c),
+                                  selected: _category == c,
+                                  onTap: () => setState(() => _category = c),
+                                ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!_isEdit)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _busy || _saving ? null : () => _add(next: false),
-                              child: Text(s.add),
+                          if (!_isEdit) ...[
+                            const SizedBox(height: 8),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(s.alreadyDirty),
+                              value: _dirty,
+                              onChanged: (v) => setState(() => _dirty = v),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: FilledButton.icon(
-                              onPressed: _busy || _saving ? null : () => _add(next: true),
-                              icon: Icon(_hasCamera ? AppIcons.camera : AppIcons.forward),
-                              label: Text(s.addAndNext),
+                          ],
+                          Theme(
+                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              tilePadding: EdgeInsets.zero,
+                              initiallyExpanded: _isEdit && (_brand.text.isNotEmpty || _notes.text.isNotEmpty),
+                              title: Text(
+                                '${s.brand}, ${s.notes.toLowerCase()} · ${s.optional.toLowerCase()}',
+                                style: context.text.bodyMedium,
+                              ),
+                              children: [
+                                TextField(
+                                  controller: _brand,
+                                  textCapitalization: TextCapitalization.words,
+                                  decoration: InputDecoration(labelText: s.brand),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: _notes,
+                                  minLines: 2,
+                                  maxLines: 4,
+                                  textCapitalization: TextCapitalization.sentences,
+                                  decoration: InputDecoration(labelText: s.notes),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                ],
+                    if (!_isEdit)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _busy || _saving ? null : () => _add(next: false),
+                                child: Text(s.add),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: FilledButton.icon(
+                                onPressed: _busy || _saving ? null : () => _add(next: true),
+                                icon: Icon(_hasCamera ? AppIcons.camera : AppIcons.forward),
+                                label: Text(s.addAndNext),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

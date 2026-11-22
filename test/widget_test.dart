@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_laundry_tracker/main.dart';
 import 'package:smart_laundry_tracker/models/garment.dart';
 import 'package:smart_laundry_tracker/models/laundry_batch.dart';
+import 'package:smart_laundry_tracker/screens/camera_view.dart';
 import 'package:smart_laundry_tracker/screens/garment_form_screen.dart';
 import 'package:smart_laundry_tracker/screens/home_shell.dart';
 import 'package:smart_laundry_tracker/state/wardrobe_state.dart';
@@ -441,6 +442,32 @@ void main() {
     expect(find.text('Discard this piece?'), findsNothing);
     expect(find.byIcon(AppIcons.close), findsNothing);
     expect(state.garments, hasLength(1));
+  });
+
+  testWidgets('the name keyboard closes when Add and next opens the camera', (tester) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final state = await _loadedState();
+    state.addGarment(name: 'Tee', category: GarmentCategory.tops);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(AppIcons.add));
+    await tester.pumpAndSettle();
+    // Our camera covers the form while open; typing the name happens once
+    // it's out of the way.
+    GarmentFormScreen.ownCamera = true;
+    await tester.tap(find.byType(TextField).first);
+    await tester.enterText(find.byType(TextField).first, 'Black jeans');
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    await tester.tap(find.text('Add and next'));
+    await tester.pump();
+    await tester.pump();
+    expect(state.garments, hasLength(2));
+    expect(find.byType(CameraView), findsOneWidget);
+    expect(tester.testTextInput.isVisible, isFalse, reason: 'no keyboard over the viewfinder');
   });
 
   group('fit shuffle', () {
