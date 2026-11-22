@@ -1,6 +1,7 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:smart_laundry_tracker/services/cutout.dart';
@@ -157,5 +158,29 @@ void main() {
     expect(ImageStore.isCutout('/data/garments/g_1.jpg'), isFalse);
     expect(ImageStore.isCutout(null), isFalse);
     expect(ImageStore.isCutoutBytes(Uint8List.fromList([1, 2, 3])), isFalse);
+  });
+
+  test('on iPhone the subjects come from Vision through the platform channel', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    const channel = MethodChannel('findmyfit/cutout');
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'subjects');
+      expect(call.arguments, {'path': '/tmp/photo.jpg'});
+      return [
+        {'x': 3, 'y': 4, 'width': 2, 'height': 1, 'mask': Float32List.fromList([0.25, 1])},
+      ];
+    });
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      final subjects = await Cutout.platformFinder('/tmp/photo.jpg');
+      expect(subjects, hasLength(1));
+      final s = subjects.single;
+      expect((s.x, s.y, s.width, s.height), (3, 4, 2, 1));
+      expect(s.mask, [0.25, 1.0]);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+      messenger.setMockMethodCallHandler(channel, null);
+    }
   });
 }

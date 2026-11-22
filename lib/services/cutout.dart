@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' show Offset, Rect;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_subject_segmentation/google_mlkit_subject_segmentation.dart';
 import 'package:image/image.dart' as img;
 
@@ -73,7 +73,7 @@ class CutoutResult {
   final bool unavailable;
 
   /// True when it couldn't run because Play services is still downloading
-  /// the model, so trying again later will help.
+  /// the model (Android), so trying again later will help.
   final bool downloading;
 
   const CutoutResult.done(Uint8List this.png, {this.inPlace, this.geometry}) : unavailable = false, downloading = false;
@@ -89,17 +89,58 @@ class CutoutResult {
 /// slightly tilted garment is straightened, and the result is trimmed and
 /// centered on a square.
 ///
-/// Runs on the phone with Google ML Kit (Android), whose model Play
-/// services downloads the first time. Elsewhere, or when no garment is
-/// found, there's no cutout and the plain photo is kept.
+/// Runs on the phone: with Google ML Kit on Android, whose model Play
+/// services downloads the first time, and with Apple's Vision framework on
+/// iPhone (iOS 17 and later, see ios/Runner/CutoutPlugin.swift). Elsewhere,
+/// or when no garment is found, there's no cutout and the plain photo is
+/// kept.
 class Cutout {
   /// Longest side of a saved cutout, matching the picker's photo size.
   static const maxSide = 900;
 
-  static bool get supported => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  static bool get supported {
+    if (kIsWeb) return false;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => true,
+      TargetPlatform.iOS => _iosVersion >= 17,
+      _ => false,
+    };
+  }
+
+  /// The iPhone's major iOS version, or 0 when it can't be told.
+  static final int _iosVersion = () {
+    try {
+      // Like "Version 17.4 (Build 21E213)".
+      return int.parse(RegExp(r'\d+').firstMatch(Platform.operatingSystemVersion)!.group(0)!);
+    } catch (_) {
+      return 0;
+    }
+  }();
 
   @visibleForTesting
-  static SubjectFinder finder = _mlKit;
+  static SubjectFinder finder = platformFinder;
+
+  /// ML Kit on Android, Vision on iPhone.
+  @visibleForTesting
+  static Future<List<CutoutSubject>> platformFinder(String path) =>
+      defaultTargetPlatform == TargetPlatform.iOS ? _vision(path) : _mlKit(path);
+
+  static const _channel = MethodChannel('findmyfit/cutout');
+
+  /// Apple's Vision framework, through ios/Runner/CutoutPlugin.swift.
+  static Future<List<CutoutSubject>> _vision(String path) async {
+    final subjects = await _channel.invokeListMethod<Map<Object?, Object?>>('subjects', {'path': path}) ?? const [];
+    return [
+      for (final s in subjects)
+        CutoutSubject(
+          x: s['x']! as int,
+          y: s['y']! as int,
+          width: s['width']! as int,
+          height: s['height']! as int,
+          mask: s['mask']! as Float32List,
+        ),
+    ];
+  }
 
   static Future<CutoutResult> lift(Uint8List photo) async {
     File? temp;
