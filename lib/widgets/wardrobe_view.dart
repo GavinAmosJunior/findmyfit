@@ -248,34 +248,30 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                     },
                   ),
                 ),
-              // Two doors that swing open on their hinges the first time,
-              // turning toward you until they're edge-on and gone. Solid
-              // the whole way; they shade a little as they turn from the light.
+              // Sliding doors that glide apart the first time, into the
+              // sides of the wardrobe, like pocket doors. Solid the whole
+              // way: they disappear behind the frame, never fade.
               Positioned.fill(
                 child: IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _doors,
-                    builder: (context, _) {
-                      final t = Curves.easeInOutCubic.transform(_doors.value);
-                      if (t >= 1) return const SizedBox.shrink();
-                      final half = c.maxWidth / 2;
-                      final angle = t * pi / 2;
-                      Widget door(bool left) => Positioned(
-                        left: left ? 2 * k : null,
-                        right: left ? null : 2 * k,
-                        top: 2 * k,
-                        bottom: 2 * k,
-                        width: half - 2 * k,
-                        child: Transform(
-                          alignment: left ? Alignment.centerLeft : Alignment.centerRight,
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.0012)
-                            ..rotateY(left ? angle : -angle),
-                          child: _Door(handleOnRight: left, k: k, shade: sin(angle) * 0.22),
-                        ),
-                      );
-                      return Stack(clipBehavior: Clip.none, children: [door(true), door(false)]);
-                    },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10 * k),
+                    child: AnimatedBuilder(
+                      animation: _doors,
+                      builder: (context, _) {
+                        final t = Curves.easeInOutCubic.transform(_doors.value);
+                        if (t >= 1) return const SizedBox.shrink();
+                        final half = c.maxWidth / 2;
+                        Widget door(bool left) => Positioned(
+                          left: left ? 2 * k - t * half : null,
+                          right: left ? null : 2 * k - t * half,
+                          top: 2 * k,
+                          bottom: 2 * k,
+                          width: half - 2 * k,
+                          child: _Door(handleOnRight: left, k: k),
+                        );
+                        return Stack(children: [door(true), door(false)]);
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -291,16 +287,13 @@ class _Door extends StatelessWidget {
   final bool handleOnRight;
   final double k;
 
-  /// How much the door darkens as it turns away from the light.
-  final double shade;
-
-  const _Door({required this.handleOnRight, required this.k, this.shade = 0});
+  const _Door({required this.handleOnRight, required this.k});
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Color.alphaBlend(Colors.black.withValues(alpha: shade), context.palette.tile),
+        color: context.palette.tile,
         border: Border.all(color: context.palette.separator, width: 2),
         borderRadius: BorderRadius.circular(8 * k),
       ),
