@@ -782,7 +782,8 @@ class _Shelf extends StatelessWidget {
                                     height: height,
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(min(20, height * 0.25)),
-                                      child: GarmentImage(garment: items[i % items.length]),
+                                      // Shoes are wide and low: closer, so they fill the shelf.
+                                      child: GarmentImage(garment: items[i % items.length], zoom: 1.4),
                                     ),
                                   ),
                                   const SizedBox(height: 8),

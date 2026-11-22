@@ -39,7 +39,11 @@ class GarmentImage extends StatelessWidget {
   /// stands out.
   final Color? backdrop;
 
-  const GarmentImage({super.key, required this.garment, this.iconSize = 34, this.backdrop});
+  /// How much closer a cutout is shown, for pieces that sit small in
+  /// their square, like shoes on a wide shelf.
+  final double zoom;
+
+  const GarmentImage({super.key, required this.garment, this.iconSize = 34, this.backdrop, this.zoom = 1});
 
   // Decoding a data: URL is costly, so keep recent results.
   static final _cache = <String, Uint8List>{};
@@ -72,7 +76,7 @@ class GarmentImage extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, c) => Padding(
           padding: EdgeInsets.all(c.biggest.shortestSide.isFinite ? c.biggest.shortestSide * 0.08 : 0),
-          child: photo,
+          child: zoom == 1 ? photo : Transform.scale(scale: zoom, child: photo),
         ),
       ),
     );
