@@ -247,25 +247,26 @@ class AppFilm extends StatelessWidget {
   (Widget, _Shot) _shuffle(BuildContext context, double t) {
     const button = Offset(_sw / 2 + 30, _sh - 140);
     final shot = _camera(t, [
-      (0.0, (zoom: 1.0, focus: const Offset(_sw / 2, 520))),
-      (1.0, (zoom: 1.05, focus: const Offset(_sw / 2, 520))),
+      (0.0, (zoom: 0.9, focus: const Offset(_sw / 2, 450))),
+      (1.0, (zoom: 0.93, focus: const Offset(_sw / 2, 450))),
     ]);
-    final taps = [0.3];
-    // After the slide the pieces swing on their hangers and settle.
+    final taps = [0.25];
+    // A spin through the rail, slowing to a stop, like the app's Shuffle;
+    // then the pieces swing on their hangers and settle.
     double swing(double from) {
       final secs = (t - from) * filmSeconds;
       return secs <= 0 ? 0 : 0.14 * math.exp(-3.5 * secs) * math.sin(11 * secs);
     }
     var top = 0.0, bottom = 0.0;
-    for (final (i, at) in taps.indexed) {
-      top += _seg(t, at + 0.02, at + 0.12) * (i + 1);
-      bottom += _seg(t, at + 0.08, at + 0.18);
+    for (final at in taps) {
+      top += _seg(t, at + 0.02, at + 0.4, Curves.easeOutCubic) * 5;
+      bottom += _seg(t, at + 0.07, at + 0.45, Curves.easeOutCubic) * 3;
     }
     final press = taps.map((a) => _bump(_seg(t, a - 0.02, a + 0.04, Curves.linear))).reduce(math.max);
     final s = S.of(context);
     final screen = Stack(
       children: [
-        _FitsScreen(s: s, top: top, bottom: bottom, press: press, swingTop: swing(0.4), swingBottom: swing(0.46)),
+        _FitsScreen(s: s, top: top, bottom: bottom, press: press, swingTop: swing(0.6), swingBottom: swing(0.66)),
         _FingerAt(t: t, taps: [for (final a in taps) (a, button)]),
       ],
     );
@@ -279,9 +280,10 @@ class AppFilm extends StatelessWidget {
   (Widget, _Shot) _wear(BuildContext context, double t) {
     final wore = _ClosetScreen.woreButton(0);
     final hamperTab = _TabBar.tabCenter(2);
+    // One long, gentle glide down, following the tee to the Hamper tab.
     final shot = _camera(t, [
-      (0.4, (zoom: 1.0, focus: wore + const Offset(0, 120))),
-      (0.75, (zoom: 1.0, focus: hamperTab - const Offset(0, 120))),
+      (0.05, (zoom: 0.86, focus: const Offset(_sw / 2, 400))),
+      (0.95, (zoom: 0.86, focus: hamperTab - const Offset(0, 200))),
     ]);
     final s = S.of(context);
     final screen = Stack(
@@ -290,9 +292,10 @@ class AppFilm extends StatelessWidget {
           s: s,
           wornPress: _bump(_seg(t, 0.18, 0.26, Curves.linear)),
           worn: t > 0.22,
-          gone: _seg(t, 0.28, 0.48, Curves.easeInCubic),
-          hamperCount: t > 0.8 ? 3 : 2,
-          hamperPop: _bump(_seg(t, 0.8, 0.92, Curves.linear)),
+          gone: _seg(t, 0.28, 0.62, Curves.linear),
+          reflow: _seg(t, 0.5, 0.78, Curves.linear),
+          hamperCount: t > 0.62 ? 3 : 2,
+          hamperPop: _bump(_seg(t, 0.62, 0.76, Curves.linear)),
         ),
         _FingerAt(t: t, taps: [(0.22, wore)]),
       ],
@@ -523,7 +526,11 @@ class _ClosetScreen extends StatelessWidget {
     this.hamperCount = 2,
     this.hamperPop = 0,
     this.hide,
+    this.reflow = 0,
   });
+
+  /// How far the others have moved up to fill the worn piece's place.
+  final double reflow;
 
   /// A piece left out of the grid, while it's on its way in.
   final int? hide;
@@ -534,6 +541,16 @@ class _ClosetScreen extends StatelessWidget {
   static Offset _cell(int i) => Offset(16 + (i % 2) * (_tile + 12), _top + (i ~/ 2) * _row);
   static Offset woreButton(int i) => _cell(i) + const Offset(_tile - 28, _tile - 28);
 
+  /// Where a tile is now: the worn one on its way to the Hamper tab, the
+  /// others sliding back one spot.
+  Offset _place(int i) {
+    if (i == 0) {
+      final target = _TabBar.tabCenter(2) - const Offset(_tile * 0.15 / 2, _tile * 0.15 / 2);
+      return Offset.lerp(_cell(0), target, Curves.easeInOutCubic.transform(gone))!;
+    }
+    return Offset.lerp(_cell(i), _cell(i - 1), Curves.easeInOutCubic.transform(reflow))!;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -542,12 +559,13 @@ class _ClosetScreen extends StatelessWidget {
         for (final (i, art) in _pieces.indexed)
           if (i != hide)
           Positioned(
-            left: _cell(i).dx,
-            top: _cell(i).dy + (i == 0 ? 120 * gone : 0),
+            left: _place(i).dx,
+            top: _place(i).dy,
             child: Opacity(
-              opacity: i == 0 ? 1 - gone : 1,
+              opacity: i == 0 ? 1 - _seg(gone, 0.6, 1, Curves.linear) : 1,
               child: Transform.scale(
-                scale: i == 0 ? 1 - 0.6 * gone : 1,
+                alignment: Alignment.topLeft,
+                scale: i == 0 ? 1 - 0.85 * gone : 1,
                 child: SizedBox(
                   width: _tile,
                   child: Column(
