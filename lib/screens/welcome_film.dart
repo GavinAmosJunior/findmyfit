@@ -504,22 +504,23 @@ class _ClosetScreen extends StatelessWidget {
                       Stack(
                         children: [
                           _Tile(art, size: _tile),
+                          // Clothes only, like the app: tee, jeans, jacket.
+                          if (i < 3)
                           Positioned(
                             right: 8,
                             bottom: 8,
                             child: Transform.scale(
                               scale: i == 0 ? 1 + 0.2 * wornPress : 1,
                               child: Container(
-                                width: 40,
-                                height: 40,
+                                width: 34,
+                                height: 34,
                                 decoration: BoxDecoration(
-                                  color: i == 0 && worn ? context.ink : context.colors.surface,
+                                  color: i == 0 && worn ? context.ink : context.colors.surface.withValues(alpha: 0.8),
                                   shape: BoxShape.circle,
-                                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
                                 ),
                                 child: Icon(
-                                  AppIcons.wore,
-                                  size: 20,
+                                  AppIcons.hamper,
+                                  size: 17,
                                   color: i == 0 && worn ? context.colors.surface : context.ink,
                                 ),
                               ),

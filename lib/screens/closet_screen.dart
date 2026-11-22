@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -332,10 +334,12 @@ class GarmentTile extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (canWear)
+              // Only clothes that get washed: it drops them in the hamper.
+              // Shoes, hats and the like are worn from their sheet.
+              if (canWear && garment.category.goesToHamper)
                 Positioned(
-                  right: 4,
-                  bottom: 4,
+                  right: 8,
+                  bottom: 8,
                   child: _WoreItButton(
                     toHamper: garment.category.goesToHamper,
                     tooltip: garment.category.goesToHamper ? s.woreItHint(garment.name) : s.woreCounted(garment.name),
@@ -391,19 +395,30 @@ class _WoreItButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        backgroundColor: context.colors.surface,
-        foregroundColor: context.ink,
-        minimumSize: const Size(40, 40),
-        fixedSize: const Size(40, 40),
-        elevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.25),
-        tapTargetSize: MaterialTapTargetSize.padded,
+    // A small frosted disc with the hamper on it: where the piece goes.
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onPressed();
+          },
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                width: 34,
+                height: 34,
+                color: context.colors.surface.withValues(alpha: 0.72),
+                child: Icon(AppIcons.hamper, size: 17, color: context.ink),
+              ),
+            ),
+          ),
+        ),
       ),
-      icon: const Icon(AppIcons.wore, size: 20),
     );
   }
 }
