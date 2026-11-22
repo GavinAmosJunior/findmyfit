@@ -45,6 +45,12 @@ abstract final class Samples {
   static List<String> get preview =>
       [for (final a in ['tee', 'jeans', 'coat', 'sneakers', 'blouse', 'cap']) 'assets/samples/$a.png'];
 
+  /// A sample's name in the app's language, by its art's name.
+  static String name(String asset, S s) {
+    final p = [..._closet, ..._hamper, ..._laundry].firstWhere((p) => p.asset == asset);
+    return s.isIndonesian ? p.id : p.en;
+  }
+
   /// Fills the closet with the samples, named in the app's language.
   static Future<void> add(WardrobeState state, S s) async {
     final ids = <String>[];
@@ -77,5 +83,12 @@ abstract final class Samples {
   static void remove(WardrobeState state) {
     state.removeSamples();
     ImageStore.deleteUnused(state.garments.map((g) => g.imageUrl).whereType<String>().toSet());
+  }
+
+  /// Starts the welcome over with a clean slate of samples: for showing
+  /// the app to one person after another. Your own clothes stay.
+  static void replayWelcome(WardrobeState state) {
+    if (state.hasSamples) remove(state);
+    state.showWelcomeAgain();
   }
 }

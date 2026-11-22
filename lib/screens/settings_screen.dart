@@ -228,9 +228,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: const Icon(AppIcons.closet),
                 title: Text(s.showWelcome),
+                subtitle: Text(s.showWelcomeHint),
                 onTap: () {
                   Navigator.of(context).popUntil((r) => r.isFirst);
-                  state.showWelcomeAgain();
+                  Samples.replayWelcome(state);
                 },
               ),
               if (state.hasSamples)

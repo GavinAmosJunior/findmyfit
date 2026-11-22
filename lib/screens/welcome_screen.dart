@@ -4,13 +4,15 @@ import 'package:flutter/services.dart';
 import '../l10n/strings.dart';
 import '../services/samples.dart';
 import '../state/app_scope.dart';
-import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
+import 'welcome_scenes.dart';
 
 /// The first thing a new person sees, in the spirit of setting up a new
-/// iPhone: a few calm pages, one idea each, big bold titles, and one
-/// clear button at the bottom. The last page offers sample clothes, so
-/// the app can be tried before photographing a single piece.
+/// iPhone: calm pages, one idea each, big bold titles, and one clear
+/// button at the bottom. Each idea plays as a small looping film (see
+/// welcome_scenes.dart): scanning a piece, shuffling a fit, Wore it into
+/// the hamper, and checking a load back in. The last page offers sample
+/// clothes, so the app can be tried before photographing a single piece.
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -19,7 +21,7 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  static const _pages = 3;
+  static const _pages = 6;
   final _pager = PageController();
   int _page = 0;
   bool _working = false;
@@ -27,8 +29,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // The sample art shows on the last page; have it ready by then.
-    for (final a in Samples.preview) {
+    // The scenes and the last page use the sample art; have it ready.
+    for (final a in Samples.assets) {
       precacheImage(AssetImage(a), context);
     }
   }
@@ -39,12 +41,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.dispose();
   }
 
+  Duration get _slide =>
+      MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : const Duration(milliseconds: 420);
+
   void _next() {
     HapticFeedback.selectionClick();
-    _pager.nextPage(
-      duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : const Duration(milliseconds: 420),
-      curve: Curves.easeInOutCubic,
-    );
+    _pager.nextPage(duration: _slide, curve: Curves.easeInOutCubic);
+  }
+
+  /// Straight to the last page, where sample clothes are offered.
+  void _skip() {
+    HapticFeedback.selectionClick();
+    _pager.animateToPage(_pages - 1, duration: _slide * 1.6, curve: Curves.easeInOutCubic);
   }
 
   Future<void> _finish({required bool samples}) async {
@@ -72,13 +80,50 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Skip, top right, on every page but the last.
+            SizedBox(
+              height: 44,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: AnimatedOpacity(
+                  opacity: last ? 0 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  child: IgnorePointer(
+                    ignoring: last,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: TextButton(onPressed: _skip, child: Text(s.skip)),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: PageView(
                 controller: _pager,
                 onPageChanged: (i) => setState(() => _page = i),
                 children: [
                   _HelloPage(s: s),
-                  _HowPage(s: s),
+                  _FeaturePage(
+                    scene: ScanScene(active: _page == 1),
+                    title: s.scanTitle,
+                    body: s.scanBody,
+                  ),
+                  _FeaturePage(
+                    scene: ShuffleScene(active: _page == 2),
+                    title: s.shuffleTitle,
+                    body: s.shuffleBody,
+                  ),
+                  _FeaturePage(
+                    scene: HamperScene(active: _page == 3),
+                    title: s.hamperTitle,
+                    body: s.hamperBody,
+                  ),
+                  _FeaturePage(
+                    scene: CheckScene(active: _page == 4),
+                    title: s.checkTitle,
+                    body: s.checkBody,
+                  ),
                   _TryPage(s: s),
                 ],
               ),
@@ -225,45 +270,28 @@ class _HelloPage extends StatelessWidget {
   }
 }
 
-class _HowPage extends StatelessWidget {
-  final S s;
+/// One idea: its little film, a bold title and a line or two.
+class _FeaturePage extends StatelessWidget {
+  final Widget scene;
+  final String title;
+  final String body;
 
-  const _HowPage({required this.s});
+  const _FeaturePage({required this.scene, required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {
-    final rows = [
-      (AppIcons.cameraOutline, s.howClosetTitle, s.howClosetBody),
-      (AppIcons.fits, s.howFitsTitle, s.howFitsBody),
-      (AppIcons.hamper, s.howHamperTitle, s.howHamperBody),
-      (AppIcons.laundry, s.howLaundryTitle, s.howLaundryBody),
-    ];
     return _Page(
       child: _Entrance(
         children: [
-          Text(s.howTitle, textAlign: TextAlign.center, style: context.text.headlineMedium),
-          const SizedBox(height: 36),
-          for (final (icon, title, body) in rows)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 26),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(width: 44, child: Icon(icon, size: 32, color: context.ink)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(title, style: context.text.titleSmall),
-                        const SizedBox(height: 3),
-                        Text(body, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          scene,
+          const SizedBox(height: 28),
+          Text(title, textAlign: TextAlign.center, style: context.text.headlineMedium),
+          const SizedBox(height: 14),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: context.text.bodyLarge?.copyWith(color: context.palette.secondaryText),
+          ),
         ],
       ),
     );

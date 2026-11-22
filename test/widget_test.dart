@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smart_laundry_tracker/l10n/strings.dart';
 import 'package:smart_laundry_tracker/main.dart';
 import 'package:smart_laundry_tracker/models/garment.dart';
 import 'package:smart_laundry_tracker/models/laundry_batch.dart';
@@ -484,9 +485,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome to\nFindMyFit'), findsOneWidget);
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('How FindMyFit works'), findsOneWidget);
+    // Each idea plays as a looping film, so step the clock rather than
+    // waiting for stillness.
+    for (final title in ['Snap it. It lifts right out.', 'Shuffle a fit', 'Wore it? One tap.', 'Know what comes back']) {
+      await tester.tap(find.text('Continue'));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text(title), findsOneWidget);
+    }
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Try it with sample clothes'), findsOneWidget);
@@ -524,9 +530,7 @@ void main() {
     final state = await _loadedState();
     await tester.pumpWidget(FindMyFitApp(state: state));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Start with an empty closet'));
     await tester.pumpAndSettle();
@@ -536,6 +540,25 @@ void main() {
 
     final again = await _loadedState();
     expect(again.welcomeDone, isTrue, reason: 'remembered');
+  });
+
+  testWidgets('holding Settings starts the welcome over with fresh samples, keeping your own clothes', (tester) async {
+    Samples.store = (bytes) async => 'data:image/png;base64,${base64Encode(bytes)}';
+    addTearDown(() => Samples.store = ImageStore.saveBytes);
+    final state = await _loadedState();
+    state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+    final s = S.of(tester.element(find.byType(HomeShell)));
+    await tester.runAsync(() => Samples.add(state, s));
+    await tester.pumpAndSettle();
+    expect(state.garments, hasLength(12));
+
+    await tester.longPress(find.byIcon(AppIcons.settings));
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome to\nFindMyFit'), findsOneWidget);
+    expect(state.garments.map((g) => g.name), ['My jacket']);
+    expect(state.batches, isEmpty);
   });
 
   test('people who already have clothes skip the welcome', () async {

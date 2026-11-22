@@ -108,10 +108,19 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 onPressed: all.isEmpty ? null : _toggleSearch,
                 icon: Icon(_searching ? AppIcons.close : AppIcons.search),
               ),
-              IconButton(
-                tooltip: s.settings,
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-                icon: const Icon(AppIcons.settings),
+              // Holding Settings starts the welcome over: for showing the
+              // app to one person after another, as at an exhibition.
+              // (No tooltip: it would take the long press for itself.)
+              Semantics(
+                label: s.settings,
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                  onLongPress: () {
+                    HapticFeedback.heavyImpact();
+                    Samples.replayWelcome(state);
+                  },
+                  icon: const Icon(AppIcons.settings),
+                ),
               ),
             ],
           ),
