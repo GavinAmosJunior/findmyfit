@@ -617,9 +617,6 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
 
   Widget _preview(BuildContext context, S s, Garment preview) {
     final ref = _image!;
-    final cutoutOn = _useCutout && _cutout != null;
-    final canCutout =
-        _cutout != null || (Cutout.supported && !ImageStore.isCutout(_original) && !_lifting && !_noGarment);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     final isFileCutout = ImageStore.isCutout(ref) && !kIsWeb && !ref.startsWith('data:');
@@ -712,31 +709,6 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
               ),
             ),
           ),
-        Positioned(
-          right: 10,
-          top: 10,
-          child: Column(
-            children: [
-              // Retake sits with the photo's other tools, for a shot that came out wrong.
-              _PhotoButton(
-                icon: AppIcons.cameraOutline,
-                tooltip: s.retake,
-                onPressed: _saving ? null : (_hasCamera ? _takePhoto : _choosePhotos),
-              ),
-              const SizedBox(height: 8),
-              _PhotoButton(icon: AppIcons.rotate, tooltip: s.rotate, onPressed: _saving ? null : _rotate),
-              if (canCutout) ...[
-                const SizedBox(height: 8),
-                _PhotoButton(
-                  icon: cutoutOn ? AppIcons.cutoutOn : AppIcons.cutout,
-                  tooltip: cutoutOn ? s.showOriginal : s.showCutout,
-                  selected: cutoutOn,
-                  onPressed: _saving ? null : _toggleCutout,
-                ),
-              ],
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -745,6 +717,9 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
     final preview = Garment(id: 'preview', name: _name.text, category: _category, imageUrl: _image);
     final hasPhoto = _image != null;
     final inQueue = _queueTotal > 0;
+    final cutoutOn = _useCutout && _cutout != null;
+    final canCutout =
+        _cutout != null || (Cutout.supported && !ImageStore.isCutout(_original) && !_lifting && !_noGarment);
 
     return Column(
       children: [
@@ -781,6 +756,29 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           ),
         ),
         const SizedBox(height: 10),
+        if (hasPhoto)
+          // One row of tools under the photo, like editing in Photos.
+          Row(
+            children: [
+              _Tool(
+                icon: _hasCamera ? AppIcons.cameraOutline : AppIcons.library,
+                label: s.retake,
+                onPressed: _busy || _saving ? null : (_hasCamera ? _takePhoto : _choosePhotos),
+              ),
+              if (_hasCamera)
+                _Tool(icon: AppIcons.library, label: s.library, onPressed: _busy || _saving ? null : _choosePhotos),
+              _Tool(icon: AppIcons.rotate, label: s.rotate, onPressed: _busy || _saving ? null : _rotate),
+              if (canCutout)
+                _Tool(
+                  icon: cutoutOn ? AppIcons.cutoutOn : AppIcons.cutout,
+                  label: s.cutoutLabel,
+                  selected: cutoutOn,
+                  onPressed: _busy || _saving ? null : _toggleCutout,
+                ),
+              if (inQueue) _Tool(icon: AppIcons.forward, label: s.skip, onPressed: _busy ? null : _skip),
+            ],
+          )
+        else
         Row(
           children: [
             if (_hasCamera) ...[
@@ -788,7 +786,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                 child: TextButton.icon(
                   onPressed: _busy ? null : _takePhoto,
                   icon: const Icon(AppIcons.cameraOutline),
-                  label: Text(hasPhoto ? s.retake : s.takePhoto),
+                  label: Text(s.takePhoto),
                 ),
               ),
             ],
@@ -803,6 +801,56 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// A tool under the photo: icon over a small word, as in Photos' editor.
+class _Tool extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final bool selected;
+
+  const _Tool({required this.icon, required this.label, required this.onPressed, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = onPressed == null ? context.palette.tertiaryText : context.ink;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onPressed == null
+              ? null
+              : () {
+                  HapticFeedback.selectionClick();
+                  onPressed!();
+                },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 40,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: selected ? context.ink : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, size: 21, color: selected ? context.colors.surface : color),
+                ),
+                const SizedBox(height: 3),
+                Text(label, style: context.text.labelSmall?.copyWith(color: color), maxLines: 1),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -830,40 +878,6 @@ class _Pill extends StatelessWidget {
   );
 }
 
-/// A round button laid over the photo's corner.
-class _PhotoButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final bool selected;
-  final VoidCallback? onPressed;
-
-  const _PhotoButton({required this.icon, required this.tooltip, this.selected = false, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      toggled: selected,
-      child: Tooltip(
-        message: tooltip,
-        child: Material(
-          color: selected ? Colors.white : Colors.black.withValues(alpha: 0.5),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onPressed,
-            child: SizedBox.square(
-              dimension: 44,
-              child: Icon(icon, size: 22, color: selected ? Colors.black : Colors.white),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Keeps a picture in one place in the preview's switcher, whatever it
 /// shows inside, so changing its inside isn't a transition.
 class _Slot extends StatelessWidget {
   final Widget child;

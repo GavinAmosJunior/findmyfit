@@ -274,6 +274,8 @@ class S {
   String queueProgress(int current, int total) => _id ? 'Foto $current dari $total' : 'Photo $current of $total';
   String get liftingOut => _t('Removing background…', 'Menghapus latar…');
   String get rotate => _t('Rotate', 'Putar');
+  String get library => _t('Library', 'Galeri');
+  String get cutoutLabel => _t('Cutout', 'Potong');
   String get showOriginal => _t('Show original photo', 'Tampilkan foto asli');
   String get showCutout => _t('Remove background', 'Hapus latar');
   String get cutoutFailed => _t('Background removal didn’t work on this phone. The photo is kept as is.',
