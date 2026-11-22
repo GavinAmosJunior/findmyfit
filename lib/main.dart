@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'l10n/strings.dart';
 import 'screens/home_shell.dart';
+import 'screens/welcome_screen.dart';
 import 'services/image_store.dart';
 import 'state/app_scope.dart';
 import 'state/wardrobe_state.dart';
@@ -68,7 +69,15 @@ class _FindMyFitAppState extends State<FindMyFitApp> {
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
             scrollBehavior: const _AppScrollBehavior(),
             builder: (context, child) => MobileFrame(child: child!),
-            home: HomeShell(key: homeShellKey),
+            // New here: the welcome first. It fades into the app when done.
+            home: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 450),
+              child: !widget.state.isLoaded
+                  ? const Scaffold(key: ValueKey('loading'))
+                  : widget.state.welcomeDone
+                  ? HomeShell(key: homeShellKey)
+                  : const WelcomeScreen(key: ValueKey('welcome')),
+            ),
           );
         },
       ),

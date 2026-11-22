@@ -23,6 +23,8 @@ class S {
 
   String _t(String en, String id) => _id ? id : en;
 
+  bool get isIndonesian => _id;
+
   // ------------------------------------------------------------- navigation
   String get closet => _t('Closet', 'Lemari');
   String get hamper => _t('Hamper', 'Keranjang');
@@ -346,4 +348,38 @@ class S {
   String get aboutBody =>
       _t('FindMyFit helps you check that everything you send to the laundry comes back.',
           'FindMyFit membantu memastikan semua pakaian yang kamu kirim ke laundry kembali.');
+
+  // ---------------------------------------------------------------- welcome
+  String get welcomeTitle => _t('Welcome to\nFindMyFit', 'Selamat datang di\nFindMyFit');
+  String get welcomeBody => _t(
+      'Every piece you own, and where it is right now: in your closet, in the hamper or at the laundry.',
+      'Semua pakaianmu, dan di mana posisinya sekarang: di lemari, di keranjang, atau di laundry.');
+  String get continueLabel => _t('Continue', 'Lanjut');
+  String get howTitle => _t('How FindMyFit works', 'Cara kerja FindMyFit');
+  String get howClosetTitle => _t('Snap your clothes', 'Foto pakaianmu');
+  String get howClosetBody => _t('The background lifts away, so every piece looks like a product shot.',
+      'Latarnya hilang sendiri, jadi tiap pakaian tampak seperti foto katalog.');
+  String get howFitsTitle => _t('Shuffle outfits', 'Acak gaya');
+  String get howFitsBody =>
+      _t('Mix what’s clean into a fit and save the ones you like.', 'Padukan yang bersih jadi satu gaya, simpan yang kamu suka.');
+  String get howHamperTitle => _t('Tap Wore it', 'Ketuk Sudah dipakai');
+  String get howHamperBody =>
+      _t('Worn pieces wait in the hamper until laundry day.', 'Pakaian yang sudah dipakai menunggu di keranjang sampai hari laundry.');
+  String get howLaundryTitle => _t('Check what comes back', 'Cek yang kembali');
+  String get howLaundryBody => _t('Tick each piece as it returns. Anything missing gets a list for the laundromat.',
+      'Centang tiap pakaian yang kembali. Yang hilang langsung dibuatkan daftar untuk laundry.');
+  String get tryTitle => _t('Try it with sample clothes', 'Coba dengan pakaian contoh');
+  String get tryBody => _t(
+      'We’ll fill your closet with a few pieces, some in the hamper and a load at the laundry, so you can try everything. Remove them anytime.',
+      'Lemarimu akan diisi beberapa pakaian, ada yang di keranjang dan satu cucian di laundry, supaya kamu bisa mencoba semuanya. Hapus kapan saja.');
+  String get useSamples => _t('Use sample clothes', 'Pakai pakaian contoh');
+  String get startEmpty => _t('Start with an empty closet', 'Mulai dengan lemari kosong');
+  String get sampleLaundromat => _t('Sparkle Laundry', 'Laundry Kilat');
+  String get samplesBannerTitle => _t('These are sample clothes', 'Ini pakaian contoh');
+  String get samplesBannerBody => _t('Try Wore it, Fits and the laundry check. Remove them when you add your own.',
+      'Coba Sudah dipakai, Gaya, dan cek laundry. Hapus saat kamu menambah pakaianmu sendiri.');
+  String get removeSamples => _t('Remove sample clothes', 'Hapus pakaian contoh');
+  String get samplesRemoved => _t('Sample clothes removed', 'Pakaian contoh dihapus');
+  String get gettingStarted => _t('Getting started', 'Memulai');
+  String get showWelcome => _t('Show welcome again', 'Tampilkan sambutan lagi');
 }

@@ -5,6 +5,7 @@ import '../models/garment.dart';
 import '../services/backup_service.dart';
 import '../services/cutout.dart';
 import '../services/image_store.dart';
+import '../services/samples.dart';
 import '../state/app_scope.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/grouped_section.dart';
@@ -219,6 +220,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: Text(s.importBackup),
                 onTap: _import,
               ),
+            ],
+          ),
+          GroupedSection(
+            header: s.gettingStarted,
+            children: [
+              ListTile(
+                leading: const Icon(AppIcons.closet),
+                title: Text(s.showWelcome),
+                onTap: () {
+                  Navigator.of(context).popUntil((r) => r.isFirst);
+                  state.showWelcomeAgain();
+                },
+              ),
+              if (state.hasSamples)
+                ListTile(
+                  leading: Icon(AppIcons.delete, color: context.palette.signal),
+                  title: Text(s.removeSamples, style: TextStyle(color: context.palette.signal)),
+                  onTap: () {
+                    Samples.remove(state);
+                    showMessage(context, s.samplesRemoved);
+                  },
+                ),
             ],
           ),
           GroupedSection(

@@ -18,6 +18,8 @@ class WardrobeState extends ChangeNotifier {
   static const _keyAppearance = 'appearance_v1';
   static const _keyRails = 'shuffle_rails_v1';
   static const _keyClosetView = 'closet_view_v1';
+  static const _keyWelcomeDone = 'welcome_done_v1';
+  static const _keySamples = 'sample_ids_v1';
 
   /// The extra rows Fit Shuffle shows besides tops and bottoms.
   static const extraRails = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories, GarmentCategory.shoes];
@@ -35,12 +37,53 @@ class WardrobeState extends ChangeNotifier {
   String _appearance = 'system';
   final Set<GarmentCategory> _rails = {};
   String _closetView = 'grid';
+  bool _welcomeDone = false;
+  final Set<String> _sampleIds = {};
 
   /// How Closet shows your clothes: 'grid' or 'wardrobe'.
   String get closetView => _closetView;
 
   void setClosetView(String view) {
     _closetView = view;
+    _changed();
+  }
+
+  /// Whether the welcome pages have been seen (or skipped).
+  bool get welcomeDone => _welcomeDone;
+
+  void finishWelcome() {
+    _welcomeDone = true;
+    _changed();
+  }
+
+  /// Shows the welcome pages again, from Settings.
+  void showWelcomeAgain() {
+    _welcomeDone = false;
+    _changed();
+  }
+
+  /// Whether any of the sample clothes from the welcome are still here.
+  bool get hasSamples => _garments.any((g) => _sampleIds.contains(g.id));
+
+  bool isSample(String id) => _sampleIds.contains(id);
+
+  /// Remembers which pieces are samples, so they can be removed together.
+  void markSamples(Iterable<String> ids) {
+    _sampleIds.addAll(ids);
+    _changed();
+  }
+
+  /// Removes the sample clothes, the loads made only of them, and outfits
+  /// that use them.
+  void removeSamples() {
+    _garments.removeWhere((g) => _sampleIds.contains(g.id));
+    _batches.removeWhere((b) => b.itemIds.every(_sampleIds.contains));
+    for (final b in _batches) {
+      b.itemIds.removeWhere(_sampleIds.contains);
+      b.verifiedItemIds.removeWhere(_sampleIds.contains);
+    }
+    _fits.removeWhere((f) => f.itemIds.any(_sampleIds.contains));
+    _sampleIds.clear();
     _changed();
   }
 
@@ -117,6 +160,11 @@ class WardrobeState extends ChangeNotifier {
       _language = prefs.getString(_keyLanguage) ?? 'system';
       _appearance = prefs.getString(_keyAppearance) ?? 'system';
       _closetView = prefs.getString(_keyClosetView) ?? 'grid';
+      // People who used the app before the welcome existed skip it.
+      _welcomeDone = prefs.getBool(_keyWelcomeDone) ?? _garments.isNotEmpty;
+      _sampleIds
+        ..clear()
+        ..addAll(prefs.getStringList(_keySamples) ?? const []);
       _rails
         ..clear()
         ..addAll((prefs.getStringList(_keyRails) ?? []).map(GarmentCategory.fromString).where(extraRails.contains));
@@ -157,6 +205,8 @@ class WardrobeState extends ChangeNotifier {
       await prefs.setString(_keyAppearance, _appearance);
       await prefs.setStringList(_keyRails, _rails.map((c) => c.name).toList());
       await prefs.setString(_keyClosetView, _closetView);
+      await prefs.setBool(_keyWelcomeDone, _welcomeDone);
+      await prefs.setStringList(_keySamples, _sampleIds.toList());
     } catch (e) {
       debugPrint('Error saving wardrobe storage: $e');
     }

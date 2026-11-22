@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +10,8 @@ import 'package:smart_laundry_tracker/models/laundry_batch.dart';
 import 'package:smart_laundry_tracker/screens/camera_view.dart';
 import 'package:smart_laundry_tracker/screens/garment_form_screen.dart';
 import 'package:smart_laundry_tracker/screens/home_shell.dart';
+import 'package:smart_laundry_tracker/services/image_store.dart';
+import 'package:smart_laundry_tracker/services/samples.dart';
 import 'package:smart_laundry_tracker/state/wardrobe_state.dart';
 import 'package:smart_laundry_tracker/theme/app_icons.dart';
 import 'package:smart_laundry_tracker/widgets/pressable.dart';
@@ -20,7 +24,8 @@ Future<WardrobeState> _loadedState() async {
 
 void main() {
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    // Most tests start past the welcome; the welcome's own tests clear this.
+    SharedPreferences.setMockInitialValues({'welcome_done_v1': true});
     GoogleFonts.config.allowRuntimeFetching = false;
     // Tests have no camera: use the phone's picker path.
     GarmentFormScreen.ownCamera = false;
@@ -468,6 +473,77 @@ void main() {
     expect(state.garments, hasLength(2));
     expect(find.byType(CameraView), findsOneWidget);
     expect(tester.testTextInput.isVisible, isFalse, reason: 'no keyboard over the viewfinder');
+  });
+
+  testWidgets('a first run shows the welcome, and sample clothes fill every part of the app', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    Samples.store = (bytes) async => 'data:image/png;base64,${base64Encode(bytes)}';
+    addTearDown(() => Samples.store = ImageStore.saveBytes);
+    final state = await _loadedState();
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome to\nFindMyFit'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('How FindMyFit works'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Try it with sample clothes'), findsOneWidget);
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Use sample clothes'));
+      // Loading the art happens off the fake clock.
+      for (var i = 0; i < 50 && !state.welcomeDone; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await tester.pumpAndSettle();
+
+    expect(state.welcomeDone, isTrue);
+    expect(state.garments, hasLength(11));
+    expect(state.countOf(GarmentStatus.dirtyHamper), 2);
+    expect(state.countOf(GarmentStatus.inLaundry), 2);
+    expect(state.activeBatches, hasLength(1));
+    expect(find.byType(AppTabBar), findsOneWidget);
+    expect(find.text('These are sample clothes'), findsOneWidget);
+
+    // Your own piece stays when the samples go.
+    state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove sample clothes'));
+    await tester.pumpAndSettle();
+    expect(state.garments.map((g) => g.name), ['My jacket']);
+    expect(state.batches, isEmpty);
+    expect(state.hasSamples, isFalse);
+    expect(find.text('These are sample clothes'), findsNothing);
+  });
+
+  testWidgets('starting with an empty closet skips the samples, and the welcome is not shown again', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = await _loadedState();
+    await tester.pumpWidget(FindMyFitApp(state: state));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start with an empty closet'));
+    await tester.pumpAndSettle();
+
+    expect(state.garments, isEmpty);
+    expect(find.text('Start your closet'), findsOneWidget);
+
+    final again = await _loadedState();
+    expect(again.welcomeDone, isTrue, reason: 'remembered');
+  });
+
+  test('people who already have clothes skip the welcome', () async {
+    SharedPreferences.setMockInitialValues({
+      'saved_garments_v1': '[{"id":"g1","name":"Tee","category":"tops"}]',
+    });
+    final state = await _loadedState();
+    expect(state.welcomeDone, isTrue);
   });
 
   group('fit shuffle', () {

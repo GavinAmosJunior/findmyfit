@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../l10n/strings.dart';
 import '../models/garment.dart';
+import '../services/samples.dart';
 import '../state/app_scope.dart';
 import '../state/wardrobe_state.dart';
 import '../theme/app_icons.dart';
@@ -127,7 +128,52 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 onAction: () => GarmentFormScreen.openAdd(context),
               ),
             )
-          else if (state.closetView == 'wardrobe' && !_searching) ...[
+          else ...[
+            if (state.hasSamples && !_searching) SliverToBoxAdapter(child: _samplesBanner(context, s, state)),
+            ..._content(context, s, state, visible),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Says the clothes are samples, with a way to clear them.
+  Widget _samplesBanner(BuildContext context, S s, WardrobeState state) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.samplesBannerTitle, style: context.text.titleSmall),
+              const SizedBox(height: 3),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(s.samplesBannerBody, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    Samples.remove(state);
+                    showMessage(context, s.samplesRemoved);
+                  },
+                  child: Text(s.removeSamples),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _content(BuildContext context, S s, WardrobeState state, List<Garment> visible) {
+    return [
+          if (state.closetView == 'wardrobe' && !_searching) ...[
             SliverToBoxAdapter(child: _viewSwitch(context, s, state)),
             SliverToBoxAdapter(child: _wardrobe(context, s, state)),
           ] else ...[
@@ -161,9 +207,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 ),
               ),
           ],
-        ],
-      ),
-    );
+    ];
   }
 
   /// Grid or Wardrobe, as an iOS segmented control.
