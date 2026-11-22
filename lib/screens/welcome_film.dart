@@ -132,7 +132,7 @@ class AppFilm extends StatelessWidget {
     final scale = _fw / _sw * shot.zoom;
     final halfH = _fh / 2 / scale, halfW = _fw / 2 / scale;
     final center = Offset(
-      shot.focus.dx.clamp(halfW, _sw - halfW),
+      halfW * 2 >= _sw ? _sw / 2 : shot.focus.dx.clamp(halfW, _sw - halfW),
       shot.focus.dy.clamp(halfH, _sh - halfH),
     );
     final fade = math.min(_seg(t, 0, 0.05, Curves.linear), 1 - _seg(t, 0.95, 1, Curves.linear));
@@ -178,20 +178,66 @@ class AppFilm extends StatelessWidget {
 
   // ------------------------------------------------------------- add
 
-  /// Tap +, the camera opens on a shirt lying on the floor, the shutter
-  /// blinks, and the shirt lifts off its background while its name is
-  /// typed.
+  /// Snap: the jacket in the viewfinder, focus brackets close in, the
+  /// shutter, and it flies into its spot in your closet, named.
   (Widget, _Shot) _add(BuildContext context, double t) {
-    const card = Offset(_sw / 2, 300);
-    final shot = _camera(t, [
-      (0.0, (zoom: 1.0, focus: card)),
-      (1.0, (zoom: 1.08, focus: card)),
-    ]);
-    final lift = _seg(t, 0.2, 0.5, Curves.easeOutCubic);
-    final typed = _seg(t, 0.55, 0.8, Curves.linear);
-
     final s = S.of(context);
-    final screen = _AddScreen(s: s, lift: lift, name: Samples.name('almet', s), typed: typed);
+    final shot = _camera(t, [
+      (0.46, (zoom: 1.0, focus: const Offset(_sw / 2, 400))),
+      (0.72, (zoom: 0.88, focus: const Offset(_sw / 2, 335))),
+    ]);
+    const shutter = Offset(_sw / 2, 590);
+    final lock = _seg(t, 0.06, 0.28, Curves.easeOutBack);
+    final flash = _bump(_seg(t, 0.32, 0.42, Curves.linear));
+    final fly = _seg(t, 0.46, 0.72);
+    final named = _seg(t, 0.72, 0.82);
+    const big = Rect.fromLTWH(60, 190, _sw - 120, _sw - 120);
+    final end = _ClosetScreen._cell(2) & const Size(_ClosetScreen._tile, _ClosetScreen._tile);
+    final r = Rect.lerp(big, end, fly)!;
+    final frame = big.inflate(14 + 22 * (1 - lock));
+
+    final screen = Stack(
+      children: [
+        Opacity(opacity: fly, child: _ClosetScreen(s: s, hide: 2)),
+        Positioned.fromRect(rect: r, child: _Tile('almet', size: r.width)),
+        if (fly < 1) ...[
+          // Focus brackets, as the camera finds the piece.
+          Positioned.fromRect(
+            rect: frame,
+            child: Opacity(opacity: (1 - fly * 3).clamp(0.0, 1.0) * _seg(t, 0.02, 0.1), child: const _Brackets()),
+          ),
+          // The shutter.
+          Positioned(
+            left: shutter.dx - 36,
+            top: shutter.dy - 36,
+            child: Opacity(
+              opacity: (1 - fly * 3).clamp(0.0, 1.0),
+              child: Container(
+                width: 72,
+                height: 72,
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: context.ink, width: 3)),
+                child: Transform.scale(
+                  scale: 1 - 0.12 * flash,
+                  child: DecoratedBox(decoration: BoxDecoration(shape: BoxShape.circle, color: context.ink)),
+                ),
+              ),
+            ),
+          ),
+        ],
+        Positioned(
+          left: end.left + 4,
+          top: end.bottom + 10,
+          child: Opacity(
+            opacity: named,
+            child: Text(Samples.name('almet', s), style: context.text.titleSmall),
+          ),
+        ),
+        // A soft flash for the shot.
+        Positioned.fill(child: IgnorePointer(child: ColoredBox(color: Colors.white.withValues(alpha: 0.75 * flash)))),
+        _FingerAt(t: t, taps: const [(0.36, shutter)]),
+      ],
+    );
     return (screen, shot);
   }
 
@@ -476,7 +522,11 @@ class _ClosetScreen extends StatelessWidget {
     this.gone = 0,
     this.hamperCount = 2,
     this.hamperPop = 0,
+    this.hide,
   });
+
+  /// A piece left out of the grid, while it's on its way in.
+  final int? hide;
 
   static const _pieces = ['tee', 'denims', 'almet', 'sneakers', 'cap', 'watch'];
   static const _tile = (_sw - 32 - 12) / 2, _top = 168.0, _row = _tile + 56;
@@ -490,6 +540,7 @@ class _ClosetScreen extends StatelessWidget {
       children: [
         _LargeTitle(s.closetOf(AppScope.of(context).userName)),
         for (final (i, art) in _pieces.indexed)
+          if (i != hide)
           Positioned(
             left: _cell(i).dx,
             top: _cell(i).dy + (i == 0 ? 120 * gone : 0),
@@ -544,113 +595,32 @@ class _ClosetScreen extends StatelessWidget {
   }
 }
 
-class _AddScreen extends StatelessWidget {
-  final S s;
-  final double lift;
-  final String name;
-  final double typed;
-
-  const _AddScreen({required this.s, required this.lift, required this.name, required this.typed});
+/// A camera's focus corners.
+class _Brackets extends StatelessWidget {
+  const _Brackets();
 
   @override
   Widget build(BuildContext context) {
-    final shown = name.substring(0, (name.length * typed).round());
-    return Container(
-      width: _sw,
-      height: _sh,
-      color: context.colors.surface,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 64,
-            child: Text(s.addClothes, textAlign: TextAlign.center, style: context.text.titleMedium),
-          ),
-          Positioned(
-            left: 20,
-            top: 110,
-            child: Container(
-              width: _sw - 40,
-              height: 380,
-              decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(28)),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    // The real photo, then just the jacket: its background lifts away.
-                    child: Opacity(
-                      opacity: 1 - lift,
-                      child: Image.asset('assets/film/almet_photo.jpg', fit: BoxFit.cover),
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: Offset(0, -12 * lift),
-                    child: Opacity(
-                      opacity: lift,
-                      child: Transform.scale(scale: 0.9 + 0.1 * lift, child: Image.asset(_art('almet'), width: 380)),
-                    ),
-                  ),
-                ],
+    final side = BorderSide(color: context.ink, width: 3);
+    Widget corner(Alignment a) => Align(
+          alignment: a,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              border: Border(
+                top: a.y < 0 ? side : BorderSide.none,
+                bottom: a.y > 0 ? side : BorderSide.none,
+                left: a.x < 0 ? side : BorderSide.none,
+                right: a.x > 0 ? side : BorderSide.none,
               ),
             ),
           ),
-          Positioned(
-            left: 20,
-            right: 20,
-            top: 512,
-            child: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              alignment: Alignment.centerLeft,
-              decoration: BoxDecoration(
-                color: context.palette.tile,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.ink, width: typed > 0 ? 1.5 : 0),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    shown.isEmpty ? s.name : shown,
-                    style: context.text.bodyLarge?.copyWith(
-                      color: shown.isEmpty ? context.palette.secondaryText : null,
-                    ),
-                  ),
-                  if (typed > 0 && typed < 1) Container(width: 2, height: 22, color: context.ink),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 60,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 54,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(27)),
-                    child: Text(s.add, style: context.text.labelLarge),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    height: 54,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: context.ink, borderRadius: BorderRadius.circular(27)),
-                    child: Text(s.addAndNext, style: context.text.labelLarge?.copyWith(color: context.colors.surface)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+    return Stack(
+      children: [
+        for (final a in [Alignment.topLeft, Alignment.topRight, Alignment.bottomLeft, Alignment.bottomRight]) corner(a),
+      ],
     );
   }
 }

@@ -372,7 +372,7 @@ class S {
   String get continueLabel => _t('Continue', 'Lanjut');
   String get skip => _t('Skip', 'Lewati');
   String get stepAddTitle => _t('Snap your clothes', 'Foto pakaianmu');
-  String get stepAddBody => _t('The background lifts away.', 'Latarnya hilang sendiri.');
+  String get stepAddBody => _t('Each piece gets its own spot.', 'Tiap pakaian dapat tempatnya.');
   String get stepFitTitle => _t('Pick an outfit', 'Pilih gaya');
   String get stepFitBody => _t('Shuffle what’s clean.', 'Acak yang bersih.');
   String get stepWearTitle => _t('Wear it', 'Pakai');
