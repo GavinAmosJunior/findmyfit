@@ -35,6 +35,26 @@ double _bump(double x) => math.sin(math.pi * x.clamp(0.0, 1.0));
 
 String _art(String name) => 'assets/samples/$name.png';
 
+/// The hangers' swing at [secs], for a rail at [pos] (in pieces): the same
+/// damped pendulum as Fit Shuffle, worked out from the start so every
+/// frame of the film agrees.
+double _pendulum(double Function(double secs) pos, double secs) {
+  const dt = 1 / 120, stiffness = 110.0, drive = 0.33, maxAccel = 45.0, maxAngle = 0.21;
+  final damping = 2 * 0.22 * math.sqrt(stiffness);
+  var angle = 0.0, spin = 0.0, speed = 0.0, last = pos(0);
+  for (var time = dt; time <= secs; time += dt) {
+    final p = pos(time);
+    final v = (p - last) / dt;
+    last = p;
+    final smoothed = speed + (v - speed) * 0.5;
+    final accel = ((smoothed - speed) / dt).clamp(-maxAccel, maxAccel);
+    speed = smoothed;
+    spin += (-stiffness * angle - damping * spin - drive * accel) * dt;
+    angle = (angle + spin * dt).clamp(-maxAngle, maxAngle);
+  }
+  return angle;
+}
+
 /// Runs a clock while [active], in seconds since it started.
 class FilmClock extends StatefulWidget {
   final bool active;
@@ -178,8 +198,9 @@ class AppFilm extends StatelessWidget {
 
   // ------------------------------------------------------------- add
 
-  /// Snap: the jacket in the viewfinder, focus brackets close in, the
-  /// shutter, and it flies into its spot in your closet, named.
+  /// Snap: the shutter, then the jacket glows as it's picked out of the
+  /// photo (the light iPhone gives a lifted subject), and it flies into
+  /// its spot in your closet, named.
   (Widget, _Shot) _add(BuildContext context, double t) {
     final s = S.of(context);
     final shot = _camera(t, [
@@ -187,25 +208,19 @@ class AppFilm extends StatelessWidget {
       (0.72, (zoom: 0.88, focus: const Offset(_sw / 2, 335))),
     ]);
     const shutter = Offset(_sw / 2, 590);
-    final lock = _seg(t, 0.06, 0.28, Curves.easeOutBack);
-    final flash = _bump(_seg(t, 0.32, 0.42, Curves.linear));
-    final fly = _seg(t, 0.46, 0.72);
-    final named = _seg(t, 0.72, 0.82);
+    final flash = _bump(_seg(t, 0.12, 0.2, Curves.linear));
+    final sweep = _seg(t, 0.2, 0.46, Curves.easeInOut);
+    final fly = _seg(t, 0.48, 0.74);
+    final named = _seg(t, 0.74, 0.84);
     const big = Rect.fromLTWH(60, 190, _sw - 120, _sw - 120);
     final end = _ClosetScreen._cell(2) & const Size(_ClosetScreen._tile, _ClosetScreen._tile);
     final r = Rect.lerp(big, end, fly)!;
-    final frame = big.inflate(14 + 22 * (1 - lock));
 
     final screen = Stack(
       children: [
         Opacity(opacity: fly, child: _ClosetScreen(s: s, hide: 2)),
-        Positioned.fromRect(rect: r, child: _Tile('almet', size: r.width)),
-        if (fly < 1) ...[
-          // Focus brackets, as the camera finds the piece.
-          Positioned.fromRect(
-            rect: frame,
-            child: Opacity(opacity: (1 - fly * 3).clamp(0.0, 1.0) * _seg(t, 0.02, 0.1), child: const _Brackets()),
-          ),
+        Positioned.fromRect(rect: r, child: _Tile('almet', size: r.width, sweep: fly > 0 ? null : sweep)),
+        if (fly < 1)
           // The shutter.
           Positioned(
             left: shutter.dx - 36,
@@ -224,7 +239,6 @@ class AppFilm extends StatelessWidget {
               ),
             ),
           ),
-        ],
         Positioned(
           left: end.left + 4,
           top: end.bottom + 10,
@@ -233,9 +247,9 @@ class AppFilm extends StatelessWidget {
             child: Text(Samples.name('almet', s), style: context.text.titleSmall),
           ),
         ),
-        // A soft flash for the shot.
-        Positioned.fill(child: IgnorePointer(child: ColoredBox(color: Colors.white.withValues(alpha: 0.75 * flash)))),
-        _FingerAt(t: t, taps: const [(0.36, shutter)]),
+        // The shutter's blink.
+        Positioned.fill(child: IgnorePointer(child: ColoredBox(color: Colors.white.withValues(alpha: 0.6 * flash)))),
+        _FingerAt(t: t, taps: const [(0.16, shutter)]),
       ],
     );
     return (screen, shot);
@@ -247,26 +261,22 @@ class AppFilm extends StatelessWidget {
   (Widget, _Shot) _shuffle(BuildContext context, double t) {
     const button = Offset(_sw / 2 + 30, _sh - 140);
     final shot = _camera(t, [
-      (0.0, (zoom: 0.9, focus: const Offset(_sw / 2, 450))),
-      (1.0, (zoom: 0.93, focus: const Offset(_sw / 2, 450))),
+      (0.0, (zoom: 0.84, focus: const Offset(_sw / 2, 470))),
+      (1.0, (zoom: 0.86, focus: const Offset(_sw / 2, 470))),
     ]);
-    final taps = [0.25];
-    // A spin through the rail, slowing to a stop, like the app's Shuffle;
-    // then the pieces swing on their hangers and settle.
-    double swing(double from) {
-      final secs = (t - from) * filmSeconds;
-      return secs <= 0 ? 0 : 0.14 * math.exp(-3.5 * secs) * math.sin(11 * secs);
-    }
-    var top = 0.0, bottom = 0.0;
-    for (final at in taps) {
-      top += _seg(t, at + 0.02, at + 0.4, Curves.easeOutCubic) * 5;
-      bottom += _seg(t, at + 0.07, at + 0.45, Curves.easeOutCubic) * 3;
-    }
+    final taps = [0.22];
+    // The app's Shuffle: each rail spins a couple of turns and lands on a
+    // new piece, easing out over a second (the second rail a beat longer).
+    // The hangers are the app's damped pendulums, driven by the rail.
+    double topAt(double secs) => _seg(secs / filmSeconds, taps[0] + 0.01, taps[0] + 0.01 + 1.0 / filmSeconds, Curves.easeOutCubic) * 9;
+    double bottomAt(double secs) => _seg(secs / filmSeconds, taps[0] + 0.01, taps[0] + 0.01 + 1.22 / filmSeconds, Curves.easeOutCubic) * 5;
+    final secs = t * filmSeconds;
+    final top = topAt(secs), bottom = bottomAt(secs);
     final press = taps.map((a) => _bump(_seg(t, a - 0.02, a + 0.04, Curves.linear))).reduce(math.max);
     final s = S.of(context);
     final screen = Stack(
       children: [
-        _FitsScreen(s: s, top: top, bottom: bottom, press: press, swingTop: swing(0.6), swingBottom: swing(0.66)),
+        _FitsScreen(s: s, top: top, bottom: bottom, press: press, swingTop: _pendulum(topAt, secs), swingBottom: _pendulum(bottomAt, secs)),
         _FingerAt(t: t, taps: [for (final a in taps) (a, button)]),
       ],
     );
@@ -279,11 +289,11 @@ class AppFilm extends StatelessWidget {
   /// tab counts one more.
   (Widget, _Shot) _wear(BuildContext context, double t) {
     final wore = _ClosetScreen.woreButton(0);
-    final hamperTab = _TabBar.tabCenter(2);
-    // One long, gentle glide down, following the tee to the Hamper tab.
+    // Far enough out to see the tee and the Hamper tab at once, so the
+    // camera barely moves: a slow drift in, nothing to stop.
     final shot = _camera(t, [
-      (0.05, (zoom: 0.86, focus: const Offset(_sw / 2, 400))),
-      (0.95, (zoom: 0.86, focus: hamperTab - const Offset(0, 200))),
+      (0.0, (zoom: 0.7, focus: const Offset(_sw / 2, 470))),
+      (1.0, (zoom: 0.73, focus: const Offset(_sw / 2, 470))),
     ]);
     final s = S.of(context);
     final screen = Stack(
@@ -292,10 +302,9 @@ class AppFilm extends StatelessWidget {
           s: s,
           wornPress: _bump(_seg(t, 0.18, 0.26, Curves.linear)),
           worn: t > 0.22,
-          gone: _seg(t, 0.28, 0.62, Curves.linear),
-          reflow: _seg(t, 0.5, 0.78, Curves.linear),
-          hamperCount: t > 0.62 ? 3 : 2,
-          hamperPop: _bump(_seg(t, 0.62, 0.76, Curves.linear)),
+          gone: _seg(t, 0.28, 0.6, Curves.linear),
+          hamperCount: t > 0.59 ? 3 : 2,
+          hamperPop: _bump(_seg(t, 0.59, 0.73, Curves.linear)),
         ),
         _FingerAt(t: t, taps: [(0.22, wore)]),
       ],
@@ -381,7 +390,10 @@ class _Tile extends StatelessWidget {
   final double size;
   final Color? color;
 
-  const _Tile(this.art, {required this.size, this.color});
+  /// A band of light passing over the piece, 0 to 1; null for none.
+  final double? sweep;
+
+  const _Tile(this.art, {required this.size, this.color, this.sweep});
 
   @override
   Widget build(BuildContext context) {
@@ -390,7 +402,19 @@ class _Tile extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(color: color ?? context.palette.tile, borderRadius: BorderRadius.circular(size * 0.14)),
       padding: EdgeInsets.all(size * 0.1),
-      child: Image.asset(_art(art)),
+      child: sweep == null || sweep == 0 || sweep == 1
+          ? Image.asset(_art(art))
+          // Only on the piece itself: the light follows its outline.
+          : ShaderMask(
+              blendMode: BlendMode.srcATop,
+              shaderCallback: (rect) => LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white.withValues(alpha: 0), Colors.white.withValues(alpha: 0.85), Colors.white.withValues(alpha: 0)],
+                stops: [sweep! * 1.6 - 0.6, sweep! * 1.6 - 0.3, sweep! * 1.6],
+              ).createShader(rect),
+              child: Image.asset(_art(art)),
+            ),
     );
   }
 }
@@ -526,11 +550,7 @@ class _ClosetScreen extends StatelessWidget {
     this.hamperCount = 2,
     this.hamperPop = 0,
     this.hide,
-    this.reflow = 0,
   });
-
-  /// How far the others have moved up to fill the worn piece's place.
-  final double reflow;
 
   /// A piece left out of the grid, while it's on its way in.
   final int? hide;
@@ -541,16 +561,6 @@ class _ClosetScreen extends StatelessWidget {
   static Offset _cell(int i) => Offset(16 + (i % 2) * (_tile + 12), _top + (i ~/ 2) * _row);
   static Offset woreButton(int i) => _cell(i) + const Offset(_tile - 28, _tile - 28);
 
-  /// Where a tile is now: the worn one on its way to the Hamper tab, the
-  /// others sliding back one spot.
-  Offset _place(int i) {
-    if (i == 0) {
-      final target = _TabBar.tabCenter(2) - const Offset(_tile * 0.15 / 2, _tile * 0.15 / 2);
-      return Offset.lerp(_cell(0), target, Curves.easeInOutCubic.transform(gone))!;
-    }
-    return Offset.lerp(_cell(i), _cell(i - 1), Curves.easeInOutCubic.transform(reflow))!;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -559,13 +569,12 @@ class _ClosetScreen extends StatelessWidget {
         for (final (i, art) in _pieces.indexed)
           if (i != hide)
           Positioned(
-            left: _place(i).dx,
-            top: _place(i).dy,
+            left: _cell(i).dx,
+            top: _cell(i).dy,
             child: Opacity(
-              opacity: i == 0 ? 1 - _seg(gone, 0.6, 1, Curves.linear) : 1,
+              opacity: 1,
               child: Transform.scale(
-                alignment: Alignment.topLeft,
-                scale: i == 0 ? 1 - 0.85 * gone : 1,
+                scale: 1,
                 child: SizedBox(
                   width: _tile,
                   child: Column(
@@ -575,7 +584,7 @@ class _ClosetScreen extends StatelessWidget {
                         children: [
                           _Tile(art, size: _tile),
                           // Clothes only, like the app: tee, jeans, jacket.
-                          if (i < 3)
+                          if (i < 3 && !(i == 0 && gone > 0))
                           Positioned(
                             right: 8,
                             bottom: 8,
@@ -600,44 +609,28 @@ class _ClosetScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(Samples.name(art, s), style: context.text.titleSmall),
-                      Text(s.statusLabel(GarmentStatus.closet), style: context.text.bodySmall),
+                      // Like the app: the piece stays in the grid and says where it is.
+                      Text(
+                        s.statusLabel(i == 0 && gone > 0.5 ? GarmentStatus.dirtyHamper : GarmentStatus.closet),
+                        style: context.text.bodySmall,
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
           ),
-        _TabBar(s: s, hamperCount: hamperCount, hamperPop: hamperPop),
-      ],
-    );
-  }
-}
-
-/// A camera's focus corners.
-class _Brackets extends StatelessWidget {
-  const _Brackets();
-
-  @override
-  Widget build(BuildContext context) {
-    final side = BorderSide(color: context.ink, width: 3);
-    Widget corner(Alignment a) => Align(
-          alignment: a,
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              border: Border(
-                top: a.y < 0 ? side : BorderSide.none,
-                bottom: a.y > 0 ? side : BorderSide.none,
-                left: a.x < 0 ? side : BorderSide.none,
-                right: a.x > 0 ? side : BorderSide.none,
-              ),
+        // A copy of it drops into the Hamper tab.
+        if (gone > 0 && gone < 1)
+          Positioned(
+            left: Offset.lerp(_cell(0), _TabBar.tabCenter(2) - const Offset(_tile / 2, _tile / 2), Curves.easeInOutCubic.transform(gone))!.dx,
+            top: Offset.lerp(_cell(0), _TabBar.tabCenter(2) - const Offset(_tile / 2, _tile / 2), Curves.easeInOutCubic.transform(gone))!.dy,
+            child: Opacity(
+              opacity: 1 - _seg(gone, 0.7, 1, Curves.linear),
+              child: Transform.scale(scale: 1 - 0.85 * Curves.easeIn.transform(gone), child: _Tile('tee', size: _tile)),
             ),
           ),
-        );
-    return Stack(
-      children: [
-        for (final a in [Alignment.topLeft, Alignment.topRight, Alignment.bottomLeft, Alignment.bottomRight]) corner(a),
+        _TabBar(s: s, hamperCount: hamperCount, hamperPop: hamperPop),
       ],
     );
   }
@@ -734,27 +727,30 @@ class _Rail extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
         children: [
           Positioned(left: 0, right: 0, top: 8, child: Container(height: 2, color: context.palette.separator)),
-          Positioned(
-            left: _sw / 2 - 18,
-            top: 0,
-            child: Icon(AppIcons.closet, size: 36, color: context.palette.tertiaryText),
-          ),
           for (var k = base - 2; k <= base + 3; k++)
             Builder(
               builder: (context) {
                 final off = k - position;
                 final away = off.abs().clamp(0.0, 1.0);
+                // Each piece on its own hanger, turning on the hook, as in
+                // the app.
                 return Positioned(
                   left: _sw / 2 + off * gap - size / 2,
-                  top: 30,
+                  top: 0,
                   child: Opacity(
                     opacity: 1 - 0.6 * away,
                     child: Transform.rotate(
                       alignment: Alignment.topCenter,
                       angle: (off * 0.09).clamp(-0.16, 0.16) + swing * (off.abs() < 0.5 ? 1 : 0.7),
                       child: Transform.scale(
+                        alignment: Alignment.topCenter,
                         scale: 1 - 0.15 * away,
-                        child: _Tile(items[k % items.length], size: size),
+                        child: Column(
+                          children: [
+                            Icon(AppIcons.closet, size: 32, color: context.palette.tertiaryText),
+                            _Tile(items[k % items.length], size: size),
+                          ],
+                        ),
                       ),
                     ),
                   ),
