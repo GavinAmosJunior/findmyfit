@@ -512,17 +512,16 @@ void main() {
     expect(state.countOf(GarmentStatus.inLaundry), 2);
     expect(state.activeBatches, hasLength(1));
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.text('Sample clothes'), findsOneWidget);
+    expect(find.textContaining('Remove them anytime in Settings'), findsOneWidget);
 
     // Your own piece stays when the samples go.
     state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remove sample clothes'));
+    Samples.remove(state);
     await tester.pumpAndSettle();
     expect(state.garments.map((g) => g.name), ['My jacket']);
     expect(state.batches, isEmpty);
     expect(state.hasSamples, isFalse);
-    expect(find.text('Sample clothes'), findsNothing);
   });
 
   testWidgets('starting with an empty closet skips the samples, and the welcome is not shown again', (tester) async {

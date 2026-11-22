@@ -5,6 +5,7 @@ import '../l10n/strings.dart';
 import '../services/samples.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dialogs.dart';
 import 'welcome_film.dart';
 
 /// The first thing a new person sees, the way Apple introduces an app:
@@ -61,10 +62,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (_working) return;
     final state = AppScope.read(context);
     final s = S.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _working = true);
     HapticFeedback.lightImpact();
     try {
-      if (samples) await Samples.add(state, s);
+      if (samples) {
+        await Samples.add(state, s);
+        showMessageOn(messenger, s.samplesAdded);
+      }
     } catch (e) {
       // Without samples the app still works; never strand someone here.
       debugPrint('Sample clothes skipped: $e');

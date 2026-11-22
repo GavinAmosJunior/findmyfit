@@ -138,7 +138,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
               ),
             )
           else ...[
-            if (state.hasSamples && !_searching) SliverToBoxAdapter(child: _samplesBanner(context, s, state)),
             ..._content(context, s, state, visible),
           ],
         ],
@@ -147,27 +146,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 
   /// Says the clothes are samples, with a way to clear them.
-  /// One quiet line, so the samples don't crowd the closet.
-  Widget _samplesBanner(BuildContext context, S s, WardrobeState state) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 8, 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(s.samplesBannerTitle, style: context.text.bodySmall?.copyWith(color: context.palette.secondaryText)),
-          ),
-          TextButton(
-            onPressed: () {
-              Samples.remove(state);
-              showMessage(context, s.samplesRemoved);
-            },
-            child: Text(s.removeSamples),
-          ),
-        ],
-      ),
-    );
-  }
-
   List<Widget> _content(BuildContext context, S s, WardrobeState state, List<Garment> visible) {
     return [
           if (state.closetView == 'wardrobe' && !_searching) ...[

@@ -560,6 +560,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                               onChanged: (v) => setState(() => _dirty = v),
                             ),
                           ],
+                          if (_isEdit)
                           Theme(
                             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                             child: ExpansionTile(

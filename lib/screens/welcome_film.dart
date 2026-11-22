@@ -181,7 +181,7 @@ class AppFilm extends StatelessWidget {
   /// blinks, and the shirt lifts off its background while its name is
   /// typed.
   (Widget, _Shot) _add(BuildContext context, double t) {
-    const card = Offset(_sw / 2, 380);
+    const card = Offset(_sw / 2, 300);
     final shot = _camera(t, [
       (0.0, (zoom: 1.0, focus: card)),
       (1.0, (zoom: 1.08, focus: card)),
