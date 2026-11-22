@@ -513,7 +513,7 @@ void main() {
     expect(state.countOf(GarmentStatus.inLaundry), 2);
     expect(state.activeBatches, hasLength(1));
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.text('Sample clothes added'), findsOneWidget);
+    expect(find.text('Just samples. Clear them anytime.'), findsOneWidget);
 
     // Your own piece stays when the samples go.
     state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
