@@ -32,7 +32,8 @@ enum GarmentStatus {
   closet, // Clean, in the closet
   dirtyHamper, // Worn, waiting in the hamper
   inLaundry, // Sent out to the laundromat
-  missing; // Didn't come back from the laundromat
+  missing, // Didn't come back from the laundromat
+  lost; // Gave up looking: kept, out of the closet, can come back
 
   static GarmentStatus fromString(String? val) {
     return GarmentStatus.values.firstWhere(

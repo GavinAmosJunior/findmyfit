@@ -73,6 +73,8 @@ class S {
         return _t('At laundry', 'Di laundry');
       case GarmentStatus.missing:
         return _t('Missing', 'Hilang');
+      case GarmentStatus.lost:
+        return _t('Lost', 'Hilang');
     }
   }
 
@@ -230,11 +232,14 @@ class S {
       _t('Clothes that don’t come back from the laundry show up here.',
           'Pakaian yang tidak kembali dari laundry akan muncul di sini.');
   String get foundIt => _t('Found it', 'Sudah ketemu');
-  String get lostForGood => _t('Lost for good', 'Hilang permanen');
-  String lostTitle(String name) => _t('Delete $name?', 'Hapus $name?');
-  String get lostBody =>
-      _t('It will be removed from your wardrobe. This can’t be undone.',
-          'Pakaian ini akan dihapus dari lemarimu. Tindakan ini tidak bisa dibatalkan.');
+  String get lostForGood => _t('Stop looking', 'Berhenti mencari');
+  String lostTitle(String name) => _t('Stop looking for $name?', 'Berhenti mencari $name?');
+  String get lostBody => _t('It moves to Lost, out of your closet. If it turns up, bring it back.',
+      'Pindah ke Hilang, keluar dari lemari. Kalau ketemu, kembalikan kapan saja.');
+  String get lostSection => _t('Lost', 'Hilang');
+  String get bringBack => _t('It turned up', 'Ketemu lagi');
+  String missingFrom(String place) => _t('Missing from $place', 'Hilang dari $place');
+  String get askHint => _t('Tap to ask the laundromat', 'Ketuk untuk tanya ke laundry');
   String foundMessage(String name) => _t('$name is back in your closet', '$name kembali ke lemari');
 
   String get askLaundromat => _t('Ask the laundromat', 'Tanya ke laundry');

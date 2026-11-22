@@ -26,12 +26,13 @@ class LaundryScreen extends StatelessWidget {
     final active = state.activeBatches;
     final done = state.completedBatches.take(10).toList();
     final missing = state.countOf(GarmentStatus.missing);
+    final lost = state.countOf(GarmentStatus.lost);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           LargeTitle(title: s.laundry),
-          if (active.isEmpty && done.isEmpty && missing == 0)
+          if (active.isEmpty && done.isEmpty && missing == 0 && lost == 0)
             SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(icon: AppIcons.laundry, title: s.emptyLaundryTitle, body: s.emptyLaundryBody),
@@ -43,6 +44,17 @@ class LaundryScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                   child: _MissingCard(count: missing),
+                ),
+              )
+            else if (lost > 0)
+              // Nothing to chase, but the lost pieces are still kept here.
+              SliverToBoxAdapter(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(AppIcons.missing, color: context.palette.secondaryText),
+                  title: Text(s.lostSection),
+                  trailing: Text('$lost', style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
+                  onTap: () => MissingScreen.open(context),
                 ),
               ),
             if (active.isNotEmpty) ...[
@@ -112,7 +124,7 @@ class _MissingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(s.stampMissing(count), style: context.text.titleMedium?.copyWith(color: signal)),
-                  Text(s.missingSubtitle, style: context.text.bodySmall),
+                  Text(s.askHint, style: context.text.bodySmall),
                 ],
               ),
             ),

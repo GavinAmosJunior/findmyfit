@@ -15,6 +15,8 @@ IconData statusIcon(GarmentStatus status) {
       return AppIcons.laundry;
     case GarmentStatus.missing:
       return AppIcons.warning;
+    case GarmentStatus.lost:
+      return AppIcons.missing;
   }
 }
 

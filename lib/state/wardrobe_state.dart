@@ -139,8 +139,11 @@ class WardrobeState extends ChangeNotifier {
   List<Garment> get garments => List.unmodifiable(_garments);
   List<LaundryBatch> get batches => List.unmodifiable(_batches);
 
-  /// Saved outfits, newest first, skipping any whose pieces were deleted.
-  List<SavedFit> get fits => _fits.where((f) => f.itemIds.every((id) => garmentById(id) != null)).toList();
+  /// Saved outfits, newest first, skipping any whose pieces were deleted
+  /// or lost.
+  List<SavedFit> get fits => _fits
+      .where((f) => f.itemIds.every((id) => (garmentById(id)?.status ?? GarmentStatus.lost) != GarmentStatus.lost))
+      .toList();
 
   /// 'system', 'en' or 'id'.
   String get language => _language;
@@ -551,8 +554,12 @@ class WardrobeState extends ChangeNotifier {
   void markFound(String id) => moveToCloset(id);
 
   /// Permanently removes a garment that is gone for good.
+  /// Stops looking for a missing piece: it stays, out of the closet, and
+  /// can be brought back if it turns up. Nothing is deleted.
   void markLost(String id) {
-    _garments.removeWhere((g) => g.id == id);
+    final g = garmentById(id);
+    if (g == null) return;
+    g.status = GarmentStatus.lost;
     _changed();
   }
 

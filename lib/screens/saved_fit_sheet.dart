@@ -1,7 +1,5 @@
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -12,6 +10,7 @@ import '../models/saved_fit.dart';
 import '../state/app_scope.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
+import '../widgets/capture.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/fit_collage.dart';
 
@@ -46,37 +45,17 @@ class _SavedFitSheetState extends State<SavedFitSheet> {
     final storyDate = DateFormat.MMMMd(Localizations.localeOf(context).toString()).format(fit.createdAt);
     setState(() => _sharing = true);
     HapticFeedback.lightImpact();
-    final key = GlobalKey();
-    // Drawn off screen at story size, then captured.
-    final entry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: -4000,
-        top: 0,
-        child: RepaintBoundary(
-          key: key,
-          child: _Story(pieces: pieces, tint: fit.tint, date: storyDate, s: s),
-        ),
-      ),
-    );
-    Overlay.of(context, rootOverlay: true).insert(entry);
     try {
-      // Time for the pictures to decode at this size.
-      await Future<void>.delayed(const Duration(milliseconds: 600));
-      await WidgetsBinding.instance.endOfFrame;
-      final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3);
-      final png = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (png == null) throw StateError('No picture');
+      final png = await captureOffscreen(context, _Story(pieces: pieces, tint: fit.tint, date: storyDate, s: s));
       await SharePlus.instance.share(
         ShareParams(
-          files: [XFile.fromData(png.buffer.asUint8List(), mimeType: 'image/png', name: 'my-fit.png')],
+          files: [XFile.fromData(png, mimeType: 'image/png', name: 'my-fit.png')],
           fileNameOverrides: ['my-fit.png'],
         ),
       );
     } catch (_) {
       if (mounted) showMessage(context, s.shareFailed);
     } finally {
-      entry.remove();
       if (mounted) setState(() => _sharing = false);
     }
   }

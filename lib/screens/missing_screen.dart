@@ -8,6 +8,7 @@ import '../state/app_scope.dart';
 import '../theme/app_icons.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
+import '../widgets/capture.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/garment_image.dart';
@@ -31,6 +32,7 @@ class MissingScreen extends StatelessWidget {
     final s = S.of(context);
     final state = AppScope.of(context);
     final missing = state.withStatus(GarmentStatus.missing);
+    final lost = state.withStatus(GarmentStatus.lost);
 
     // Group by laundromat so one message covers each place.
     final groups = <String, List<Garment>>{};
@@ -42,16 +44,25 @@ class MissingScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: BarTitle(s.missing, subtitle: missing.isEmpty ? null : s.missingSubtitle)),
-      body: missing.isEmpty
+      body: missing.isEmpty && lost.isEmpty
           ? EmptyState(icon: AppIcons.allFound, title: s.emptyMissingTitle, body: s.emptyMissingBody)
-          : ListView.separated(
+          : ListView(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + MediaQuery.paddingOf(context).bottom),
-              itemCount: groups.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 14),
-              itemBuilder: (context, i) {
-                final entry = groups.entries.elementAt(i);
-                return _PlaceCard(place: entry.key, garments: entry.value);
-              },
+              children: [
+                for (final (i, MapEntry(key: place, value: garments)) in groups.entries.indexed) ...[
+                  if (i > 0) const SizedBox(height: 14),
+                  _PlaceCard(place: place, garments: garments),
+                ],
+                // Pieces you stopped looking for: kept, quiet, and one tap
+                // from coming back.
+                if (lost.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 26, 4, 8),
+                    child: Text(s.lostSection, style: context.text.titleMedium),
+                  ),
+                  for (final g in lost) _LostPiece(garment: g),
+                ],
+              ],
             ),
     );
   }
@@ -64,6 +75,24 @@ class _PlaceCard extends StatelessWidget {
   final List<Garment> garments;
 
   const _PlaceCard({required this.place, required this.garments});
+
+  /// The message, with a picture of what's missing so they know what to
+  /// look for. Falls back to the words alone if the picture can't be made.
+  Future<void> _ask(BuildContext context, S s, String title) async {
+    final text = s.askMessage(place, garments.map((g) => g.name).toList());
+    try {
+      final png = await captureOffscreen(context, _AskPicture(title: s.missingFrom(title), garments: garments), pixelRatio: 2.5);
+      await SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          files: [XFile.fromData(png, mimeType: 'image/png', name: 'missing.png')],
+          fileNameOverrides: ['missing.png'],
+        ),
+      );
+    } catch (_) {
+      await SharePlus.instance.share(ShareParams(text: text));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +124,7 @@ class _PlaceCard extends StatelessWidget {
           const SizedBox(height: 16),
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(backgroundColor: context.colors.surface),
-            onPressed: () =>
-                SharePlus.instance.share(ShareParams(text: s.askMessage(place, garments.map((g) => g.name).toList()))),
+            onPressed: () => _ask(context, s, title),
             icon: const Icon(AppIcons.chat, size: 20),
             label: Text(s.askLaundromat),
           ),
@@ -184,7 +212,6 @@ class _MissingPiece extends StatelessWidget {
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(44, 46),
-                  foregroundColor: context.palette.signal,
                   backgroundColor: context.colors.surface,
                 ),
                 onPressed: () async {
@@ -192,9 +219,8 @@ class _MissingPiece extends StatelessWidget {
                     context,
                     title: s.lostTitle(garment.name),
                     body: s.lostBody,
-                    confirmLabel: s.delete,
+                    confirmLabel: s.lostForGood,
                     cancelLabel: s.cancel,
-                    destructive: true,
                   );
                   if (ok) state.markLost(garment.id);
                 },
@@ -204,6 +230,95 @@ class _MissingPiece extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// A piece you stopped looking for, with a way back to the closet.
+class _LostPiece extends StatelessWidget {
+  final Garment garment;
+
+  const _LostPiece({required this.garment});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox.square(dimension: 52, child: Opacity(opacity: 0.6, child: GarmentImage(garment: garment, iconSize: 22))),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Text(garment.name, style: context.text.titleSmall)),
+          TextButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              AppScope.read(context).markFound(garment.id);
+              showMessage(context, s.foundMessage(garment.name));
+            },
+            child: Text(s.bringBack),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The picture sent with the message: each missing piece and its name, on
+/// white, so the laundromat can spot it on their shelves.
+class _AskPicture extends StatelessWidget {
+  final String title;
+  final List<Garment> garments;
+
+  const _AskPicture({required this.title, required this.garments});
+
+  @override
+  Widget build(BuildContext context) {
+    const width = 360.0, tile = 148.0;
+    return Theme(
+      data: AppTheme.light,
+      child: Builder(
+        builder: (context) => Container(
+          width: width,
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(24, 26, 24, 26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: context.text.titleLarge?.copyWith(color: const Color(0xFF1D1D1F))),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  for (final g in garments)
+                    SizedBox(
+                      width: tile,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: SizedBox.square(
+                              dimension: tile,
+                              child: GarmentImage(garment: g, backdrop: const Color(0xFFF2F2F4)),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(g.name, maxLines: 2, style: context.text.titleSmall?.copyWith(color: const Color(0xFF1D1D1F))),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

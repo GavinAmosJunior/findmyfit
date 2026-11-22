@@ -607,6 +607,10 @@ void main() {
       state.toggleFit([a.id, b.id]);
       state.markLost(a.id);
       expect(state.fits, isEmpty);
+      // Lost is not deleted: it can come back, and so does the fit.
+      expect(state.garmentById(a.id)?.status, GarmentStatus.lost);
+      state.markFound(a.id);
+      expect(state.fits, hasLength(1));
     });
 
     test('saved fits survive a backup, and older backups without fits load', () async {

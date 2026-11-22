@@ -69,6 +69,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
   List<Garment> _visible(List<Garment> all, String sort) {
     final q = _search.text.trim().toLowerCase();
     final list = all.where((g) {
+      // Lost pieces live on the Missing screen, not in the closet.
+      if (g.status == GarmentStatus.lost) return false;
       if (_filter == 'fav' && !g.isFavorite) return false;
       if (_filter != null && _filter != 'fav' && g.category.name != _filter) return false;
       if (q.isNotEmpty) {
