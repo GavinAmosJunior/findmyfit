@@ -6,11 +6,16 @@ enum GarmentCategory {
   shoes,
   hats,
   bags,
-  accessories;
+  accessories,
+  watches;
 
   /// Clothes you wash: wearing them sends them to the hamper. Shoes, hats,
-  /// bags and accessories just count the wear.
+  /// bags, accessories and watches just count the wear.
   bool get goesToHamper => index <= delicates.index;
+
+  /// Where a piece sits in the wardrobe drawing: watches share the
+  /// accessories cubby.
+  GarmentCategory get compartment => this == watches ? accessories : this;
 
   /// What Fit Shuffle hangs on the top rail.
   bool get isUpper => this == tops || this == outerwear || this == delicates;

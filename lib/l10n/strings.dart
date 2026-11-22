@@ -82,6 +82,8 @@ class S {
         return _t('Bags', 'Tas');
       case GarmentCategory.accessories:
         return _t('Accessories', 'Aksesori');
+      case GarmentCategory.watches:
+        return _t('Watches', 'Jam tangan');
     }
   }
 

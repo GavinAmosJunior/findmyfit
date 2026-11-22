@@ -26,6 +26,8 @@ IconData categoryIcon(GarmentCategory category) {
       return AppIcons.bags;
     case GarmentCategory.accessories:
       return AppIcons.accessories;
+    case GarmentCategory.watches:
+      return AppIcons.watches;
   }
 }
 

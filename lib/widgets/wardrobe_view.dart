@@ -87,7 +87,7 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
     final out = <GarmentCategory, (List<_Slot>, int)>{};
     for (final cell in _cells) {
       final r = cell.rect;
-      final pieces = all.where((g) => g.category == cell.category).toList()
+      final pieces = all.where((g) => g.category.compartment == cell.category).toList()
         ..sort((a, b) => (_away(a) ? 1 : 0).compareTo(_away(b) ? 1 : 0));
       final (size, step) = switch (cell.kind) {
         _Kind.rail => (42.0, 46.0),
@@ -209,7 +209,7 @@ class _WardrobeViewState extends State<WardrobeView> with SingleTickerProviderSt
                   rect: px(cell.rect),
                   child: Builder(
                     builder: (cellContext) {
-                      final all = state.garments.where((g) => g.category == cell.category).toList();
+                      final all = state.garments.where((g) => g.category.compartment == cell.category).toList();
                       final away = all.where(_away).length;
                       return Semantics(
                         button: true,

@@ -560,34 +560,6 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                               onChanged: (v) => setState(() => _dirty = v),
                             ),
                           ],
-                          if (_isEdit)
-                          Theme(
-                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              tilePadding: EdgeInsets.zero,
-                              initiallyExpanded: _isEdit && (_brand.text.isNotEmpty || _notes.text.isNotEmpty),
-                              title: Text(
-                                '${s.brand}, ${s.notes.toLowerCase()} · ${s.optional.toLowerCase()}',
-                                style: context.text.bodyMedium,
-                              ),
-                              children: [
-                                TextField(
-                                  controller: _brand,
-                                  textCapitalization: TextCapitalization.words,
-                                  decoration: InputDecoration(labelText: s.brand),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: _notes,
-                                  minLines: 2,
-                                  maxLines: 4,
-                                  textCapitalization: TextCapitalization.sentences,
-                                  decoration: InputDecoration(labelText: s.notes),
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -745,6 +717,13 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
           top: 10,
           child: Column(
             children: [
+              // Retake sits with the photo's other tools, for a shot that came out wrong.
+              _PhotoButton(
+                icon: AppIcons.cameraOutline,
+                tooltip: s.retake,
+                onPressed: _saving ? null : (_hasCamera ? _takePhoto : _choosePhotos),
+              ),
+              const SizedBox(height: 8),
               _PhotoButton(icon: AppIcons.rotate, tooltip: s.rotate, onPressed: _saving ? null : _rotate),
               if (canCutout) ...[
                 const SizedBox(height: 8),
@@ -779,29 +758,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                     child: const Center(child: CircularProgressIndicator.adaptive()),
                   )
                 : hasPhoto
-                ? Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _preview(context, s, preview),
-                      // Retake, right on the photo, for a shot that came out wrong.
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Material(
-                          color: context.colors.surface.withValues(alpha: 0.85),
-                          shape: const StadiumBorder(),
-                          child: InkWell(
-                            customBorder: const StadiumBorder(),
-                            onTap: _hasCamera ? _takePhoto : _choosePhotos,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              child: Text(s.retake, style: context.text.labelLarge),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
+                ? _preview(context, s, preview)
                 : Material(
                     color: context.palette.tile,
                     child: InkWell(

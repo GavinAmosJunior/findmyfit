@@ -45,7 +45,9 @@ class FitCollage extends StatelessWidget {
       case GarmentCategory.bags:
         return (0.61, 0.3, 0.37, 0.28);
       case GarmentCategory.accessories:
-        return (0.66, 0.5, 0.28, 0.17);
+        return (0.6, 0.5, 0.22, 0.17);
+      case GarmentCategory.watches:
+        return (0.79, 0.5, 0.2, 0.17);
       case GarmentCategory.shoes:
         return (0.58, 0.68, 0.4, 0.28);
       default:
@@ -100,7 +102,7 @@ class FitCollage extends StatelessWidget {
         GarmentCategory.bottoms => 0,
         GarmentCategory.shoes => 1,
         GarmentCategory.bags => 2,
-        GarmentCategory.accessories => 3,
+        GarmentCategory.accessories || GarmentCategory.watches => 3,
         GarmentCategory.hats => 4,
         _ => 5,
       };
@@ -118,7 +120,7 @@ class _Piece extends StatelessWidget {
     final cutout = ImageStore.isCutout(garment.imageUrl);
     // Small, wide pieces come closer so they hold their own on the board.
     final zoom = switch (garment.category) {
-      GarmentCategory.shoes || GarmentCategory.accessories => 1.25,
+      GarmentCategory.shoes || GarmentCategory.accessories || GarmentCategory.watches => 1.25,
       _ => 1.0,
     };
     final image = GarmentImage(garment: garment, iconSize: 22, backdrop: Colors.transparent, zoom: zoom);

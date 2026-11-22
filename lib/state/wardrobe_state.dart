@@ -25,7 +25,13 @@ class WardrobeState extends ChangeNotifier {
   static const _keySamples = 'sample_ids_v1';
 
   /// The extra rows Fit Shuffle shows besides tops and bottoms.
-  static const extraRails = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories, GarmentCategory.shoes];
+  static const extraRails = [
+    GarmentCategory.hats,
+    GarmentCategory.bags,
+    GarmentCategory.accessories,
+    GarmentCategory.watches,
+    GarmentCategory.shoes,
+  ];
   static const _keyFits = 'saved_fits_v1';
 
   static const backupFormat = 'findmyfit-backup';
@@ -196,6 +202,19 @@ class WardrobeState extends ChangeNotifier {
       _rails
         ..clear()
         ..addAll((prefs.getStringList(_keyRails) ?? []).map(GarmentCategory.fromString).where(extraRails.contains));
+      // Watches got their own category: move the ones filed under
+      // accessories, once.
+      if (prefs.getBool('watches_v1') != true) {
+        final watch = RegExp(r'watch|casio|rolex|seiko|^jam\b|jam tangan', caseSensitive: false);
+        for (var i = 0; i < _garments.length; i++) {
+          final g = _garments[i];
+          if (g.category == GarmentCategory.accessories && watch.hasMatch(g.name)) {
+            _garments[i] = g.edited(name: g.name, category: GarmentCategory.watches, brand: g.brand, notes: g.notes, imageUrl: g.imageUrl);
+          }
+        }
+        await prefs.setBool('watches_v1', true);
+        await _save();
+      }
     } catch (e) {
       debugPrint('Error loading wardrobe storage: $e');
     } finally {

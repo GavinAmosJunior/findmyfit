@@ -37,7 +37,7 @@ class FitShuffleScreen extends StatefulWidget {
 enum _Row { top, bottom, shoes }
 
 /// The small things in the tray, head first.
-const _extras = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories];
+const _extras = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories, GarmentCategory.watches];
 
 class _FitShuffleScreenState extends State<FitShuffleScreen> with TickerProviderStateMixin {
   final _rails = <_Row, _RailState>{};

@@ -32,7 +32,7 @@ abstract final class Samples {
     (asset: 'cap', en: 'White cap', id: 'Topi putih', category: GarmentCategory.hats),
     (asset: 'hat', en: 'Vietnam hat', id: 'Caping', category: GarmentCategory.hats),
     (asset: 'glasses', en: 'Glasses', id: 'Kacamata', category: GarmentCategory.accessories),
-    (asset: 'watch', en: 'Casio watch', id: 'Jam Casio', category: GarmentCategory.accessories),
+    (asset: 'watch', en: 'Casio watch', id: 'Jam Casio', category: GarmentCategory.watches),
   ];
 
   static const List<_Sample> _hamper = [

@@ -618,6 +618,19 @@ void main() {
   });
 
   group('garments', () {
+    test('watches filed under accessories move to Watches once', () async {
+      SharedPreferences.setMockInitialValues({'welcome_done_v1': true});
+      final state = await _loadedState();
+      state.addGarment(name: 'Casio watch', category: GarmentCategory.accessories);
+      state.addGarment(name: 'Glasses', category: GarmentCategory.accessories);
+      await Future<void>.delayed(Duration.zero);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('watches_v1');
+      final again = await _loadedState();
+      expect(again.garments.map((g) => (g.name, g.category)),
+          [('Glasses', GarmentCategory.accessories), ('Casio watch', GarmentCategory.watches)]);
+    });
+
     test('pieces can be moved, and the order is kept', () async {
       SharedPreferences.setMockInitialValues({'welcome_done_v1': true});
       final state = await _loadedState();
