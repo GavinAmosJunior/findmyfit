@@ -515,7 +515,7 @@ class WardrobeState extends ChangeNotifier {
 
   // ------------------------------------------------------------ fit shuffle
 
-  /// Clean clothes for the upper rail: tops, jackets and delicates.
+  /// Clean clothes for the upper rail: tops and jackets.
   List<Garment> get shuffleTops => withStatus(GarmentStatus.closet).where((g) => g.category.isUpper).toList();
 
   /// Clean clothes for the lower rail.

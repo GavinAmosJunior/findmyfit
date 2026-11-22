@@ -86,8 +86,6 @@ class S {
         return _t('Bottoms', 'Bawahan');
       case GarmentCategory.outerwear:
         return _t('Outerwear', 'Luaran');
-      case GarmentCategory.delicates:
-        return _t('Delicates', 'Halus');
       case GarmentCategory.shoes:
         return _t('Shoes', 'Sepatu');
       case GarmentCategory.hats:
@@ -301,7 +299,6 @@ class S {
   String get customizeRails => _t('Choose rails', 'Pilih rak');
   String get savedFit => _t('Saved fit', 'Fit tersimpan');
   String get myFit => _t('My fit', 'Gayaku');
-  String get shareStory => _t('Share to story', 'Bagikan ke story');
   String get savedFitsEmpty => _t('Tap the heart under the rails to keep a fit you like.',
       'Ketuk ikon hati di bawah rak untuk menyimpan fit yang kamu suka.');
   String get keepWhenShuffling => _t('Keep when shuffling', 'Tetap saat diacak');

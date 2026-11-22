@@ -98,7 +98,7 @@ void main() {
       final state = await _loadedState();
       state.setLanguage(lang);
       final a = state.addGarment(name: 'Oversized vintage denim jacket', category: GarmentCategory.outerwear);
-      final b = state.addGarment(name: 'Silk blouse', category: GarmentCategory.delicates, status: GarmentStatus.dirtyHamper);
+      final b = state.addGarment(name: 'Silk blouse', category: GarmentCategory.tops, status: GarmentStatus.dirtyHamper);
       final c = state.addGarment(name: 'Grey joggers', category: GarmentCategory.bottoms, status: GarmentStatus.dirtyHamper);
       final batch = state.sendToLaundry(garmentIds: [b.id], laundromatName: 'Sparkle Clean Laundromat');
       state.sendToLaundry(garmentIds: [c.id], laundromatName: 'Sparkle Clean Laundromat');

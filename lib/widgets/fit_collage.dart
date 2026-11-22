@@ -33,32 +33,31 @@ class FitCollage extends StatelessWidget {
 
   /// Where each kind of piece sits, as fractions of the board:
   /// left, top, width, height.
-  static (double, double, double, double)? _slot(GarmentCategory c, bool extras) {
-    // The top overlaps the waist of the bottoms, like a real flat-lay;
-    // the rest stand in a column on the right.
+  /// The small pieces that stand in the column on the right, top down.
+  static const _column = [GarmentCategory.hats, GarmentCategory.bags, GarmentCategory.accessories, GarmentCategory.watches];
+
+  /// Where a piece sits, as fractions of the board: left, top, width,
+  /// height. [column] is which small pieces this fit has; they share the
+  /// right side evenly, so there are no gaps.
+  static (double, double, double, double)? _slot(GarmentCategory c, bool extras, List<GarmentCategory> column, bool shoes) {
+    // The top overlaps the waist of the bottoms, like a real flat-lay.
     if (c.isUpper) return extras ? (0.04, 0.04, 0.6, 0.48) : (0.15, 0.03, 0.7, 0.5);
-    switch (c) {
-      case GarmentCategory.bottoms:
-        return extras ? (0.08, 0.38, 0.54, 0.58) : (0.19, 0.4, 0.62, 0.57);
-      case GarmentCategory.hats:
-        return (0.63, 0.06, 0.34, 0.22);
-      case GarmentCategory.bags:
-        return (0.61, 0.3, 0.37, 0.28);
-      case GarmentCategory.accessories:
-        return (0.6, 0.5, 0.22, 0.17);
-      case GarmentCategory.watches:
-        return (0.79, 0.5, 0.2, 0.17);
-      case GarmentCategory.shoes:
-        return (0.58, 0.68, 0.4, 0.28);
-      default:
-        return null;
-    }
+    if (c == GarmentCategory.bottoms) return extras ? (0.08, 0.38, 0.54, 0.58) : (0.19, 0.4, 0.62, 0.57);
+    if (c == GarmentCategory.shoes) return (0.58, 0.68, 0.4, 0.28);
+    final i = column.indexOf(c);
+    if (i == -1) return null;
+    final top = 0.05, bottom = shoes ? 0.67 : 0.95;
+    // From the top down, a hat first, like it's worn.
+    final step = ((bottom - top) / column.length).clamp(0.0, 0.28);
+    return (0.61, top + step * i, 0.37, step);
   }
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final extras = pieces.any((g) => !g.category.isUpper && g.category != GarmentCategory.bottoms);
+    final column = [for (final c in _column) if (pieces.any((g) => g.category == c)) c];
+    final hasShoes = pieces.any((g) => g.category == GarmentCategory.shoes);
     // Bottom-most first, so the top overlaps the waist like a real flat-lay.
     final ordered = [...pieces]..sort((a, b) => _depth(a.category).compareTo(_depth(b.category)));
 
@@ -83,7 +82,7 @@ class FitCollage extends StatelessWidget {
           builder: (context, c) => Stack(
             children: [
               for (final g in ordered)
-                if (_slot(g.category, extras) case (final x, final y, final w, final h))
+                if (_slot(g.category, extras, column, hasShoes) case (final x, final y, final w, final h))
                   Positioned(
                     left: c.maxWidth * x,
                     top: c.maxHeight * y,

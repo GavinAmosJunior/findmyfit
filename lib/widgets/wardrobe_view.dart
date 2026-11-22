@@ -27,7 +27,7 @@ const List<_Cell> _cells = [
   (category: GarmentCategory.tops, rect: Rect.fromLTWH(4, 68, 124, 126), kind: _Kind.rail),
   (category: GarmentCategory.bottoms, rect: Rect.fromLTWH(4, 194, 124, 126), kind: _Kind.rail),
   (category: GarmentCategory.accessories, rect: Rect.fromLTWH(128, 68, 64, 126), kind: _Kind.cubby),
-  (category: GarmentCategory.delicates, rect: Rect.fromLTWH(128, 194, 64, 126), kind: _Kind.cubby),
+  (category: GarmentCategory.watches, rect: Rect.fromLTWH(128, 194, 64, 126), kind: _Kind.cubby),
   (category: GarmentCategory.outerwear, rect: Rect.fromLTWH(192, 68, 116, 252), kind: _Kind.long),
   (category: GarmentCategory.shoes, rect: Rect.fromLTWH(4, 320, 304, 88), kind: _Kind.floor),
 ];

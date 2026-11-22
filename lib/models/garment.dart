@@ -2,7 +2,6 @@ enum GarmentCategory {
   tops,
   bottoms,
   outerwear,
-  delicates,
   shoes,
   hats,
   bags,
@@ -11,14 +10,13 @@ enum GarmentCategory {
 
   /// Clothes you wash: wearing them sends them to the hamper. Shoes, hats,
   /// bags, accessories and watches just count the wear.
-  bool get goesToHamper => index <= delicates.index;
+  bool get goesToHamper => this == tops || this == bottoms || this == outerwear;
 
-  /// Where a piece sits in the wardrobe drawing: watches share the
-  /// accessories cubby.
-  GarmentCategory get compartment => this == watches ? accessories : this;
+  /// Where a piece sits in the wardrobe drawing.
+  GarmentCategory get compartment => this;
 
   /// What Fit Shuffle hangs on the top rail.
-  bool get isUpper => this == tops || this == outerwear || this == delicates;
+  bool get isUpper => this == tops || this == outerwear;
 
   static GarmentCategory fromString(String? val) {
     return GarmentCategory.values.firstWhere(

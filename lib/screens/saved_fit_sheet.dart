@@ -124,7 +124,7 @@ class _SavedFitSheetState extends State<SavedFitSheet> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.surface),
                   )
                 : const Icon(AppIcons.share, size: 20),
-            label: Text(s.shareStory),
+            label: Text(s.share),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(

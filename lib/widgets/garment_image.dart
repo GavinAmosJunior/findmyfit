@@ -16,8 +16,6 @@ IconData categoryIcon(GarmentCategory category) {
       return AppIcons.bottoms;
     case GarmentCategory.outerwear:
       return AppIcons.outerwear;
-    case GarmentCategory.delicates:
-      return AppIcons.delicates;
     case GarmentCategory.shoes:
       return AppIcons.shoes;
     case GarmentCategory.hats:
