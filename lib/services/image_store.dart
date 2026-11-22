@@ -108,13 +108,36 @@ class ImageStore {
     }
   }
 
+  static String _name(String path) => path.substring(path.lastIndexOf('/') + 1);
+
+  /// Points saved photo paths at where the photos are now.
+  ///
+  /// iOS moves the app's folder on every install and update, so a full
+  /// path saved before goes stale even though the photo is still there,
+  /// under the same name in the new folder. Returns [refs] with any stale
+  /// path replaced; anything else is left alone.
+  static Future<List<String?>> relink(List<String?> refs) async {
+    if (kIsWeb) return refs;
+    bool stale(String? r) => r != null && r.startsWith('/') && r.contains('/$_folder/') && !File(r).existsSync();
+    if (!refs.any(stale)) return refs;
+    final dir = await _dir();
+    return [
+      for (final r in refs)
+        if (stale(r) && File('${dir.path}/${_name(r!)}').existsSync()) '${dir.path}/${_name(r)}' else r,
+    ];
+  }
+
   /// Deletes photo files no garment uses any more (phones only).
+  ///
+  /// Matched by file name, not full path, so a path from an older install
+  /// (see [relink]) never gets a photo deleted.
   static Future<void> deleteUnused(Set<String> inUse) async {
     if (kIsWeb) return;
     try {
+      final names = inUse.map(_name).toSet();
       final dir = await _dir();
       for (final f in dir.listSync().whereType<File>()) {
-        if (!inUse.contains(f.path)) f.deleteSync();
+        if (!names.contains(_name(f.path))) f.deleteSync();
       }
     } catch (e) {
       debugPrint('Photo cleanup skipped: $e');

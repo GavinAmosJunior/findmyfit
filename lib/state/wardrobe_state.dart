@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/garment.dart';
 import '../models/laundry_batch.dart';
 import '../models/saved_fit.dart';
+import '../services/image_store.dart';
 
 /// What a garment looked like before "Wore it", so the action can be undone.
 typedef WornSnapshot = ({GarmentStatus status, int wearCount, DateTime? lastWornAt});
@@ -156,6 +157,7 @@ class WardrobeState extends ChangeNotifier {
         batches: prefs.getString(_keyBatches),
         fits: prefs.getString(_keyFits),
       );
+      await _relinkPhotos();
       _batchCounter = prefs.getInt(_keyBatchCounter) ?? 1000;
       _language = prefs.getString(_keyLanguage) ?? 'system';
       _appearance = prefs.getString(_keyAppearance) ?? 'system';
@@ -173,6 +175,24 @@ class WardrobeState extends ChangeNotifier {
     } finally {
       _isLoaded = true;
       notifyListeners();
+    }
+  }
+
+  /// After an app update on iPhone, points photos at their new folder.
+  Future<void> _relinkPhotos() async {
+    try {
+      final before = [for (final g in _garments) g.imageUrl];
+      final after = await ImageStore.relink(before);
+      var changed = false;
+      for (var i = 0; i < _garments.length; i++) {
+        if (after[i] == before[i]) continue;
+        final g = _garments[i];
+        _garments[i] = g.edited(name: g.name, category: g.category, brand: g.brand, notes: g.notes, imageUrl: after[i]);
+        changed = true;
+      }
+      if (changed) await _save();
+    } catch (e) {
+      debugPrint('Photo relink skipped: $e');
     }
   }
 
