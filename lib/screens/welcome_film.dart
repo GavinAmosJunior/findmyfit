@@ -22,9 +22,8 @@ import '../theme/app_theme.dart';
 const filmSeconds = 3.6;
 
 // The phone's screen, in iPhone points, and the film's frame.
-const _sw = 390.0, _sh = 844.0, _bezel = 13.0;
-const _pw = _sw + 2 * _bezel, _ph = _sh + 2 * _bezel;
-const _fw = 340.0, _fh = 290.0;
+const _sw = 390.0, _sh = 844.0;
+const _fw = 340.0, _fh = 420.0;
 
 /// Progress of [t] through [a]..[b], 0 before and 1 after, eased.
 double _seg(double t, double a, double b, [Curve curve = Curves.easeInOutCubic]) =>
@@ -127,15 +126,15 @@ class AppFilm extends StatelessWidget {
       2 => _wear(context, t),
       _ => _check(context, t),
     };
-    // At rest the whole phone fits the frame; zooming brings the focus to
-    // the middle as it gets closer.
-    final fit = (_fh - 16) / _ph;
-    final scale = fit * shot.zoom;
-    final focus = shot.focus + const Offset(_bezel, _bezel);
-    // Most of the way toward the focus, so a corner button doesn't push the
-    // phone half out of the frame.
-    final center = Offset.lerp(const Offset(_pw / 2, _ph / 2), focus, 0.78 * (shot.zoom - 1).clamp(0.0, 1.0))!;
-    final fade = _seg(t, 0, 0.08, Curves.linear);
+    // Zoom 1 fits the screen's width to the frame; the focus sits in
+    // the middle, kept inside the screen.
+    final scale = _fw / _sw * shot.zoom;
+    final halfH = _fh / 2 / scale, halfW = _fw / 2 / scale;
+    final center = Offset(
+      shot.focus.dx.clamp(halfW, _sw - halfW),
+      shot.focus.dy.clamp(halfH, _sh - halfH),
+    );
+    final fade = math.min(_seg(t, 0, 0.05, Curves.linear), 1 - _seg(t, 0.95, 1, Curves.linear));
 
     return LayoutBuilder(
       builder: (context, c) {
@@ -151,7 +150,7 @@ class AppFilm extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(28),
                 child: ColoredBox(
-                  color: context.palette.tile,
+                  color: context.colors.surface,
                   child: Opacity(
                     opacity: fade,
                     child: OverflowBox(
@@ -163,7 +162,7 @@ class AppFilm extends StatelessWidget {
                           ..translateByDouble(_fw / 2, _fh / 2, 0, 1)
                           ..scaleByDouble(scale, scale, 1, 1)
                           ..translateByDouble(-center.dx, -center.dy, 0, 1),
-                        child: _Phone(child: screen),
+                        child: SizedBox(width: _sw, height: _sh, child: ColoredBox(color: context.colors.surface, child: screen)),
                       ),
                     ),
                   ),
@@ -182,30 +181,16 @@ class AppFilm extends StatelessWidget {
   /// blinks, and the shirt lifts off its background while its name is
   /// typed.
   (Widget, _Shot) _add(BuildContext context, double t) {
-    const shutter = Offset(_sw / 2, _sh - 120);
-    const card = Offset(_sw / 2, 300);
+    const card = Offset(_sw / 2, 380);
     final shot = _camera(t, [
-      (0.0, (zoom: 1.4, focus: const Offset(_sw / 2, 520))),
-      (1.0, (zoom: 1.8, focus: card)),
+      (0.0, (zoom: 1.0, focus: card)),
+      (1.0, (zoom: 1.08, focus: card)),
     ]);
-    final formUp = _seg(t, 0.3, 0.42);
-    final flash = _bump(_seg(t, 0.2, 0.28, Curves.linear));
-    final lift = _seg(t, 0.42, 0.7, Curves.easeOutCubic);
-    final typed = _seg(t, 0.7, 0.9, Curves.linear);
+    final lift = _seg(t, 0.2, 0.5, Curves.easeOutCubic);
+    final typed = _seg(t, 0.55, 0.8, Curves.linear);
 
     final s = S.of(context);
-    final screen = Stack(
-      children: [
-        _ClosetScreen(s: s),
-        if (formUp < 1) Positioned.fill(child: _CameraScreen(flash: flash)),
-        if (formUp > 0)
-          Opacity(
-            opacity: formUp,
-            child: _AddScreen(s: s, lift: lift, name: Samples.name('shirt', s), typed: typed),
-          ),
-        _FingerAt(t: t, taps: const [(0.22, shutter)]),
-      ],
-    );
+    final screen = _AddScreen(s: s, lift: lift, name: Samples.name('shirt', s), typed: typed);
     return (screen, shot);
   }
 
@@ -215,20 +200,25 @@ class AppFilm extends StatelessWidget {
   (Widget, _Shot) _shuffle(BuildContext context, double t) {
     const button = Offset(_sw / 2 + 30, _sh - 140);
     final shot = _camera(t, [
-      (0.0, (zoom: 1.7, focus: const Offset(_sw / 2, 470))),
-      (1.0, (zoom: 1.9, focus: const Offset(_sw / 2, 470))),
+      (0.0, (zoom: 1.0, focus: const Offset(_sw / 2, 520))),
+      (1.0, (zoom: 1.05, focus: const Offset(_sw / 2, 520))),
     ]);
-    final taps = [0.35];
+    final taps = [0.3];
+    // After the slide the pieces swing on their hangers and settle.
+    double swing(double from) {
+      final secs = (t - from) * filmSeconds;
+      return secs <= 0 ? 0 : 0.14 * math.exp(-3.5 * secs) * math.sin(11 * secs);
+    }
     var top = 0.0, bottom = 0.0;
     for (final (i, at) in taps.indexed) {
-      top += _seg(t, at + 0.04, at + 0.34) * (i + 1);
-      bottom += _seg(t, at + 0.1, at + 0.4);
+      top += _seg(t, at + 0.02, at + 0.12) * (i + 1);
+      bottom += _seg(t, at + 0.08, at + 0.18);
     }
     final press = taps.map((a) => _bump(_seg(t, a - 0.02, a + 0.04, Curves.linear))).reduce(math.max);
     final s = S.of(context);
     final screen = Stack(
       children: [
-        _FitsScreen(s: s, top: top, bottom: bottom, press: press),
+        _FitsScreen(s: s, top: top, bottom: bottom, press: press, swingTop: swing(0.4), swingBottom: swing(0.46)),
         _FingerAt(t: t, taps: [for (final a in taps) (a, button)]),
       ],
     );
@@ -243,8 +233,8 @@ class AppFilm extends StatelessWidget {
     final wore = _ClosetScreen.woreButton(0);
     final hamperTab = _TabBar.tabCenter(2);
     final shot = _camera(t, [
-      (0.45, (zoom: 2.0, focus: wore)),
-      (0.8, (zoom: 2.0, focus: hamperTab)),
+      (0.4, (zoom: 1.0, focus: wore + const Offset(0, 120))),
+      (0.75, (zoom: 1.0, focus: hamperTab - const Offset(0, 120))),
     ]);
     final s = S.of(context);
     final screen = Stack(
@@ -270,8 +260,8 @@ class AppFilm extends StatelessWidget {
   (Widget, _Shot) _check(BuildContext context, double t) {
     final rows = [for (var i = 0; i < 3; i++) _LoadScreen.check(i)];
     final shot = _camera(t, [
-      (0.0, (zoom: 1.8, focus: const Offset(_sw / 2, 340))),
-      (1.0, (zoom: 2.0, focus: const Offset(_sw / 2, 340))),
+      (0.0, (zoom: 1.0, focus: const Offset(_sw / 2, 300))),
+      (1.0, (zoom: 1.05, focus: const Offset(_sw / 2, 300))),
     ]);
     final s = S.of(context);
     final screen = Stack(
@@ -290,87 +280,6 @@ class AppFilm extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------------ phone
-
-/// An iPhone: black bezel, rounded screen, Dynamic Island, status bar and
-/// home indicator.
-class _Phone extends StatelessWidget {
-  final Widget child;
-
-  const _Phone({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: _pw,
-      height: _ph,
-      padding: const EdgeInsets.all(_bezel),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111113),
-        borderRadius: BorderRadius.circular(64),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 40, offset: const Offset(0, 18)),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(52),
-        child: ColoredBox(
-          color: context.colors.surface,
-          child: Stack(
-            children: [
-              Positioned.fill(child: child),
-              // Status bar.
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 16,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 50),
-                    Text('9:41', style: context.text.titleSmall?.copyWith(fontSize: 17)),
-                    const Spacer(),
-                    Icon(Icons.signal_cellular_alt_rounded, size: 18, color: context.ink),
-                    const SizedBox(width: 5),
-                    Icon(Icons.wifi_rounded, size: 18, color: context.ink),
-                    const SizedBox(width: 5),
-                    Container(
-                      width: 26,
-                      height: 12,
-                      decoration: BoxDecoration(color: context.ink, borderRadius: BorderRadius.circular(4)),
-                    ),
-                    const SizedBox(width: 36),
-                  ],
-                ),
-              ),
-              // Dynamic Island.
-              Positioned(
-                top: 11,
-                left: _sw / 2 - 62,
-                child: Container(
-                  width: 124,
-                  height: 36,
-                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(18)),
-                ),
-              ),
-              // Home indicator.
-              Positioned(
-                bottom: 8,
-                left: _sw / 2 - 70,
-                child: Container(
-                  width: 140,
-                  height: 5,
-                  decoration: BoxDecoration(color: context.ink, borderRadius: BorderRadius.circular(3)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A fingertip that glides to each tap point just before its time, presses,
 /// and lifts away.
 class _FingerAt extends StatelessWidget {
   final double t;
@@ -633,69 +542,6 @@ class _ClosetScreen extends StatelessWidget {
   }
 }
 
-/// The app's own camera, aimed at a shirt on the floor.
-class _CameraScreen extends StatelessWidget {
-  final double flash;
-
-  const _CameraScreen({required this.flash});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: _sw,
-      height: _sh,
-      color: Colors.black,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 12,
-            right: 12,
-            top: 150,
-            height: 480,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const _Floor(),
-                  Center(child: Image.asset(_art('shirt'), width: 250)),
-                  Container(color: Colors.white.withValues(alpha: 0.9 * flash)),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            top: 64,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle),
-              child: const Icon(AppIcons.close, color: Colors.white, size: 22),
-            ),
-          ),
-          Positioned(
-            left: _sw / 2 - 40,
-            top: _sh - 160,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 5),
-              ),
-              padding: const EdgeInsets.all(5),
-              child: Container(
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Floorboards under the photographed shirt.
 class _Floor extends StatelessWidget {
   const _Floor();
@@ -853,8 +699,17 @@ class _FitsScreen extends StatelessWidget {
   final double top;
   final double bottom;
   final double press;
+  final double swingTop;
+  final double swingBottom;
 
-  const _FitsScreen({required this.s, required this.top, required this.bottom, required this.press});
+  const _FitsScreen({
+    required this.s,
+    required this.top,
+    required this.bottom,
+    required this.press,
+    this.swingTop = 0,
+    this.swingBottom = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -865,13 +720,13 @@ class _FitsScreen extends StatelessWidget {
           left: 0,
           right: 0,
           top: 190,
-          child: _Rail(items: const ['tee', 'shirt', 'coat', 'hoodie', 'blouse'], position: top),
+          child: _Rail(items: const ['tee', 'shirt', 'coat', 'hoodie', 'blouse'], position: top, swing: swingTop),
         ),
         Positioned(
           left: 0,
           right: 0,
           top: 420,
-          child: _Rail(items: const ['jeans', 'chinos'], position: bottom),
+          child: _Rail(items: const ['jeans', 'chinos'], position: bottom, swing: swingBottom),
         ),
         Positioned(
           left: 16,
@@ -915,8 +770,9 @@ class _FitsScreen extends StatelessWidget {
 class _Rail extends StatelessWidget {
   final List<String> items;
   final double position;
+  final double swing;
 
-  const _Rail({required this.items, required this.position});
+  const _Rail({required this.items, required this.position, this.swing = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -943,9 +799,13 @@ class _Rail extends StatelessWidget {
                   top: 30,
                   child: Opacity(
                     opacity: 1 - 0.6 * away,
-                    child: Transform.scale(
-                      scale: 1 - 0.15 * away,
-                      child: _Tile(items[k % items.length], size: size),
+                    child: Transform.rotate(
+                      alignment: Alignment.topCenter,
+                      angle: (off * 0.09).clamp(-0.16, 0.16) + swing * (off.abs() < 0.5 ? 1 : 0.7),
+                      child: Transform.scale(
+                        scale: 1 - 0.15 * away,
+                        child: _Tile(items[k % items.length], size: size),
+                      ),
                     ),
                   ),
                 );

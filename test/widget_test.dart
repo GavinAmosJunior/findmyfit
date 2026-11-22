@@ -485,14 +485,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Never lose clothes\nto the laundry again'), findsOneWidget);
-    // One idea per page; each film plays once and rests.
+    // One idea per page; the films loop, so step the clock.
     for (final title in ['Snap your clothes', 'Pick an outfit', 'Wear it', 'See what comes back']) {
       await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
       expect(find.text(title), findsOneWidget);
     }
     await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     expect(find.text('Try it with sample clothes'), findsOneWidget);
 
     await tester.runAsync(() async {
@@ -510,7 +512,7 @@ void main() {
     expect(state.countOf(GarmentStatus.inLaundry), 2);
     expect(state.activeBatches, hasLength(1));
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.text('These are sample clothes'), findsOneWidget);
+    expect(find.text('Sample clothes'), findsOneWidget);
 
     // Your own piece stays when the samples go.
     state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
@@ -520,7 +522,7 @@ void main() {
     expect(state.garments.map((g) => g.name), ['My jacket']);
     expect(state.batches, isEmpty);
     expect(state.hasSamples, isFalse);
-    expect(find.text('These are sample clothes'), findsNothing);
+    expect(find.text('Sample clothes'), findsNothing);
   });
 
   testWidgets('starting with an empty closet skips the samples, and the welcome is not shown again', (tester) async {

@@ -147,35 +147,23 @@ class _ClosetScreenState extends State<ClosetScreen> {
   }
 
   /// Says the clothes are samples, with a way to clear them.
+  /// One quiet line, so the samples don't crowd the closet.
   Widget _samplesBanner(BuildContext context, S s, WardrobeState state) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: context.palette.tile, borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(s.samplesBannerTitle, style: context.text.titleSmall),
-              const SizedBox(height: 3),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(s.samplesBannerBody, style: context.text.bodyMedium?.copyWith(color: context.palette.secondaryText)),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Samples.remove(state);
-                    showMessage(context, s.samplesRemoved);
-                  },
-                  child: Text(s.removeSamples),
-                ),
-              ),
-            ],
+      padding: const EdgeInsets.fromLTRB(20, 0, 8, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(s.samplesBannerTitle, style: context.text.bodySmall?.copyWith(color: context.palette.secondaryText)),
           ),
-        ),
+          TextButton(
+            onPressed: () {
+              Samples.remove(state);
+              showMessage(context, s.samplesRemoved);
+            },
+            child: Text(s.removeSamples),
+          ),
+        ],
       ),
     );
   }

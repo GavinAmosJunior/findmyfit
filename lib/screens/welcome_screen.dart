@@ -287,14 +287,13 @@ class _FeaturePageState extends State<_FeaturePage> {
             child: FilmClock(
               key: ValueKey(_take),
               active: widget.active,
-              still: filmSeconds + 0.3,
-              until: filmSeconds + 0.3,
+              still: filmSeconds * 0.9,
               // A beat to let the page settle before it plays.
               builder: (context, secs) =>
-                  AppFilm(chapter: widget.chapter, t: ((secs - 0.3) / filmSeconds).clamp(0.0, 1.0)),
+                  AppFilm(chapter: widget.chapter, t: secs % filmSeconds / filmSeconds),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Text(widget.title, textAlign: TextAlign.center, style: context.text.headlineMedium),
           const SizedBox(height: 12),
           Text(
