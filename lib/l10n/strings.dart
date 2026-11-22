@@ -371,7 +371,7 @@ class S {
   String get startEmpty => _t('Start with an empty closet', 'Mulai dengan lemari kosong');
   String get sampleLaundromat => _t('Sparkle Laundry', 'Laundry Kilat');
   String get samplesAdded =>
-      _t('Sample clothes added. Remove them anytime in Settings.', 'Pakaian contoh ditambah. Hapus kapan saja di Pengaturan.');
+      _t('Sample clothes added', 'Pakaian contoh ditambah');
   String get removeSamples => _t('Remove sample clothes', 'Hapus pakaian contoh');
   String get samplesRemoved => _t('Sample clothes removed', 'Pakaian contoh dihapus');
   String get gettingStarted => _t('Getting started', 'Memulai');

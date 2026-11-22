@@ -281,9 +281,9 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: ink,
-        contentTextStyle: textTheme.bodyMedium?.copyWith(color: background),
-        actionTextColor: background,
+        backgroundColor: Color.lerp(background, ink, 0.1)!.withValues(alpha: 0.94),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(color: ink),
+        actionTextColor: ink,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),

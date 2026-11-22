@@ -6,6 +6,8 @@ import '../services/samples.dart';
 import '../state/app_scope.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogs.dart';
+import 'home_shell.dart';
+import 'settings_screen.dart';
 import 'welcome_film.dart';
 
 /// The first thing a new person sees, the way Apple introduces an app:
@@ -68,7 +70,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     try {
       if (samples) {
         await Samples.add(state, s);
-        showMessageOn(messenger, s.samplesAdded);
+        // Settings is where they're removed, one tap away.
+        showMessageOn(messenger, s.samplesAdded, actionLabel: s.settings, onAction: () {
+          final ctx = homeShellKey.currentContext;
+          if (ctx != null) Navigator.of(ctx).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
+        });
       }
     } catch (e) {
       // Without samples the app still works; never strand someone here.

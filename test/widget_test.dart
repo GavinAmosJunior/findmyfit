@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:smart_laundry_tracker/screens/settings_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_laundry_tracker/l10n/strings.dart';
@@ -512,12 +513,18 @@ void main() {
     expect(state.countOf(GarmentStatus.inLaundry), 2);
     expect(state.activeBatches, hasLength(1));
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.textContaining('Remove them anytime in Settings'), findsOneWidget);
+    expect(find.text('Sample clothes added'), findsOneWidget);
 
     // Your own piece stays when the samples go.
     state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
     await tester.pumpAndSettle();
-    Samples.remove(state);
+    // Removed from Settings, on a tall screen so the row is in view.
+    tester.view.physicalSize = const Size(800, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Navigator.of(tester.element(find.byType(AppTabBar))).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove sample clothes'));
     await tester.pumpAndSettle();
     expect(state.garments.map((g) => g.name), ['My jacket']);
     expect(state.batches, isEmpty);
