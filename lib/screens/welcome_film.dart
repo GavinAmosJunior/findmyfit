@@ -477,7 +477,7 @@ class _ClosetScreen extends StatelessWidget {
     this.hamperPop = 0,
   });
 
-  static const _pieces = ['tee', 'jeans', 'coat', 'sneakers', 'cap', 'tote'];
+  static const _pieces = ['tee', 'denims', 'almet', 'sneakers', 'cap', 'watch'];
   static const _tile = (_sw - 32 - 12) / 2, _top = 168.0, _row = _tile + 56;
 
   static Offset _cell(int i) => Offset(16 + (i % 2) * (_tile + 12), _top + (i ~/ 2) * _row);
@@ -720,13 +720,13 @@ class _FitsScreen extends StatelessWidget {
           left: 0,
           right: 0,
           top: 190,
-          child: _Rail(items: const ['tee', 'shirt', 'coat', 'hoodie', 'blouse'], position: top, swing: swingTop),
+          child: _Rail(items: const ['tee', 'shirt', 'almet', 'floral'], position: top, swing: swingTop),
         ),
         Positioned(
           left: 0,
           right: 0,
           top: 420,
-          child: _Rail(items: const ['jeans', 'chinos'], position: bottom, swing: swingBottom),
+          child: _Rail(items: const ['denims', 'blackjeans'], position: bottom, swing: swingBottom),
         ),
         Positioned(
           left: 16,
@@ -834,7 +834,7 @@ class _LoadScreen extends StatelessWidget {
   });
 
   static const _rowsTop = 232.0, _rowH = 84.0;
-  static const _pieces = ['shirt', 'chinos', 'hoodie'];
+  static const _pieces = ['shirt', 'blackjeans', 'floral'];
 
   static Offset check(int i) => Offset(_sw - 44, _rowsTop + i * _rowH + _rowH / 2);
 

@@ -371,7 +371,10 @@ class S {
   String get startEmpty => _t('Start with an empty closet', 'Mulai dengan lemari kosong');
   String get sampleLaundromat => _t('Sparkle Laundry', 'Laundry Kilat');
   String get samplesAdded =>
-      _t('Just samples. Clear them anytime.', 'Cuma contoh. Hapus kapan saja.');
+      _t('Clear samples in Settings', 'Hapus contoh di Pengaturan');
+  String get open => _t('Open', 'Buka');
+  String get retake => _t('Retake', 'Foto ulang');
+  String get allClear => _t('All clear', 'Sudah bersih');
   String get removeSamples => _t('Remove sample clothes', 'Hapus pakaian contoh');
   String get samplesRemoved => _t('Sample clothes removed', 'Pakaian contoh dihapus');
   String get gettingStarted => _t('Getting started', 'Memulai');

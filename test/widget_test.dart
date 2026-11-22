@@ -508,12 +508,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(state.welcomeDone, isTrue);
-    expect(state.garments, hasLength(11));
+    expect(state.garments, hasLength(13));
     expect(state.countOf(GarmentStatus.dirtyHamper), 2);
     expect(state.countOf(GarmentStatus.inLaundry), 2);
     expect(state.activeBatches, hasLength(1));
     expect(find.byType(AppTabBar), findsOneWidget);
-    expect(find.text('Just samples. Clear them anytime.'), findsOneWidget);
+    expect(find.text('Clear samples in Settings'), findsOneWidget);
 
     // Your own piece stays when the samples go.
     state.addGarment(name: 'My jacket', category: GarmentCategory.outerwear);
@@ -558,7 +558,7 @@ void main() {
     final s = S.of(tester.element(find.byType(HomeShell)));
     await tester.runAsync(() => Samples.add(state, s));
     await tester.pumpAndSettle();
-    expect(state.garments, hasLength(12));
+    expect(state.garments, hasLength(14));
 
     await tester.longPress(find.byIcon(AppIcons.settings));
     await tester.pumpAndSettle();

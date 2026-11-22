@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/strings.dart';
@@ -20,6 +21,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _clearing = false;
+
   bool _working = false;
 
   // Removing all backgrounds: how far along, while it runs.
@@ -236,12 +239,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               if (state.hasSamples)
                 ListTile(
-                  leading: Icon(AppIcons.delete, color: context.palette.signal),
+                  leading: _clearing
+                      ? SizedBox.square(
+                          dimension: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.4, color: context.palette.signal),
+                        )
+                      : Icon(AppIcons.delete, color: context.palette.signal),
                   title: Text(s.removeSamples, style: TextStyle(color: context.palette.signal)),
-                  onTap: () {
-                    Samples.remove(state);
-                    showMessage(context, s.samplesRemoved);
-                  },
+                  onTap: _clearing
+                      ? null
+                      : () async {
+                          // A short beat so it reads as work done, then back
+                          // to a closet that's all yours.
+                          HapticFeedback.mediumImpact();
+                          setState(() => _clearing = true);
+                          await Future<void>.delayed(const Duration(milliseconds: 900));
+                          if (!context.mounted) return;
+                          final messenger = ScaffoldMessenger.of(context);
+                          Samples.remove(state);
+                          Navigator.of(context).popUntil((r) => r.isFirst);
+                          showMessageOn(messenger, s.allClear);
+                        },
                 ),
             ],
           ),

@@ -71,7 +71,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       if (samples) {
         await Samples.add(state, s);
         // Settings is where they're removed, one tap away.
-        showMessageOn(messenger, s.samplesAdded, actionLabel: s.settings, onAction: () {
+        showMessageOn(messenger, s.samplesAdded, actionLabel: s.open, onAction: () {
           final ctx = homeShellKey.currentContext;
           if (ctx != null) Navigator.of(ctx).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
         });

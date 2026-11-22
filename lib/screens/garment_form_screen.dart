@@ -779,7 +779,29 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                     child: const Center(child: CircularProgressIndicator.adaptive()),
                   )
                 : hasPhoto
-                ? _preview(context, s, preview)
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _preview(context, s, preview),
+                      // Retake, right on the photo, for a shot that came out wrong.
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: context.colors.surface.withValues(alpha: 0.85),
+                          shape: const StadiumBorder(),
+                          child: InkWell(
+                            customBorder: const StadiumBorder(),
+                            onTap: _hasCamera ? _takePhoto : _choosePhotos,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              child: Text(s.retake, style: context.text.labelLarge),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
                 : Material(
                     color: context.palette.tile,
                     child: InkWell(
@@ -809,7 +831,7 @@ class _GarmentFormScreenState extends State<GarmentFormScreen> {
                 child: TextButton.icon(
                   onPressed: _busy ? null : _takePhoto,
                   icon: const Icon(AppIcons.cameraOutline),
-                  label: Text(hasPhoto ? s.changePhoto : s.takePhoto),
+                  label: Text(hasPhoto ? s.retake : s.takePhoto),
                 ),
               ),
             ],

@@ -6,7 +6,7 @@ import '../models/garment.dart';
 import '../state/wardrobe_state.dart';
 import 'image_store.dart';
 
-/// One sample piece: drawn art in assets/samples, shown like a cutout.
+/// One sample piece: a real cutout in assets/samples.
 typedef _Sample = ({String asset, String en, String id, GarmentCategory category});
 
 /// The clothes the welcome can fill the closet with, so every part of the
@@ -25,22 +25,24 @@ abstract final class Samples {
 
   static const List<_Sample> _closet = [
     (asset: 'tee', en: 'White tee', id: 'Kaus putih', category: GarmentCategory.tops),
-    (asset: 'jeans', en: 'Blue jeans', id: 'Jeans biru', category: GarmentCategory.bottoms),
-    (asset: 'coat', en: 'Camel coat', id: 'Mantel cokelat', category: GarmentCategory.outerwear),
-    (asset: 'sneakers', en: 'White sneakers', id: 'Sepatu putih', category: GarmentCategory.shoes),
-    (asset: 'cap', en: 'Navy cap', id: 'Topi navy', category: GarmentCategory.hats),
-    (asset: 'tote', en: 'Canvas tote', id: 'Tas kanvas', category: GarmentCategory.bags),
-    (asset: 'sunglasses', en: 'Sunglasses', id: 'Kacamata hitam', category: GarmentCategory.accessories),
+    (asset: 'denims', en: 'Blue jeans', id: 'Jeans biru', category: GarmentCategory.bottoms),
+    (asset: 'almet', en: 'Campus jacket', id: 'Jaket almamater', category: GarmentCategory.outerwear),
+    (asset: 'sneakers', en: 'Adidas Spezial', id: 'Adidas Spezial', category: GarmentCategory.shoes),
+    (asset: 'loafers', en: 'Loafers', id: 'Sepatu loafer', category: GarmentCategory.shoes),
+    (asset: 'cap', en: 'White cap', id: 'Topi putih', category: GarmentCategory.hats),
+    (asset: 'hat', en: 'Vietnam hat', id: 'Caping', category: GarmentCategory.hats),
+    (asset: 'glasses', en: 'Glasses', id: 'Kacamata', category: GarmentCategory.accessories),
+    (asset: 'watch', en: 'Casio watch', id: 'Jam Casio', category: GarmentCategory.accessories),
   ];
 
   static const List<_Sample> _hamper = [
-    (asset: 'hoodie', en: 'Grey hoodie', id: 'Hoodie abu', category: GarmentCategory.tops),
-    (asset: 'blouse', en: 'Silk blouse', id: 'Blus sutra', category: GarmentCategory.delicates),
+    (asset: 'floral', en: 'Floral shirt', id: 'Kemeja bunga', category: GarmentCategory.tops),
+    (asset: 'jorts', en: 'Jorts', id: 'Celana jeans pendek', category: GarmentCategory.bottoms),
   ];
 
   static const List<_Sample> _laundry = [
     (asset: 'shirt', en: 'Striped shirt', id: 'Kemeja garis', category: GarmentCategory.tops),
-    (asset: 'chinos', en: 'Khaki chinos', id: 'Celana chino', category: GarmentCategory.bottoms),
+    (asset: 'blackjeans', en: 'Black jeans', id: 'Jeans hitam', category: GarmentCategory.bottoms),
   ];
 
   /// Every sample's asset path, for preloading the welcome.
@@ -49,7 +51,7 @@ abstract final class Samples {
 
   /// The pieces shown on the welcome's last page.
   static List<String> get preview =>
-      [for (final a in ['tee', 'jeans', 'coat', 'sneakers', 'blouse', 'cap']) 'assets/samples/$a.png'];
+      [for (final a in ['tee', 'denims', 'almet', 'sneakers', 'floral', 'cap']) 'assets/samples/$a.png'];
 
   /// A sample's name in the app's language, by its art's name.
   static String name(String asset, S s) {
