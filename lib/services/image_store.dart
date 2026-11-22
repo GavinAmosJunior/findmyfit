@@ -41,11 +41,11 @@ class ImageStore {
   static Future<String> savePicked(XFile picked) async => saveBytes(await picked.readAsBytes());
 
   /// Stores a photo or cutout and returns its reference.
-  static Future<String> saveBytes(Uint8List bytes) async {
+  static Future<String> saveBytes(Uint8List bytes, {String prefix = 'g'}) async {
     if (kIsWeb) return _dataUrl(bytes);
     final dir = await _dir();
     final ext = isCutoutBytes(bytes) ? 'png' : 'jpg';
-    final file = File('${dir.path}/g_${DateTime.now().microsecondsSinceEpoch}.$ext');
+    final file = File('${dir.path}/${prefix}_${DateTime.now().microsecondsSinceEpoch}.$ext');
     await file.writeAsBytes(bytes, flush: true);
     return file.path;
   }

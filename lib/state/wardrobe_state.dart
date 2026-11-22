@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/garment.dart';
 import '../models/laundry_batch.dart';
 import '../models/saved_fit.dart';
+import '../services/samples.dart';
 import '../services/image_store.dart';
 
 /// What a garment looked like before "Wore it", so the action can be undone.
@@ -64,9 +65,11 @@ class WardrobeState extends ChangeNotifier {
   }
 
   /// Whether any of the sample clothes from the welcome are still here.
-  bool get hasSamples => _garments.any((g) => _sampleIds.contains(g.id));
+  bool get hasSamples => _garments.any(_isSample);
 
-  bool isSample(String id) => _sampleIds.contains(id);
+  bool _isSample(Garment g) => _sampleIds.contains(g.id) || Samples.looksLike(g);
+
+  bool isSample(String id) => _sampleIds.contains(id) || _garments.any((g) => g.id == id && Samples.looksLike(g));
 
   /// Remembers which pieces are samples, so they can be removed together.
   void markSamples(Iterable<String> ids) {
@@ -77,6 +80,7 @@ class WardrobeState extends ChangeNotifier {
   /// Removes the sample clothes, the loads made only of them, and outfits
   /// that use them.
   void removeSamples() {
+    _sampleIds.addAll(_garments.where(_isSample).map((g) => g.id));
     _garments.removeWhere((g) => _sampleIds.contains(g.id));
     _batches.removeWhere((b) => b.itemIds.every(_sampleIds.contains));
     for (final b in _batches) {

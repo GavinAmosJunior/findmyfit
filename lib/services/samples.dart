@@ -15,7 +15,13 @@ typedef _Sample = ({String asset, String en, String id, GarmentCategory category
 abstract final class Samples {
   /// Where the art is stored. Swappable so tests run without a disk.
   @visibleForTesting
-  static Future<String> Function(Uint8List bytes) store = ImageStore.saveBytes;
+  static Future<String> Function(Uint8List bytes) store = (bytes) => ImageStore.saveBytes(bytes, prefix: 'sample');
+
+  /// Whether [g] is a sample, even if the list of sample ids was lost:
+  /// by its photo's file name, or by a sample's name.
+  static bool looksLike(Garment g) =>
+      (g.imageUrl?.contains('/sample_') ?? false) ||
+      [..._closet, ..._hamper, ..._laundry].any((p) => p.en == g.name || p.id == g.name);
 
   static const List<_Sample> _closet = [
     (asset: 'tee', en: 'White tee', id: 'Kaus putih', category: GarmentCategory.tops),
