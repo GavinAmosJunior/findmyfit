@@ -1127,7 +1127,7 @@ class _SavedFitsSheet extends StatelessWidget {
                   return Pressable(
                     label: pieces.map((g) => g.name).join(', '),
                     onTap: () => onOpen(fits[i]),
-                    child: FitCollage(pieces: pieces, radius: 22),
+                    child: FitCollage(pieces: pieces, radius: 22, tint: fits[i].tint),
                   );
                 },
               ),

@@ -505,6 +505,14 @@ class WardrobeState extends ChangeNotifier {
     return true;
   }
 
+  /// Gives a saved fit another board color.
+  void setFitTint(String id, int tint) {
+    final i = _fits.indexWhere((f) => f.id == id);
+    if (i == -1) return;
+    _fits[i] = _fits[i].withTint(tint);
+    _changed();
+  }
+
   // ---------------------------------------------------------------- missing
 
   void markFound(String id) => moveToCloset(id);

@@ -14,23 +14,40 @@ class FitCollage extends StatelessWidget {
   /// Corner radius of the board.
   final double radius;
 
-  const FitCollage({super.key, required this.pieces, this.radius = 24});
+  /// A saved fit's color, from [tints]; null for the app's own board.
+  final int? tint;
+
+  /// No board behind the pieces, for laying them on something else.
+  final bool plain;
+
+  const FitCollage({super.key, required this.pieces, this.radius = 24, this.tint, this.plain = false});
+
+  /// Soft board colors a saved fit can wear: sky, peach, mint, lilac, sand.
+  static const tints = [
+    [Color(0xFFE6EEFC), Color(0xFFF5F7FB)],
+    [Color(0xFFFCE6DA), Color(0xFFFFF7F2)],
+    [Color(0xFFDDF2E5), Color(0xFFF4FBF7)],
+    [Color(0xFFEAE3FA), Color(0xFFF8F6FD)],
+    [Color(0xFFF1EADD), Color(0xFFFBF8F3)],
+  ];
 
   /// Where each kind of piece sits, as fractions of the board:
   /// left, top, width, height.
   static (double, double, double, double)? _slot(GarmentCategory c, bool extras) {
-    if (c.isUpper) return extras ? (0.03, 0.03, 0.56, 0.44) : (0.17, 0.02, 0.66, 0.48);
+    // The top overlaps the waist of the bottoms, like a real flat-lay;
+    // the rest stand in a column on the right.
+    if (c.isUpper) return extras ? (0.04, 0.04, 0.6, 0.48) : (0.15, 0.03, 0.7, 0.5);
     switch (c) {
       case GarmentCategory.bottoms:
-        return extras ? (0.07, 0.44, 0.5, 0.54) : (0.2, 0.47, 0.6, 0.51);
+        return extras ? (0.08, 0.38, 0.54, 0.58) : (0.19, 0.4, 0.62, 0.57);
       case GarmentCategory.hats:
-        return (0.62, 0.05, 0.33, 0.21);
+        return (0.63, 0.06, 0.34, 0.22);
       case GarmentCategory.bags:
-        return (0.6, 0.29, 0.37, 0.29);
+        return (0.61, 0.3, 0.37, 0.28);
       case GarmentCategory.accessories:
-        return (0.66, 0.59, 0.26, 0.14);
+        return (0.66, 0.5, 0.28, 0.17);
       case GarmentCategory.shoes:
-        return (0.56, 0.74, 0.42, 0.23);
+        return (0.58, 0.68, 0.4, 0.28);
       default:
         return null;
     }
@@ -48,13 +65,17 @@ class FitCollage extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(radius),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: dark
-                ? const [Color(0xFF16203A), Color(0xFF1C1C1E)]
-                : const [Color(0xFFE9F0FD), Color(0xFFF5F5F7)],
-          ),
+          gradient: plain
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: tint != null
+                      ? tints[tint! % tints.length]
+                      : dark
+                      ? const [Color(0xFF16203A), Color(0xFF1C1C1E)]
+                      : const [Color(0xFFE9F0FD), Color(0xFFF5F5F7)],
+                ),
         ),
         child: LayoutBuilder(
           builder: (context, c) => Stack(
@@ -95,7 +116,12 @@ class _Piece extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cutout = ImageStore.isCutout(garment.imageUrl);
-    final image = GarmentImage(garment: garment, iconSize: 22, backdrop: Colors.transparent);
+    // Small, wide pieces come closer so they hold their own on the board.
+    final zoom = switch (garment.category) {
+      GarmentCategory.shoes || GarmentCategory.accessories => 1.25,
+      _ => 1.0,
+    };
+    final image = GarmentImage(garment: garment, iconSize: 22, backdrop: Colors.transparent, zoom: zoom);
     if (cutout) return image;
     return Center(
       child: AspectRatio(
