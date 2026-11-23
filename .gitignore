@@ -55,3 +55,6 @@ app.*.map.json
 
 # Local emulator screenshots
 /screenshots/
+
+# Rendered showreel video
+/showreel/
