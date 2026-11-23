@@ -57,7 +57,7 @@ void main() {
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: theme,
-            home: RepaintBoundary(key: key, child: Showreel(time: time, by: 'by Gavin Amos Junior')),
+            home: RepaintBoundary(key: key, child: Showreel(time: time, by: 'by chibit')),
           ),
         );
 

@@ -1,6 +1,6 @@
 # Showreel
 
-A 30-second, 1080p60, silent, looping showreel of FindMyFit for a laptop
+A 30-second, 1080p60, silent, looping launch-style film of FindMyFit for a laptop
 at an exhibition. Built from the app's own tour films, drawn frame by frame.
 
 ```bash
