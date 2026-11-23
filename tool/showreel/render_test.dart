@@ -5,7 +5,6 @@
 //
 // Frames go to build/showreel/frames. See tool/showreel/README.md.
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
