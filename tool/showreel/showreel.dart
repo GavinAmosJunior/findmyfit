@@ -143,8 +143,8 @@ class _Line extends StatelessWidget {
 }
 
 /// "Clothes go to the laundry." arrives a word at a time; then "Not all
-/// come back." pushes up from below and moves it out of the way, and
-/// leaves in a blur.
+/// come back." pushes up from below, nudging it up, and the two stand
+/// together before leaving in a blur. "Not all" in a deep red.
 class _Push extends StatelessWidget {
   final double local;
 
@@ -158,34 +158,31 @@ class _Push extends StatelessWidget {
     final second = Text.rich(
       TextSpan(
         children: [
-          TextSpan(text: 'Not all ', style: style?.copyWith(color: _gray.withValues(alpha: 0.6))),
+          TextSpan(text: 'Not all ', style: style?.copyWith(color: const Color(0xFFB3261E))),
           TextSpan(text: 'come back.', style: style?.copyWith(color: _ink)),
         ],
       ),
     );
+    // The first line moves up to make room and stays; the second rises
+    // in under it. Then both leave together.
+    final both = Stack(
+      alignment: Alignment.center,
+      children: [
+        Transform.translate(
+          offset: Offset(0, -40 * push),
+          child: _Line(local: local, length: 99, words: const ['Clothes', 'go', 'to', 'the', 'laundry.']),
+        ),
+        if (push > 0)
+          Transform.translate(
+            offset: Offset(0, 40 + 70 * (1 - push)),
+            child: Opacity(opacity: push, child: second),
+          ),
+      ],
+    );
     return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (push < 1)
-            Transform.translate(
-              offset: Offset(0, -80 * push),
-              child: Opacity(
-                opacity: 1 - push,
-                child: _Line(local: local, length: 99, words: const ['Clothes', 'go', 'to', 'the', 'laundry.']),
-              ),
-            ),
-          if (push > 0)
-            Transform.translate(
-              offset: Offset(0, 80 * (1 - push)),
-              child: Opacity(
-                opacity: push * (1 - out),
-                child: out < 0.02
-                    ? second
-                    : ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 8 * out, sigmaY: 8 * out), child: second),
-              ),
-            ),
-        ],
+      child: Opacity(
+        opacity: 1 - out,
+        child: out < 0.02 ? both : ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 8 * out, sigmaY: 8 * out), child: both),
       ),
     );
   }
