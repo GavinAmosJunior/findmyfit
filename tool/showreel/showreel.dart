@@ -12,18 +12,19 @@ import 'package:smart_laundry_tracker/theme/app_theme.dart';
 /// it loops white to white.
 ///
 /// Drawn at 960×540 and rendered at 2× (1920×1080) by render_test.dart.
-const reelSeconds = 30.0;
+final reelSeconds = _endStart + 4.4;
 const reelSize = Size(960, 540);
 
 const _ink = Color(0xFF1D1D1F);
 const _gray = Color(0xFF6E6E73);
 
-/// When each feature starts, in seconds; each runs [_feature] seconds.
-const _features = [5.0, 8.4, 11.8, 15.2];
-const _feature = 3.4;
+/// How long each feature runs; Shuffle is done sooner, so it's shorter.
+const _lengths = [3.4, 2.5, 3.4, 3.4];
+const _firstFeature = 5.0;
+double _featureStart(int i) => _firstFeature + _lengths.take(i).fold(0.0, (a, b) => a + b);
 
 /// The quick cuts: a word, then the app close on what it means.
-const _montageStart = 18.7;
+final _montageStart = _featureStart(_lengths.length);
 const _cut = 0.8;
 const _cuts = <(String?, int, double, double, Alignment)>[
   ('Snap.', 0, 0, 0, Alignment.center),
@@ -35,7 +36,7 @@ const _cuts = <(String?, int, double, double, Alignment)>[
   ('Find.', 0, 0, 0, Alignment.center),
   (null, 3, 0.55, 0.85, Alignment(0, -0.1)),
 ];
-const _endStart = _montageStart + _cut * 8;
+final _endStart = _montageStart + _cut * 8;
 
 class Showreel extends StatelessWidget {
   /// Seconds into the reel.
@@ -62,12 +63,18 @@ class Showreel extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // The problem, in two beats, then the answer.
-            if (time < 1.9) _Line(local: time - 0.2, length: 1.7, words: const ['Clothes', 'go', 'to', 'the', 'laundry.']),
-            if (time >= 1.9 && time < 3.4) _Line(local: time - 1.9, length: 1.5, words: const ['Not', 'all', 'come', 'back.'], dim: 2),
+            if (time < 3.4) _Push(local: time - 0.2),
             if (time >= 3.4 && time < 5.0) _Name(local: time - 3.4, length: 1.6),
-            for (final (i, start) in _features.indexed)
-              if (time >= start && time < start + _feature)
-                _Feature(local: time - start, chapter: i, title: steps[i].$1, body: steps[i].$2, flip: i.isOdd),
+            for (var i = 0; i < _lengths.length; i++)
+              if (time >= _featureStart(i) && time < _featureStart(i) + _lengths[i])
+                _Feature(
+                  local: time - _featureStart(i),
+                  length: _lengths[i],
+                  chapter: i,
+                  title: steps[i].$1,
+                  body: steps[i].$2,
+                  flip: i.isOdd,
+                ),
             if (cut >= 0 && cut < _cuts.length) _Cut(local: time - _montageStart - cut * _cut, cut: _cuts[cut]),
             if (time >= _endStart) _End(local: time - _endStart, length: reelSeconds - _endStart, by: by),
           ],
@@ -106,14 +113,13 @@ class _Focus extends StatelessWidget {
   }
 }
 
-/// A line that arrives a word at a time. Words before [dim] are gray.
+/// A line that arrives a word at a time.
 class _Line extends StatelessWidget {
   final double local;
   final double length;
   final List<String> words;
-  final int? dim;
 
-  const _Line({required this.local, required this.length, required this.words, this.dim});
+  const _Line({required this.local, required this.length, required this.words});
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +134,56 @@ class _Line extends StatelessWidget {
               local: local,
               length: length,
               delay: i * 0.08,
-              child: Text(w, style: style?.copyWith(color: dim != null && i < dim! ? _gray.withValues(alpha: 0.6) : _ink)),
+              child: Text(w, style: style?.copyWith(color: _ink)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Clothes go to the laundry." arrives a word at a time; then "Not all
+/// come back." pushes up from below and moves it out of the way, and
+/// leaves in a blur.
+class _Push extends StatelessWidget {
+  final double local;
+
+  const _Push({required this.local});
+
+  @override
+  Widget build(BuildContext context) {
+    final push = _ease(local, 1.3, 1.75);
+    final out = _ease(local, 2.9, 3.2, Curves.easeInCubic);
+    final style = context.text.displayLarge?.copyWith(fontSize: 64, fontWeight: FontWeight.w700, letterSpacing: -1.8);
+    final second = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: 'Not all ', style: style?.copyWith(color: _gray.withValues(alpha: 0.6))),
+          TextSpan(text: 'come back.', style: style?.copyWith(color: _ink)),
+        ],
+      ),
+    );
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (push < 1)
+            Transform.translate(
+              offset: Offset(0, -80 * push),
+              child: Opacity(
+                opacity: 1 - push,
+                child: _Line(local: local, length: 99, words: const ['Clothes', 'go', 'to', 'the', 'laundry.']),
+              ),
+            ),
+          if (push > 0)
+            Transform.translate(
+              offset: Offset(0, 80 * (1 - push)),
+              child: Opacity(
+                opacity: push * (1 - out),
+                child: out < 0.02
+                    ? second
+                    : ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 8 * out, sigmaY: 8 * out), child: second),
+              ),
             ),
         ],
       ),
@@ -200,16 +255,24 @@ class _Feature extends StatelessWidget {
   final String title;
   final String body;
   final bool flip;
+  final double length;
 
-  const _Feature({required this.local, required this.chapter, required this.title, required this.body, required this.flip});
+  const _Feature({
+    required this.local,
+    required this.length,
+    required this.chapter,
+    required this.title,
+    required this.body,
+    required this.flip,
+  });
 
   @override
   Widget build(BuildContext context) {
     // The film at a brisker pace than in the app, resting at its end.
     final filmT = ((local - 0.15) / (filmSeconds * 0.8)).clamp(0.0, 0.93);
     final rise = _ease(local, 0, 0.6, Curves.easeOutCubic);
-    final out = _ease(local, _feature - 0.28, _feature, Curves.easeInCubic);
-    final turn = (flip ? -1 : 1) * (0.24 - 0.22 * (local / _feature));
+    final out = _ease(local, length - 0.28, length, Curves.easeInCubic);
+    final turn = (flip ? -1 : 1) * (0.24 - 0.22 * (local / length));
 
     final screen = Opacity(
       opacity: rise * (1 - out),
@@ -232,7 +295,7 @@ class _Feature extends StatelessWidget {
       children: [
         _Focus(
           local: local,
-          length: _feature,
+          length: length,
           delay: 0.15,
           child: Text(
             title,
@@ -243,7 +306,7 @@ class _Feature extends StatelessWidget {
         const SizedBox(height: 14),
         _Focus(
           local: local,
-          length: _feature,
+          length: length,
           delay: 0.28,
           child: Text(
             body,
